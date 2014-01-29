@@ -2,6 +2,3 @@ attdef
 ======
 
 Attack-Defend
-
-
-testing
