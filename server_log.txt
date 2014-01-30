@@ -1,0 +1,867 @@
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[18:43:28] filterscripts = ""  (string)
+[18:43:28] 
+[18:43:28] Server Plugins
+[18:43:28] --------------
+[18:43:28]  Loaded 0 plugins.
+
+[18:43:28] 
+[18:43:28] Filterscripts
+[18:43:28] ---------------
+[18:43:28]   Loaded 0 filterscripts.
+
+[18:43:28]  
+[18:43:28]  
+[18:43:28]  
+[18:43:28]  ======================================= 
+[18:43:28]  |                                     | 
+[18:43:28]  |        YSI version 3.09.0684        | 
+[18:43:28]  |        By Alex "Y_Less" Cole        | 
+[18:43:28]  |                                     | 
+[18:43:28]  ======================================= 
+[18:43:28]  
+[18:43:28]  
+[18:43:28]  
+[18:43:28] Hostname: Attdef Test Server [Normal Aim-leading]
+[18:43:28] Server Config Loaded.
+[18:43:28] Bases Loaded: 86
+[18:43:28] Arenas Loaded: 79
+[18:43:28] DMs Loaded: 13
+[18:43:28] Duels Loaded: 1
+[18:43:28] Number of vehicle models: 0
+[18:43:28] __________________________________________________
+[18:43:28] 
+[18:43:28] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[18:43:28] 
+[18:43:28] __________________________________________________
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[18:43:55] filterscripts = ""  (string)
+[18:43:55] 
+[18:43:55] Server Plugins
+[18:43:55] --------------
+[18:43:55]  Loaded 0 plugins.
+
+[18:43:55] 
+[18:43:55] Filterscripts
+[18:43:55] ---------------
+[18:43:55]   Loaded 0 filterscripts.
+
+[18:43:55]  
+[18:43:55]  
+[18:43:55]  
+[18:43:55]  ======================================= 
+[18:43:55]  |                                     | 
+[18:43:55]  |        YSI version 3.09.0684        | 
+[18:43:55]  |        By Alex "Y_Less" Cole        | 
+[18:43:55]  |                                     | 
+[18:43:55]  ======================================= 
+[18:43:55]  
+[18:43:55]  
+[18:43:55]  
+[18:43:55] Hostname: Attdef Test Server [Lag Compensation]
+[18:43:55] Server Config Loaded.
+[18:43:55] Bases Loaded: 86
+[18:43:55] Arenas Loaded: 79
+[18:43:55] DMs Loaded: 13
+[18:43:55] Duels Loaded: 1
+[18:43:55] Number of vehicle models: 0
+[18:43:56] __________________________________________________
+[18:43:56] 
+[18:43:56] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[18:43:56] 
+[18:43:56] __________________________________________________
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[23:42:42] filterscripts = ""  (string)
+[23:42:42] 
+[23:42:42] Server Plugins
+[23:42:42] --------------
+[23:42:42]  Loaded 0 plugins.
+
+[23:42:42] 
+[23:42:42] Filterscripts
+[23:42:42] ---------------
+[23:42:42]   Loaded 0 filterscripts.
+
+[23:42:42]  
+[23:42:42]  
+[23:42:42]  
+[23:42:42]  ======================================= 
+[23:42:42]  |                                     | 
+[23:42:42]  |        YSI version 3.09.0684        | 
+[23:42:42]  |        By Alex "Y_Less" Cole        | 
+[23:42:42]  |                                     | 
+[23:42:42]  ======================================= 
+[23:42:42]  
+[23:42:42]  
+[23:42:42]  
+[23:42:42] Hostname: Attdef Test Server [Normal Aim-leading]
+[23:42:42] Server Config Loaded.
+[23:42:42] Bases Loaded: 86
+[23:42:42] Arenas Loaded: 79
+[23:42:42] DMs Loaded: 13
+[23:42:42] Duels Loaded: 1
+[23:42:42] Number of vehicle models: 0
+[23:42:45] __________________________________________________
+[23:42:45] 
+[23:42:45] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[23:42:45] 
+[23:42:45] __________________________________________________
+[23:43:06] Incoming connection: 192.168.1.103:58416
+[23:43:07] [join] Niko_boy has joined the server (0:192.168.1.103)
+[23:59:47] Server password has been removed.
+[23:59:47] [part] Niko_boy has left the server (0:1)
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[01:27:48] filterscripts = ""  (string)
+[01:27:48] 
+[01:27:48] Server Plugins
+[01:27:48] --------------
+[01:27:48]  Loaded 0 plugins.
+
+[01:27:48] 
+[01:27:48] Filterscripts
+[01:27:48] ---------------
+[01:27:48]   Loaded 0 filterscripts.
+
+[01:27:48]  
+[01:27:48]  
+[01:27:48]  
+[01:27:48]  ======================================= 
+[01:27:48]  |                                     | 
+[01:27:48]  |        YSI version 3.09.0684        | 
+[01:27:48]  |        By Alex "Y_Less" Cole        | 
+[01:27:48]  |                                     | 
+[01:27:48]  ======================================= 
+[01:27:48]  
+[01:27:48]  
+[01:27:48]  
+[01:27:48] Hostname: Attdef Test Server [Normal Aim-leading]
+[01:27:48] Server Config Loaded.
+[01:27:48] Bases Loaded: 86
+[01:27:48] Arenas Loaded: 79
+[01:27:48] DMs Loaded: 13
+[01:27:48] Duels Loaded: 1
+[01:27:48] Number of vehicle models: 0
+[01:27:49] __________________________________________________
+[01:27:49] 
+[01:27:49] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[01:27:49] 
+[01:27:49] __________________________________________________
+[01:29:10] Incoming connection: 192.168.1.103:59744
+[01:29:10] [join] Niko_boy has joined the server (0:192.168.1.103)
+Console input: gmx
+[01:34:14] Server password has been removed.
+[01:34:26]  
+[01:34:26]  
+[01:34:26]  
+[01:34:26]  ======================================= 
+[01:34:26]  |                                     | 
+[01:34:26]  |        YSI version 3.09.0684        | 
+[01:34:26]  |        By Alex "Y_Less" Cole        | 
+[01:34:26]  |                                     | 
+[01:34:26]  ======================================= 
+[01:34:26]  
+[01:34:26]  
+[01:34:26]  
+[01:34:26] Hostname: Attdef Test Server [Normal Aim-leading] [Normal Aim-leading]
+[01:34:26] Server Config Loaded.
+[01:34:26] Bases Loaded: 86
+[01:34:26] Arenas Loaded: 79
+[01:34:26] DMs Loaded: 13
+[01:34:26] Duels Loaded: 1
+[01:34:26] Number of vehicle models: 0
+[01:34:28] __________________________________________________
+[01:34:28] 
+[01:34:28] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[01:34:28] 
+[01:34:28] __________________________________________________
+Console input: gmx
+[01:39:15] Server password has been removed.
+[01:39:27]  
+[01:39:27]  
+[01:39:27]  
+[01:39:27]  ======================================= 
+[01:39:27]  |                                     | 
+[01:39:27]  |        YSI version 3.09.0684        | 
+[01:39:27]  |        By Alex "Y_Less" Cole        | 
+[01:39:27]  |                                     | 
+[01:39:27]  ======================================= 
+[01:39:27]  
+[01:39:27]  
+[01:39:27]  
+[01:39:27] Hostname: Attdef Test Server [Normal Aim-leading] [Normal Aim-leading] [No
+[01:39:27] Server Config Loaded.
+[01:39:27] Bases Loaded: 86
+[01:39:27] Arenas Loaded: 79
+[01:39:27] DMs Loaded: 13
+[01:39:27] Duels Loaded: 1
+[01:39:27] Number of vehicle models: 0
+[01:39:29] __________________________________________________
+[01:39:29] 
+[01:39:29] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[01:39:29] 
+[01:39:29] __________________________________________________
+[01:41:00] RCON (In-Game): Player #0 (Niko_boy) has logged in.
+[01:41:07] RCON (In-Game): Player [Niko_boy] sent command: reloadfs fsdebug
+[01:41:07]   Filterscript 'fsdebug.amx' unload failed.
+[01:41:07]   Filterscript 'fsdebug.amx' load failed'.
+[01:41:59] RCON (In-Game): Player [Niko_boy] sent command: login bitch
+[01:42:01] RCON (In-Game): Player [Niko_boy] sent command: reloadfs fsdebug
+[01:42:01]   Filterscript 'fsdebug.amx' unload failed.
+[01:42:01]   Filterscript 'fsdebug.amx' load failed'.
+[01:42:27] RCON (In-Game): Player [Niko_boy] sent command: reloadfs fsdebug
+[01:42:27]   Filterscript 'fsdebug.amx' unload failed.
+[01:42:27] 
+  *********************
+  * SA:MP DEBUG 0.2   *
+[01:42:27]   * By Simon Campbell *
+  *********************
+[01:42:27]   * Version: 0.5d      *
+  *********************
+[01:42:27]   * -- LOADED         *
+  *********************
+
+[01:42:27]   Filterscript 'fsdebug.amx' loaded.
+[01:43:11] [death] Niko_boy died 54
+[01:43:20] [death] Niko_boy died 54
+Console input: gmx
+[01:54:50] Server password has been removed.
+[01:55:02]  
+[01:55:02]  
+[01:55:02]  
+[01:55:02]  ======================================= 
+[01:55:02]  |                                     | 
+[01:55:02]  |        YSI version 3.09.0684        | 
+[01:55:02]  |        By Alex "Y_Less" Cole        | 
+[01:55:02]  |                                     | 
+[01:55:02]  ======================================= 
+[01:55:02]  
+[01:55:02]  
+[01:55:02]  
+[01:55:02] Hostname: Attdef Test Server [Normal Aim-leading] [Normal Aim-leading] [No
+[01:55:02] Server Config Loaded.
+[01:55:02] Bases Loaded: 86
+[01:55:02] Arenas Loaded: 79
+[01:55:02] DMs Loaded: 13
+[01:55:02] Duels Loaded: 1
+[01:55:02] Number of vehicle models: 0
+[01:55:03] __________________________________________________
+[01:55:03] 
+[01:55:03] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[01:55:03] 
+[01:55:03] __________________________________________________
+Console input: gmx
+[01:56:23] Server password has been removed.
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[01:56:37] filterscripts = ""  (string)
+[01:56:37] 
+[01:56:37] Server Plugins
+[01:56:37] --------------
+[01:56:37]  Loaded 0 plugins.
+
+[01:56:37] 
+[01:56:37] Filterscripts
+[01:56:37] ---------------
+[01:56:37]   Loaded 0 filterscripts.
+
+[01:56:37]  
+[01:56:37]  
+[01:56:37]  
+[01:56:37]  ======================================= 
+[01:56:37]  |                                     | 
+[01:56:37]  |        YSI version 3.09.0684        | 
+[01:56:37]  |        By Alex "Y_Less" Cole        | 
+[01:56:37]  |                                     | 
+[01:56:37]  ======================================= 
+[01:56:37]  
+[01:56:37]  
+[01:56:37]  
+[01:56:37] Hostname: Attdef Test Server [Normal Aim-leading]
+[01:56:37] Server Config Loaded.
+[01:56:37] Bases Loaded: 86
+[01:56:37] Arenas Loaded: 79
+[01:56:37] DMs Loaded: 13
+[01:56:37] Duels Loaded: 1
+[01:56:37] Number of vehicle models: 0
+[01:56:37] __________________________________________________
+[01:56:37] 
+[01:56:37] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[01:56:37] 
+[01:56:37] __________________________________________________
+[01:57:56] Incoming connection: 192.168.1.103:51710
+[01:57:56] [join] Niko_boy has joined the server (0:192.168.1.103)
+[02:00:56] Server password has been removed.
+[02:00:56] [part] Niko_boy has left the server (0:1)
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[17:30:31] filterscripts = ""  (string)
+[17:30:31] 
+[17:30:31] Server Plugins
+[17:30:31] --------------
+[17:30:31]  Loaded 0 plugins.
+
+[17:30:31] 
+[17:30:31] Filterscripts
+[17:30:31] ---------------
+[17:30:31]   Loaded 0 filterscripts.
+
+[17:30:31]  
+[17:30:31]  
+[17:30:31]  
+[17:30:31]  ======================================= 
+[17:30:31]  |                                     | 
+[17:30:31]  |        YSI version 3.09.0684        | 
+[17:30:31]  |        By Alex "Y_Less" Cole        | 
+[17:30:31]  |                                     | 
+[17:30:31]  ======================================= 
+[17:30:31]  
+[17:30:31]  
+[17:30:31]  
+[17:30:31] Hostname: Attdef Test Server [Normal Aim-leading]
+[17:30:31] Server Config Loaded.
+[17:30:31] Bases Loaded: 86
+[17:30:31] Arenas Loaded: 79
+[17:30:31] DMs Loaded: 13
+[17:30:31] Duels Loaded: 1
+[17:30:31] Number of vehicle models: 0
+[17:30:32] __________________________________________________
+[17:30:32] 
+[17:30:32] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[17:30:32] 
+[17:30:32] __________________________________________________
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[17:31:20] filterscripts = ""  (string)
+[17:31:20] 
+[17:31:20] Server Plugins
+[17:31:20] --------------
+[17:31:20]  Loaded 0 plugins.
+
+[17:31:20] 
+[17:31:20] Filterscripts
+[17:31:20] ---------------
+[17:31:20]   Loaded 0 filterscripts.
+
+[17:31:20] Script[gamemodes/spec_z.amx]: Run time error 19: "File or function is not found"
+[17:31:20] Number of vehicle models: 0
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[17:31:37] filterscripts = ""  (string)
+[17:31:37] 
+[17:31:37] Server Plugins
+[17:31:37] --------------
+[17:31:37]  Loaded 0 plugins.
+
+[17:31:37] 
+[17:31:37] Filterscripts
+[17:31:37] ---------------
+[17:31:37]   Loaded 0 filterscripts.
+
+[17:31:37] Script[gamemodes/spec_z.amx]: Run time error 19: "File or function is not found"
+[17:31:37] Number of vehicle models: 0
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[17:31:51] filterscripts = ""  (string)
+[17:31:51] 
+[17:31:51] Server Plugins
+[17:31:51] --------------
+[17:31:51]  Loaded 0 plugins.
+
+[17:31:51] 
+[17:31:51] Filterscripts
+[17:31:51] ---------------
+[17:31:51]   Loaded 0 filterscripts.
+
+[17:31:51] Script[gamemodes/spec_z.amx]: Run time error 19: "File or function is not found"
+[17:31:51] Number of vehicle models: 0
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[17:32:13] filterscripts = ""  (string)
+[17:32:13] 
+[17:32:13] Server Plugins
+[17:32:13] --------------
+[17:32:13]  Loaded 0 plugins.
+
+[17:32:13] 
+[17:32:13] Filterscripts
+[17:32:13] ---------------
+[17:32:13]   Loaded 0 filterscripts.
+
+[17:32:13] Script[gamemodes/spec_z.amx]: Run time error 19: "File or function is not found"
+[17:32:13] Number of vehicle models: 0
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[17:32:17] filterscripts = ""  (string)
+[17:32:17] 
+[17:32:17] Server Plugins
+[17:32:17] --------------
+[17:32:17]  Loaded 0 plugins.
+
+[17:32:17] 
+[17:32:17] Filterscripts
+[17:32:17] ---------------
+[17:32:17]   Loaded 0 filterscripts.
+
+[17:32:17] Script[gamemodes/spec_z.amx]: Run time error 19: "File or function is not found"
+[17:32:17] Number of vehicle models: 0
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[17:33:00] filterscripts = ""  (string)
+[17:33:00] 
+[17:33:00] Server Plugins
+[17:33:00] --------------
+[17:33:00]  Loaded 0 plugins.
+
+[17:33:00] 
+[17:33:00] Filterscripts
+[17:33:00] ---------------
+[17:33:00]   Loaded 0 filterscripts.
+
+[17:33:00] Script[gamemodes/spec_z.amx]: Run time error 19: "File or function is not found"
+[17:33:00] Number of vehicle models: 0
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[17:33:26] filterscripts = ""  (string)
+[17:33:26] 
+[17:33:26] Server Plugins
+[17:33:26] --------------
+[17:33:26]  Loading plugin: sscanf
+[17:33:26] 
+
+[17:33:26]  ===============================
+
+[17:33:26]       sscanf plugin loaded.     
+
+[17:33:26]          Version:  2.8.1        
+
+[17:33:26]    (c) 2012 Alex "Y_Less" Cole  
+
+[17:33:26]  ===============================
+
+[17:33:26]   Loaded.
+[17:33:26]  Loading plugin: crashdetect
+[17:33:26]   CrashDetect v4.13 is OK.
+[17:33:26]   Loaded.
+[17:33:26]  Loaded 2 plugins.
+
+[17:33:26] 
+[17:33:26] Filterscripts
+[17:33:26] ---------------
+[17:33:26]   Loaded 0 filterscripts.
+
+[17:33:26]  
+[17:33:26]  
+[17:33:26]  
+[17:33:26]  ======================================= 
+[17:33:26]  |                                     | 
+[17:33:26]  |        YSI version 3.09.0684        | 
+[17:33:26]  |        By Alex "Y_Less" Cole        | 
+[17:33:26]  |                                     | 
+[17:33:26]  ======================================= 
+[17:33:26]  
+[17:33:26] Number of vehicle models: 0
+[17:33:26] Incoming connection: 127.0.0.1:53644
+[17:33:26] [npc:join] npcidle has joined the server (0:127.0.0.1)
+[17:33:49] Incoming connection: 192.168.1.103:53660
+[17:33:50] [join] Niko_boy has joined the server (1:192.168.1.103)
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[17:36:30] filterscripts = ""  (string)
+[17:36:30] 
+[17:36:30] Server Plugins
+[17:36:30] --------------
+[17:36:30]  Loading plugin: sscanf
+[17:36:30] 
+
+[17:36:30]  ===============================
+
+[17:36:30]       sscanf plugin loaded.     
+
+[17:36:30]          Version:  2.8.1        
+
+[17:36:30]    (c) 2012 Alex "Y_Less" Cole  
+
+[17:36:30]  ===============================
+
+[17:36:30]   Loaded.
+[17:36:30]  Loading plugin: crashdetect
+[17:36:30]   CrashDetect v4.13 is OK.
+[17:36:30]   Loaded.
+[17:36:30]  Loaded 2 plugins.
+
+[17:36:30] 
+[17:36:30] Filterscripts
+[17:36:30] ---------------
+[17:36:30]   Loaded 0 filterscripts.
+
+[17:36:30]  
+[17:36:30]  
+[17:36:30]  
+[17:36:30]  ======================================= 
+[17:36:30]  |                                     | 
+[17:36:30]  |        YSI version 3.09.0684        | 
+[17:36:30]  |        By Alex "Y_Less" Cole        | 
+[17:36:30]  |                                     | 
+[17:36:30]  ======================================= 
+[17:36:30]  
+[17:36:30] Number of vehicle models: 0
+[17:36:30] Incoming connection: 127.0.0.1:64391
+[17:37:19] Incoming connection: 192.168.1.103:52275
+Console input: reloadbans
+[17:37:40] Incoming connection: 192.168.1.103:53206
+[17:37:40] [join] Niko_boy has joined the server (0:192.168.1.103)
+[17:37:50] RCON (In-Game): Player #0 (Niko_boy) has logged in.
+[17:37:54] RCON (In-Game): Player [Niko_boy] sent command: reloadfs fsdebug
+[17:37:54]   Filterscript 'fsdebug.amx' unload failed.
+[17:37:54] 
+  *********************
+  * SA:MP DEBUG 0.2   *
+[17:37:54]   * By Simon Campbell *
+  *********************
+[17:37:54]   * Version: 0.5d      *
+  *********************
+[17:37:54]   * -- LOADED         *
+  *********************
+
+[17:37:54]   Filterscript 'fsdebug.amx' loaded.
+[17:38:15] Incoming connection: 122.173.146.8:21264
+[17:38:15] [join] neeraj has joined the server (1:122.173.146.8)
+[17:47:39] [part] neeraj has left the server (1:1)
+Console input: gmx
+[17:56:03]  
+[17:56:03]  
+[17:56:03]  
+[17:56:03]  ======================================= 
+[17:56:03]  |                                     | 
+[17:56:03]  |        YSI version 3.09.0684        | 
+[17:56:03]  |        By Alex "Y_Less" Cole        | 
+[17:56:03]  |                                     | 
+[17:56:03]  ======================================= 
+[17:56:03]  
+[17:56:03] Number of vehicle models: 0
+[17:56:03] Incoming connection: 127.0.0.1:61401
+Console input: gmx
+[18:01:05]  
+[18:01:05]  
+[18:01:05]  
+[18:01:05]  ======================================= 
+[18:01:05]  |                                     | 
+[18:01:05]  |        YSI version 3.09.0684        | 
+[18:01:05]  |        By Alex "Y_Less" Cole        | 
+[18:01:05]  |                                     | 
+[18:01:05]  ======================================= 
+[18:01:05]  
+[18:01:05] Number of vehicle models: 0
+[18:01:05] Incoming connection: 127.0.0.1:54663
+Console input: gmx
+[18:03:57]  
+[18:03:57]  
+[18:03:57]  
+[18:03:57]  ======================================= 
+[18:03:57]  |                                     | 
+[18:03:57]  |        YSI version 3.09.0684        | 
+[18:03:57]  |        By Alex "Y_Less" Cole        | 
+[18:03:57]  |                                     | 
+[18:03:57]  ======================================= 
+[18:03:57]  
+[18:03:57] Number of vehicle models: 0
+[18:03:58] Incoming connection: 127.0.0.1:53654
+Console input: gmx
+[18:12:51]  
+[18:12:51]  
+[18:12:51]  
+[18:12:51]  ======================================= 
+[18:12:51]  |                                     | 
+[18:12:51]  |        YSI version 3.09.0684        | 
+[18:12:51]  |        By Alex "Y_Less" Cole        | 
+[18:12:51]  |                                     | 
+[18:12:51]  ======================================= 
+[18:12:51]  
+[18:12:52] Number of vehicle models: 0
+[18:12:52] Incoming connection: 127.0.0.1:50936
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[03:09:51] filterscripts = ""  (string)
+[03:09:51] 
+[03:09:51] Server Plugins
+[03:09:51] --------------
+[03:09:51]  Loading plugin: sscanf
+[03:09:51] 
+
+[03:09:51]  ===============================
+
+[03:09:51]       sscanf plugin loaded.     
+
+[03:09:51]          Version:  2.8.1        
+
+[03:09:51]    (c) 2012 Alex "Y_Less" Cole  
+
+[03:09:51]  ===============================
+
+[03:09:51]   Loaded.
+[03:09:51]  Loading plugin: crashdetect
+[03:09:51]   CrashDetect v4.13 is OK.
+[03:09:51]   Loaded.
+[03:09:51]  Loaded 2 plugins.
+
+[03:09:51] 
+[03:09:51] Filterscripts
+[03:09:51] ---------------
+[03:09:51]   Loaded 0 filterscripts.
+
+[03:09:51]  
+[03:09:51]  
+[03:09:51]  
+[03:09:51]  ======================================= 
+[03:09:51]  |                                     | 
+[03:09:51]  |        YSI version 3.09.0684        | 
+[03:09:51]  |        By Alex "Y_Less" Cole        | 
+[03:09:51]  |                                     | 
+[03:09:51]  ======================================= 
+[03:09:51]  
+[03:09:51] Number of vehicle models: 0
+[03:09:51] Incoming connection: 127.0.0.1:55838
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[03:10:23] filterscripts = ""  (string)
+[03:10:23] 
+[03:10:23] Server Plugins
+[03:10:23] --------------
+[03:10:23]  Loading plugin: sscanf
+[03:10:23] 
+
+[03:10:23]  ===============================
+
+[03:10:23]       sscanf plugin loaded.     
+
+[03:10:23]          Version:  2.8.1        
+
+[03:10:23]    (c) 2012 Alex "Y_Less" Cole  
+
+[03:10:23]  ===============================
+
+[03:10:23]   Loaded.
+[03:10:23]  Loading plugin: crashdetect
+[03:10:23]   CrashDetect v4.13 is OK.
+[03:10:23]   Loaded.
+[03:10:23]  Loaded 2 plugins.
+
+[03:10:23] 
+[03:10:23] Filterscripts
+[03:10:23] ---------------
+[03:10:23]   Loaded 0 filterscripts.
+
+[03:10:23]  
+[03:10:23]  
+[03:10:23]  
+[03:10:23]  ======================================= 
+[03:10:23]  |                                     | 
+[03:10:23]  |        YSI version 3.09.0684        | 
+[03:10:23]  |        By Alex "Y_Less" Cole        | 
+[03:10:23]  |                                     | 
+[03:10:23]  ======================================= 
+[03:10:23]  
+[03:10:23]  
+[03:10:23]  
+[03:10:23] Hostname: Attdef Test Server [Normal Aim-leading]
+[03:10:23] Server Config Loaded.
+[03:10:23] Bases Loaded: 86
+[03:10:23] Arenas Loaded: 79
+[03:10:23] DMs Loaded: 13
+[03:10:23] Duels Loaded: 1
+[03:10:23] Number of vehicle models: 0
+[03:10:23] __________________________________________________
+[03:10:23] 
+[03:10:23] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[03:10:23] 
+[03:10:23] __________________________________________________
+[03:10:53] Incoming connection: 127.0.0.1:51178
+[03:10:53] [join] [KHK]Khalid has joined the server (0:127.0.0.1)
+[03:11:04] [death] [KHK]Khalid died 255
+[03:11:07] [death] [KHK]Khalid died 255
+[03:11:10] Server password has been removed.
+[03:11:10] [part] [KHK]Khalid has left the server (0:1)
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z-RC4, (C)2005-2014 SA-MP Team
+
+[03:11:25] filterscripts = ""  (string)
+[03:11:25] 
+[03:11:25] Server Plugins
+[03:11:25] --------------
+[03:11:25]  Loading plugin: sscanf
+[03:11:25] 
+
+[03:11:25]  ===============================
+
+[03:11:25]       sscanf plugin loaded.     
+
+[03:11:25]          Version:  2.8.1        
+
+[03:11:25]    (c) 2012 Alex "Y_Less" Cole  
+
+[03:11:25]  ===============================
+
+[03:11:25]   Loaded.
+[03:11:25]  Loading plugin: crashdetect
+[03:11:25]   CrashDetect v4.13 is OK.
+[03:11:25]   Loaded.
+[03:11:25]  Loaded 2 plugins.
+
+[03:11:25] 
+[03:11:25] Filterscripts
+[03:11:25] ---------------
+[03:11:25]   Loaded 0 filterscripts.
+
+[03:11:25]  
+[03:11:25]  
+[03:11:25]  
+[03:11:25]  ======================================= 
+[03:11:25]  |                                     | 
+[03:11:25]  |        YSI version 3.09.0684        | 
+[03:11:25]  |        By Alex "Y_Less" Cole        | 
+[03:11:25]  |                                     | 
+[03:11:25]  ======================================= 
+[03:11:25]  
+[03:11:25]  
+[03:11:25]  
+[03:11:25] Hostname: Attdef Test Server [Normal Aim-leading]
+[03:11:25] Server Config Loaded.
+[03:11:25] Bases Loaded: 86
+[03:11:25] Arenas Loaded: 79
+[03:11:25] DMs Loaded: 13
+[03:11:25] Duels Loaded: 1
+[03:11:25] Number of vehicle models: 0
+[03:11:27] __________________________________________________
+[03:11:27] 
+[03:11:27] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[03:11:27] 
+[03:11:27] __________________________________________________
+[03:11:49] Incoming connection: 127.0.0.1:52699
+[03:11:49] [join] [KHK]Khalid has joined the server (0:127.0.0.1)
+[03:11:56] [death] [KHK]Khalid died 255
+[03:11:59] [death] [KHK]Khalid died 255
+[03:12:00] [death] [KHK]Khalid died 255
+[03:12:02] Server password has been removed.
+[03:12:02] [part] [KHK]Khalid has left the server (0:1)
