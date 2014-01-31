@@ -7,7 +7,7 @@
 	- Headshots now should be more accurate than before.
 	- Re-enabled anti-joypad    //antijoypad
 	- Added 2 new commands to permanently lock a server or enable AC.
-	
+	- Fixed a bug that you would see Arena instead of TDM while it's a TDM running.
 
 */
 
@@ -15918,7 +15918,8 @@ stock FixVsTextDraw()
 {
 	new iString[128];
 
-	if(Current == -1) {
+	if(Current == -1)
+	{
 		new ct[2];
 		foreach(new i : Player)
 		{
@@ -15936,7 +15937,12 @@ stock FixVsTextDraw()
 		}
 	    format(iString, sizeof(iString), "  ~r~%d  %sVs  ~b~~h~%d", ct[0], MAIN_TEXT_COLOUR, ct[1]);
 	} else {
-		if(GameType == ARENA || GameType == TDM) {
+		if(GameType == TDM)
+		{
+		    if(OneOnOne == false) format(iString, sizeof(iString), "%sTDM %s(~r~%d%s)", MAIN_TEXT_COLOUR, MAIN_TEXT_COLOUR, Current, MAIN_TEXT_COLOUR);
+		}
+		else if(GameType == ARENA)
+		{
 			if(OneOnOne == false) format(iString, sizeof(iString), "%sArena %s(~r~%d%s)", MAIN_TEXT_COLOUR, MAIN_TEXT_COLOUR, Current, MAIN_TEXT_COLOUR);
 			else format(iString, sizeof(iString), "%sDuel %s(~r~%d%s)", MAIN_TEXT_COLOUR, MAIN_TEXT_COLOUR, Current, MAIN_TEXT_COLOUR);
 	    } else {
@@ -20468,8 +20474,7 @@ SpawnPlayersInArena()
 	ArenaStarted = true;
 	FallProtection = true;
 	RadarFix();
-
-
+	FixVsTextDraw();
 }
 
 forward AddPlayerToArena(playerid);
@@ -20587,6 +20592,7 @@ public AddPlayerToArena(playerid)
 	PlayerTextDrawSetString(playerid, RoundKillDmgTDmg, iString);
 
 	RadarFix();
+	FixVsTextDraw();
 	return 1;
 }
 
@@ -20987,7 +20993,7 @@ SpawnPlayersInBase()
 	BaseStarted = true;
     FallProtection = true;
 	RadarFix();
-
+    FixVsTextDraw();
 
 }
 
@@ -21104,6 +21110,7 @@ public AddPlayerToBase(playerid)
 	} */
 
 	RadarFix();
+	FixVsTextDraw();
 	return 1;
 }
 
