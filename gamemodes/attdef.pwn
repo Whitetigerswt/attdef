@@ -3,11 +3,12 @@
 	v2.3
 
 	- The gamemode has been updated to function properly with the new SA:MP version (0.3z).
-	- Server browsers now can tell whether an Attdef server is using lag compensation or not (from hostname).
 	- Headshots now should be more accurate than before.
 	- Re-enabled anti-joypad    //antijoypad
 	- Added 2 new commands to permanently lock a server or enable AC.
 	- Fixed a bug that you would see Arena instead of TDM while it's a TDM running.
+	- Fixed: /accheck was mentioned in /acmds by mistake.
+	- Most of admin commands are now logged with exact time and date in 'admin_command_log.txt' in your scriptfiles directory.
 
 */
 
@@ -819,7 +820,7 @@ new OnlineInChannel[MAX_CHANNELS];
 new ChatString[128];
 new ServerPass[128];
 new hostname[64];
-new shotcompmode;
+new lagcompmode;
 new ScoreString[4][256];
 new TotalStr[2500];
 //new Exception[24];
@@ -1777,16 +1778,18 @@ public OnGameModeInit()
     new ServerIP[30];
     GetServerVarAsString("hostname", hostname, sizeof(hostname));
     GetServerVarAsString("bind", ServerIP, sizeof(ServerIP));
+    
+    lagcompmode = GetServerVarAsInt("lagcompmode");
 
-    new hn[128];
-	shotcompmode = GetServerVarAsInt("shotcompmode");
-    if(shotcompmode == 2)
+    /*new hn[128];
+	lagcompmode = GetServerVarAsInt("lagcompmode");
+    if(lagcompmode == 2)
 		format(hn, sizeof(hn), "hostname %s [Normal Aim-leading]", hostname);
 	else
 	    format(hn, sizeof(hn), "hostname %s [Lag Compensation]", hostname);
 
 	SendRconCommand(hn);
-	
+*/
 	GetServerVarAsString("hostname", hostname, sizeof(hostname));
 
     new port = GetServerVarAsInt("port");
@@ -6266,7 +6269,7 @@ CMD:acmds(playerid, params[])
 
 	if(Player[playerid][Level] > 2) {
 		strcat(string, "\n\n{3377FF}Level 3:");
-		strcat(string, "\n{FFFFFF}/kick   /ban   /unbanip   /ac   /end   /limit   /muteall   /unmuteall   /skinicons   /aka   /accheck");
+		strcat(string, "\n{FFFFFF}/kick   /ban   /unbanip   /ac   /end   /limit   /muteall   /unmuteall   /skinicons   /aka");
 	}
 
 	if(Player[playerid][Level] > 3) {
@@ -6425,7 +6428,7 @@ CMD:lobbyguns(playerid, params[])
 	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}guns in lobby.", Player[playerid][Name]);
         SendClientMessageToAll(-1, iString);
 	}
-
+	LogAdminCommand("lobbyguns", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -6447,7 +6450,7 @@ CMD:autopause(playerid, params[])
 	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}Auto-Pause on player disconnect in war mode.", Player[playerid][Name]);
         SendClientMessageToAll(-1, iString);
 	}
-
+    LogAdminCommand("autopause", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 //autopause
@@ -6482,7 +6485,7 @@ CMD:ann(playerid, params[])
 
 	format(str, sizeof(str), "{FFFFFF}%s {3377FF}made an announcement.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, str);
-
+    LogAdminCommand("ann", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -6517,6 +6520,7 @@ CMD:freecam(playerid, params[])
 		PlayerTextDrawHide(playerid, HPTextDraw_TD);
 		PlayerTextDrawHide(playerid, ArmourTextDraw);
 	}
+	LogAdminCommand("freecam", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -6539,7 +6543,7 @@ CMD:antispam(playerid, params[])
 	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}anti-spam.", Player[playerid][Name]);
         SendClientMessageToAll(-1, iString);
 	}
-
+    LogAdminCommand("antispam", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 //antispam
@@ -6561,7 +6565,7 @@ CMD:autobalance(playerid, params[])
 	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}auto-balance in non war mode.", Player[playerid][Name]);
         SendClientMessageToAll(-1, iString);
 	}
-
+    LogAdminCommand("autobalance", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 //autobalancefix
@@ -6599,6 +6603,8 @@ CMD:gmx(playerid, params[])
 	format(iString, sizeof(iString), "{FFFFFF}%s (%d) {3377FF}has restarted server", Player[playerid][Name], playerid);
 	SendClientMessageToAll(-1, iString);
 
+    LogAdminCommand("gmx", playerid, INVALID_PLAYER_ID);
+
 	SendRconCommand("gmx");
 	return 1;
 }
@@ -6635,7 +6641,7 @@ CMD:website(playerid, params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed Website text.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("website", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 //webtxt
@@ -6651,7 +6657,7 @@ CMD:asay(playerid, params[])
 	SendClientMessageToAll(-1, iString);
 
 	printf("%s (%d) used /asay : %s", Player[playerid][Name], playerid, params);
-
+    LogAdminCommand("asay", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -6669,7 +6675,7 @@ CMD:banip(playerid,params[])
 	new iString2[128];
 	format(iString2, sizeof(iString2), "%s%s (%d) {3377FF}has banned IP: {FFFFFF}%s", TextColor[Player[playerid][Team]], Player[playerid][Name], playerid, params);
 	SendClientMessageToAll(-1, iString2);
-
+    LogAdminCommand("banip", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -6707,6 +6713,7 @@ CMD:spas(playerid, params[])
 			SendClientMessageToAll(-1, iString);
 		}
 	}
+	LogAdminCommand("spas", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -7052,7 +7059,7 @@ CMD:setradio(playerid, params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed Radio %d link to: {FFFFFF}%s", Player[playerid][Name], Param, link);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("setradio", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -7136,6 +7143,7 @@ CMD:limit(playerid, params[])
 			SendClientMessageToAll(-1, iString);
 	    }
 	}
+	LogAdminCommand("limit", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -7143,7 +7151,7 @@ CMD:config(playerid, params[]) {
     if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be level 5 or rcon admin.");
 
 	ShowConfigDialog(playerid);
-
+    LogAdminCommand("config", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -7164,7 +7172,7 @@ CMD:eslac(playerid, params[])
 
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'Anticheat'", ESLAC);
     db_free_result(db_query(sqliteconnection, iString));
-
+    LogAdminCommand("eslac", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 */
@@ -7401,6 +7409,7 @@ CMD:weaponlimit(playerid, params[])
 {
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level to do that.");
     ShowWepLimit(playerid);
+    LogAdminCommand("weaponlimit", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -7428,6 +7437,7 @@ CMD:permlock(playerid, params[])
 			SendClientMessageToAll(-1, iString);
 		}
 	}
+	LogAdminCommand("permlock", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -7464,7 +7474,7 @@ CMD:lock(playerid, params[])
 		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has unlocked the server.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 	}
-
+    LogAdminCommand("lock", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -7482,7 +7492,7 @@ CMD:unlock(playerid, params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has unlocked the server.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("unlock", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -7627,7 +7637,7 @@ CMD:addexc(playerid, params[])
 	new iString[160];
 	format(iString, sizeof(iString), "The exception name was changed to: %s", Exception);
 	SendClientMessage(playerid, -1, iString);
-
+    LogAdminCommand("addexc", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 */
@@ -7984,7 +7994,7 @@ CMD:createduel(playerid, params[])
 
 		}
 	}
-
+    LogAdminCommand("createduel", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 */
@@ -8006,7 +8016,7 @@ CMD:maxplayers(playerid, params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed Max ESL Players to: {FFFFFF}%d", Player[playerid][Name], MaxESLPlayers);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("maxplayers", playerid, INVALID_PLAYER_ID);
     return 1;
 }
 
@@ -8053,7 +8063,7 @@ CMD:1on1(playerid, params[])
 	WarMode = true;
     format(iString, sizeof iString, "%sWar Mode: ~r~ON", MAIN_TEXT_COLOUR);
 	TextDrawSetString(WarModeText, iString);
-
+    LogAdminCommand("1on1", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 */
@@ -8328,7 +8338,7 @@ CMD:netcheck(playerid, params[])
     db_free_result(db_query(sqliteconnection, iString));
 
 	#endif
-
+    LogAdminCommand("netcheck", playerid, pID);
 	return 1;
 }
 
@@ -8899,7 +8909,7 @@ CMD:eslmode(playerid, params[])
 
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'ESL Mode'", (ESLMode == true ? 1 : 0));
     db_free_result(db_query(sqliteconnection, iString));
-
+    LogAdminCommand("eslmode", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 */
@@ -8910,6 +8920,7 @@ CMD:serverpassword(playerid, params[]) {
 		format(str, sizeof(str), "{3377FF}Current Server Password: {FFFFFF}%s", ServerPass[9]);
 		SendClientMessageToAll(-1, str);
 	} else return 0;
+	LogAdminCommand("serverpassword", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -8936,7 +8947,7 @@ CMD:freeze(playerid, params[])
     format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has frozen {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
 	SendClientMessageToAll(-1, iString);
 
-
+    LogAdminCommand("freeze", playerid, pID);
 	return 1;
 }
 
@@ -8961,7 +8972,7 @@ CMD:giveweapon(playerid, params[])
 
     format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has given {FFFFFF}%s {3377FF}| Weapon: {FFFFFF}%s {3377FF}- Ammo: {FFFFFF}%d", Player[playerid][Name], Player[pID][Name], WeaponNames[WeaponID], Ammo);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("giveweapon", playerid, pID);
 	return 1;
 }
 
@@ -8990,7 +9001,7 @@ CMD:giveallgun(playerid, params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has given everyone | Weapon: {FFFFFF}%s {3377FF}- Ammo: {FFFFFF}%d",Player[playerid][Name] ,WeaponNames[weapon], Ammo);
  	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("giveallgun", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9009,7 +9020,7 @@ CMD:unfreeze(playerid, params[])
     format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has unfrozen {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
 	SendClientMessageToAll(-1, iString);
 
-
+    LogAdminCommand("unfreeze", playerid, pID);
 	return 1;
 }
 
@@ -9030,6 +9041,7 @@ CMD:maxtdmkills(playerid,params[])
 
     format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has changed the Max Tdm Kills to {FFFFFF}%d kills", Player[playerid][Name], MaxTDMKills);
 	SendClientMessageToAll(-1, iString);
+	LogAdminCommand("maxtdmkills", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9050,7 +9062,7 @@ CMD:roundtime(playerid,params[])
 
     format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has changed the round time to: {FFFFFF}%d mints", Player[playerid][Name], rTime);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("roundtime", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9072,7 +9084,7 @@ CMD:cptime(playerid, params[])
 
     format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has changed the CP time to: {FFFFFF}%d seconds", Player[playerid][Name], cpTime);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("cptime", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9138,7 +9150,7 @@ CMD:resetallguns(playerid, params[])
 	new iString[160];
     format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has resetted everyone's weapons.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("resetallguns", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9218,6 +9230,7 @@ CMD:replace(playerid, params[])
 		SetTimerEx("OnPlayerReplace", 1000, false, "iii", ToAddID, ToReplaceID, playerid);
 		return 1;
 	}
+	LogAdminCommand("replace", playerid, ToAddID);
 	return 1;
 }
 
@@ -9230,7 +9243,7 @@ CMD:cc(playerid, params[])
     new iString[128];
     format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has cleared chat.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("cc", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9390,7 +9403,7 @@ CMD:teamdmg(playerid, params[])
 
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'Show Team HP and Dmg'", (TeamHPDamage == false ? 0 : 1));
     db_free_result(db_query(sqliteconnection, iString));
-
+    LogAdminCommand("teamdmg", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 /*
@@ -9473,6 +9486,7 @@ CMD:muteall(playerid, params[])
 	new admName[MAX_PLAYER_NAME];
 	GetPlayerName(playerid, admName, sizeof(admName));
 	SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {3377FF}has muted everyone!", admName));
+    LogAdminCommand("muteall", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9485,6 +9499,7 @@ CMD:unmuteall(playerid, params[])
 	new admName[MAX_PLAYER_NAME];
 	GetPlayerName(playerid, admName, sizeof(admName));
 	SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {3377FF}has unmuted everyone!", admName));
+    LogAdminCommand("unmuteall", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9511,7 +9526,7 @@ CMD:mute(playerid,params[])
 	if(strlen(Reason)) format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has muted {FFFFFF}%s {3377FF}| Reason: {FFFFFF}%s",Player[playerid][Name],Player[pID][Name], Reason);
 	else format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has muted {FFFFFF}%s {3377FF}| Reason: {FFFFFF}No reason given.",Player[playerid][Name],Player[pID][Name]);
 	SendClientMessageToAll(-1,iString);
-
+    LogAdminCommand("mute", playerid, pID);
 	return 1;
 }
 
@@ -9528,7 +9543,7 @@ CMD:unmute(playerid, params[])
 	new iString[180];
 	format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has unmuted {FFFFFF}%s",Player[playerid][Name],Player[pID][Name]);
 	SendClientMessageToAll(-1,iString);
-
+    LogAdminCommand("unmute", playerid, pID);
 	return 1;
 }
 
@@ -9553,6 +9568,7 @@ CMD:slap(playerid,params[])
 	new iString[128];
 	format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has slapped {FFFFFF}%s",Player[playerid][Name],Player[sid][Name]);
 	SendClientMessageToAll(-1,iString);
+	LogAdminCommand("slap", playerid, sid);
 	return 1;
 }
 
@@ -9573,6 +9589,7 @@ CMD:explode(playerid,params[])
 	new iString[128];
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has exploded {FFFFFF}%s",Player[playerid][Name],Player[eid][Name]);
 	SendClientMessageToAll(-1, iString);
+	LogAdminCommand("explode", playerid, eid);
 	return 1;
 }
 
@@ -9727,6 +9744,7 @@ CMD:permac(playerid, params[])
 			SendClientMessage(playerid, -1, "AC will be running permanently!");
 		}
 	}
+	LogAdminCommand("permac", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9768,7 +9786,7 @@ CMD:ac(playerid, params[])
 		SendClientMessageToAll(-1, "{FFFFFF}>> {3377FF}Turn your {FFFFFF}Anti-Cheat {3377FF}on within one minute or get kicked.");
 		SendClientMessageToAll(-1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 	}
-
+    LogAdminCommand("ac", playerid, INVALID_PLAYER_ID);
 	return 1;
 
 }
@@ -9800,7 +9818,7 @@ CMD:maxpacket(playerid, params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed maximum packet-loss to: {FFFFFF}%.2f", Player[playerid][Name], iPacket);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("maxpacket", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9823,7 +9841,7 @@ CMD:maxping(playerid, params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed maximum ping limit to: {FFFFFF}%d", Player[playerid][Name], iPacket);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("maxping", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9844,7 +9862,7 @@ CMD:minfps(playerid, params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed minimum FPS limit to: {FFFFFF}%d", Player[playerid][Name], iPacket);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("minfps", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -9952,7 +9970,7 @@ CMD:move(playerid, params[])
 
     format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has moved {FFFFFF}%s {3377FF}to {FFFFFF}%s", Player[playerid][Name], Player[pID[0]][Name], Player[pID[1]][Name]);
     SendClientMessageToAll( -1, iString);
-
+    LogAdminCommand("move", playerid, pID[0]);
     return 1;
 }
 
@@ -9994,6 +10012,7 @@ CMD:shortcuts(playerid, params[])
 			}
 		}
 	}
+	LogAdminCommand("shortcuts", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -10094,7 +10113,7 @@ CMD:defaultskins(playerid, params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed {FFFFFF}skins {3377FF}to default.", Player[playerid][Name] );
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("defaultskins", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -10137,7 +10156,7 @@ CMD:teamskin(playerid, params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed {FFFFFF}%s {3377FF}skin to: {FFFFFF}%d", Player[playerid][Name], TeamName[Params[0]+1], Skin[Params[0]+1]);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("teamskin", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -10239,7 +10258,7 @@ CMD:setscore(playerid, params[])
 	format(iString, sizeof(iString), "%sRounds ~r~~h~%d~r~/~h~~h~%d", MAIN_TEXT_COLOUR, CurrentRound, TotalRounds);
 	TextDrawSetString(RoundsPlayed, iString);
 
-
+    LogAdminCommand("setscore", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -10432,6 +10451,7 @@ CMD:setafk(playerid, params[])
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set {FFFFFF}%s {3377FF}to AFK mode.", Player[playerid][Name], Player[pID][Name]);
 	SendClientMessageToAll(-1, iString);
     FixVsTextDraw();
+    LogAdminCommand("setafk", playerid, pID);
 	return 1;
 }
 
@@ -10543,7 +10563,7 @@ CMD:mainspawn(playerid, params[])
 
     format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed the main spawn location.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("mainspawn", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -10647,7 +10667,7 @@ CMD:add(playerid, params[])
 	} else {
 	    SendErrorMessage(playerid,"That player must be part of one of the following teams: Attacker, Defender or Referee.");
 	}
-
+    LogAdminCommand("add", playerid, pID);
 	return 1;
 }
 
@@ -10689,11 +10709,12 @@ CMD:readd(playerid, params[])
 		    new iString[180];
 		    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has re-added {FFFFFF}%s {3377FF}to the round.", Player[playerid][Name], Player[pID][Name]);
 		    SendClientMessageToAll(-1, iString);
+		    LogAdminCommand("readd", playerid, pID);
 		} else {
 	    	SendErrorMessage(playerid,"That player must be part of one of the following teams: Attacker, Defender or Referee.");
 		}
 	}
-
+    
 	return 1;
 }
 
@@ -10710,7 +10731,6 @@ CMD:rem(playerid, params[])
     SendClientMessageToAll(-1, iString);
 
 	RemovePlayerFromRound(playerid);
-
     return 1;
 }
 
@@ -10733,7 +10753,7 @@ CMD:remove(playerid, params[])
     SendClientMessageToAll(-1, iString);
 
 	RemovePlayerFromRound(pID);
-
+    LogAdminCommand("remove", playerid, pID);
     return 1;
 }
 
@@ -10834,7 +10854,7 @@ CMD:end(playerid, params[])
 
     GangZoneDestroy(CPZone);
 	GangZoneDestroy(ArenaZone);
-
+    LogAdminCommand("end", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -10881,7 +10901,7 @@ CMD:ban(playerid, params[])
 
 	#endif
 
-
+    LogAdminCommand("ban", playerid, pID);
 	return 1;
 }
 
@@ -10907,7 +10927,7 @@ CMD:unbanip(playerid,params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has unbanned IP: {FFFFFF}%s",Player[playerid][Name], params);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("unbanip", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -10922,6 +10942,7 @@ CMD:killhim(playerid, params[])
 //	if(Player[pID][Level] >= Player[playerid][Level]) return SendErrorMessage(playerid,"Can't kill someone of same or higher admin level.");
 
 	SetPlayerHealthEx(pID, 0.0);
+	LogAdminCommand("killhim", playerid, pID);
 	return 1;
 }
 */
@@ -10961,7 +10982,7 @@ CMD:kick(playerid, params[])
 //	Player[pID][IsKicked] = true;
 //	Kick(pID);
 
-
+    LogAdminCommand("kick", playerid, pID);
 	return 1;
 }
 
@@ -11047,7 +11068,7 @@ CMD:nolag(playerid, params[])
 
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'AntiLag'", (ServerAntiLag == false ? 0 : 1));
     db_free_result(db_query(sqliteconnection, iString));
-
+    LogAdminCommand("nolag", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -11089,7 +11110,7 @@ CMD:sethp(playerid, params[])
 	new iString[180];
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set {FFFFFF}%s's {3377FF}HP to: {FFFFFF}%d", Player[playerid][Name], Player[pID][Name], Amount);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("sethp", playerid, pID);
 	return 1;
 }
 
@@ -11110,7 +11131,7 @@ CMD:setarmour(playerid, params[])
 	new iString[180];
 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set {FFFFFF}%s's {3377FF}Armour to: {FFFFFF}%d", Player[playerid][Name], Player[pID][Name], Amount);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("setarmour", playerid, pID);
 	return 1;
 }
 
@@ -11224,7 +11245,7 @@ CMD:goto(playerid,params[])
 	new tstr[180];
 	format(tstr,180,"{FFFFFF}%s {3377FF}has teleported to {FFFFFF}%s",Player[playerid][Name],Player[gid][Name]);
 	SendClientMessageToAll(-1,tstr);
-
+    LogAdminCommand("goto", playerid, gid);
 	return 1;
 }
 
@@ -11272,7 +11293,7 @@ CMD:get(playerid,params[])
 	new iString[160];
 	format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has teleported {FFFFFF}%s {3377FF}to himself.",Player[playerid][Name],Player[gid][Name]);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("", playerid, gid);
 	return 1;
 }
 
@@ -11466,7 +11487,7 @@ CMD:acar(playerid, params[])
 		case DEFENDER_SUB: ChangeVehicleColor(GetPlayerVehicleID(playerid), 208, 208);
 		case REFEREE: ChangeVehicleColor(GetPlayerVehicleID(playerid), 200, 200);
 	}
-
+    LogAdminCommand("acar", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -12207,7 +12228,7 @@ CMD:setlevel(playerid, params[])
 	if(LEVEL != 0) format(iString,sizeof(iString),"{FFFFFF}\"%s\" {3377FF}has set {FFFFFF}\"%s\"'s {3377FF}level to: {FFFFFF}%d", Player[playerid][Name], Player[GiveID][Name], LEVEL);
 	else format(iString,sizeof(iString),"{FFFFFF}\"%s\" {3377FF}has set {FFFFFF}\"%s\"'s {3377FF}level to: {FFFFFF}DonBox level (AKA: 0)", Player[playerid][Name], Player[GiveID][Name]);
 	SendClientMessageToAll(-1, iString);
-
+    LogAdminCommand("setlevel", playerid, GiveID);
 	return 1;
 }
 
@@ -15530,6 +15551,42 @@ stock SpawnConnectedPlayer(playerid, team)
 //------------------------------------------------------------------------------
 // Stocks
 //------------------------------------------------------------------------------
+
+/*
+stock ShowDeathMessage(playerid, killerid)
+{
+	if(playerid == INVALID_PLAYER_ID || killerid == INVALID_PLAYER_ID)
+	    return 0;
+	    
+	PlayerTextDrawSetString(Player[playerid][DeathMsgTD],
+	return 1;
+}*/
+
+/*
+Function: LogAdminCommand
+cmd[]: the entered command
+adminid: the admin who enters the command
+playerid: the player who the command hits (use INVALID_PLAYER_ID to ignore this)
+*/
+stock LogAdminCommand(cmd[], adminid, playerid)
+{
+	new File:log = fopen("admin_command_log.txt", io_append);
+	new Year, Month, Day;
+	getdate(Year, Month, Day);
+	new Hours, Minutes, Seconds;
+	gettime(Hours, Minutes, Seconds);
+  	if(playerid != INVALID_PLAYER_ID)
+  	{
+		fwrite(log, sprintf("[%02d/%02d/%d][%02d:%02d:%02d] %s [%d] has used the command (/%s) at %s [%d]. \r\n", Day, Month, Year, Hours, Minutes, Seconds, Player[adminid][Name], adminid, cmd, Player[playerid][Name], playerid));
+  	}
+  	else
+	{
+		fwrite(log, sprintf("[%02d/%02d/%d][%02d:%02d:%02d] %s [%d] has used the command (/%s). \r\n", Day, Month, Year, Hours, Minutes, Seconds, Player[adminid][Name], adminid, cmd));
+  	}
+  	//fwrite(log, "\r\n");
+  	fclose(log);
+  	return 1;
+}
 
 stock DamagePlayer(playerid, Float:amnt)
 {

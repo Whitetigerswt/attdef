@@ -1,0 +1,4 @@
+[12/02/2014][17:57:03] [KHK]Khalid [0] has used the command (/ac). 
+[12/02/2014][17:57:12] [KHK]Khalid [0] has used the command (/ac). 
+[12/02/2014][17:57:25] [KHK]Khalid [0] has used the command (/ann). 
+[12/02/2014][17:57:35] [KHK]Khalid [0] has used the command (/slap) at [KHK]Khalid [0]. 
