@@ -2,3 +2,23 @@
 [12/02/2014][17:57:12] [KHK]Khalid [0] has used the command (/ac). 
 [12/02/2014][17:57:25] [KHK]Khalid [0] has used the command (/ann). 
 [12/02/2014][17:57:35] [KHK]Khalid [0] has used the command (/slap) at [KHK]Khalid [0]. 
+[13/02/2014][14:53:43] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][14:54:04] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][14:55:16] [KHK]Khalid [0] has used the command (/maxping). 
+[13/02/2014][14:55:19] [KHK]Khalid [0] has used the command (/minfps). 
+[13/02/2014][14:55:24] [KHK]Khalid [0] has used the command (/maxpacket). 
+[13/02/2014][14:55:50] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][14:55:52] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][14:59:15] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][14:59:21] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][14:59:44] [KHK]Khalid [0] has used the command (/maxpacket). 
+[13/02/2014][14:59:49] [KHK]Khalid [0] has used the command (/minfps). 
+[13/02/2014][14:59:52] [KHK]Khalid [0] has used the command (/maxping). 
+[13/02/2014][14:59:58] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][15:00:00] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][15:01:37] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][15:01:39] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][15:01:44] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][15:01:46] [KHK]Khalid [0] has used the command (/eslmode). 
+[13/02/2014][15:18:18] [KHK]Khalid [0] has used the command (/lagcompmode). 
+[13/02/2014][15:18:49] [KHK]Khalid [0] has used the command (/lagcompmode). 

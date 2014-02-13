@@ -9,6 +9,7 @@
 	- Fixed a bug that you would see Arena instead of TDM while it's a TDM running.
 	- Fixed: /accheck was mentioned in /acmds by mistake.
 	- Most of admin commands are now logged with exact time and date in 'admin_command_log.txt' in your scriptfiles directory.
+	- ESL system is back in Attdef again.
 
 */
 
@@ -951,8 +952,9 @@ new Text3D:DmgLabel[MAX_PLAYERS];
 // - ESL Variables
 
 new bool:ESLMode = true;
-//new VoteKickedPlayer = -1;
-//new VotesForVotekick = 0;
+new VoteKickedPlayer = -1;
+new VotesForVotekick = 0;
+new TimedOutPlayers = 0;
 new ESLPauseTime = 120;
 new MaxESLPlayers;
 
@@ -2557,7 +2559,7 @@ public OnPlayerDisconnect(playerid, reason)
 		HighestID = highID;
 	}
 
-//	if(VoteKickedPlayer == playerid) VotekickExpire();
+	if(VoteKickedPlayer == playerid) VotekickExpire();
 
 
 	new iString[180], Float:HP[2];
@@ -2570,7 +2572,7 @@ public OnPlayerDisconnect(playerid, reason)
 			if(Player[playerid][DontPause] == false && AutoPause == true) {	//autopause
 
 				if(ESLMode == true) {
-				 	//TimedOutPlayers++;
+				 	TimedOutPlayers ++;
 					ESLPauseTime = 120;
 				}
 
@@ -4493,14 +4495,14 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 		return 1;
 	}
 
-	/*if(dialogid == DIALOG_ESL_TEAMS) {
+	if(dialogid == DIALOG_ESL_TEAMS) {
 	    if(response) {
 	        SpawnConnectedPlayer(playerid, 1);
 		} else {
 		    SpawnConnectedPlayer(playerid, 2);
 		}
 		return 1;
-	}*/
+	}
 
 	if(dialogid == DIALOG_SERVER_PASS) {
 		if(response) {
@@ -6088,10 +6090,13 @@ CMD:updates(playerid, params[])
 	strcat(string, "{00FF00}Attack-Defend v2.3 updates:\n");
 
 	strcat(string, "\n{FFFFFF}- The gamemode has been updated to function properly with the new SA:MP version (0.3z)");
-	strcat(string, "\n{FFFFFF}- Server browsers now can tell whether an Attdef server is using lag compensation or not (from hostname)");
 	strcat(string, "\n{FFFFFF}- Headshots now should be more accurate than before");
 	strcat(string, "\n{FFFFFF}- Re-enabled anti-joypad");
-	strcat(string, "\n{FFFFFF}- ");
+	strcat(string, "\n{FFFFFF}- Added 2 new commands to permanently lock a server or enable AC.");
+	strcat(string, "\n{FFFFFF}- Fixed a bug that you would see Arena instead of TDM while it's a TDM running.");
+	strcat(string, "\n{FFFFFF}- Fixed: /accheck was mentioned in /acmds by mistake.");
+	strcat(string, "\n{FFFFFF}- Most of admin commands are now logged with exact time and date in 'admin_command_log.txt' in your scriptfiles directory.");
+	strcat(string, "\n{FFFFFF}- ESL system is back in Attdef again.");
 
 /*
 	strcat(string, "{00FF00}Attack-Defend v2.2 updates:\n");
@@ -7155,7 +7160,7 @@ CMD:config(playerid, params[]) {
 	return 1;
 }
 
-/*
+
 CMD:eslac(playerid, params[])
 {
 	if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be level 5 or rcon admin.");
@@ -7175,7 +7180,7 @@ CMD:eslac(playerid, params[])
     LogAdminCommand("eslac", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
-*/
+
 
 CMD:textdraw(playerid, params[])
 {
@@ -7557,7 +7562,7 @@ CMD:campos(playerid, params[])
 
 */
 
-/*
+
 CMD:eslcmds(playerid, params[])
 {
 	SendClientMessage(playerid, -1, "{FFFFFF}------------------------------------------------------------------------------------------------------------------");
@@ -7623,7 +7628,7 @@ CMD:topduels(playerid, params[])
 	return 1;
 }
 #endif
-*/
+
 
 /*
 CMD:addexc(playerid, params[])
@@ -7999,7 +8004,7 @@ CMD:createduel(playerid, params[])
 }
 */
 
-/*
+
 CMD:maxplayers(playerid, params[])
 {
 	if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be level 5 or rcon admin.");
@@ -8066,7 +8071,7 @@ CMD:1on1(playerid, params[])
     LogAdminCommand("1on1", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
-*/
+
 /*
 CMD:votekick(playerid, params[])
 {
@@ -8127,7 +8132,7 @@ CMD:votekick(playerid, params[])
 	return 1;
 }
 */
-/*
+
 CMD:votekick(playerid, params[])
 {
 	if(ESLMode == false) return SendErrorMessage(playerid,"ESL mode is not enabled.");
@@ -8189,9 +8194,9 @@ CMD:votekick(playerid, params[])
 	}
 	return 1;
 }
-*/
 
-/*
+
+
 CMD:voteadd(playerid, params[])
 {
 	if(ESLMode == false) return SendErrorMessage(playerid,"ESL mode is not enabled.");
@@ -8303,7 +8308,7 @@ CMD:votenetcheck(playerid, params[])
 	}
 	return 1;
 }
-*/
+
 
 CMD:netcheck(playerid, params[])
 {
@@ -8342,7 +8347,7 @@ CMD:netcheck(playerid, params[])
 	return 1;
 }
 
-/*
+
 CMD:voteunpause(playerid, params[])
 {
 	if(ESLMode == false) return SendErrorMessage(playerid,"ESL mode is not enabled.");
@@ -8550,7 +8555,7 @@ CMD:voters(playerid, params[])
 	}
 	return 1;
 }
-*/
+
 
 CMD:war(playerid, params[])
 {
@@ -8788,7 +8793,7 @@ CMD:cr(playerid, params[])
 	return 1;
 }
 
-/*
+
 CMD:eslmode(playerid, params[])
 {
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level to do that.");
@@ -8844,20 +8849,22 @@ CMD:eslmode(playerid, params[])
 
         new DBResult:res = db_query(sqliteconnection, "SELECT * FROM Configs WHERE Option = 'Total Rounds' OR Option = 'Maximum Packetloss' OR Option = 'Maximum Ping' OR Option = 'Minimum FPS'");
 
-		db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Total Rounds
-	    TotalRounds = strval(iString);
-		db_next_row(res);
-
 		db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Maximum Packetloss
 	    Max_Packetloss = floatstr(iString);
 		db_next_row(res);
 
-		db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Maximum Ping
+        db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Maximum Ping
 	    Max_Ping = strval(iString);
 		db_next_row(res);
 
-		db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Minimum FPS
+        db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Minimum FPS
 	    Min_FPS = strval(iString);
+	    db_next_row(res);
+
+		db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Total Rounds
+	    TotalRounds = strval(iString);
+		db_next_row(res);
+
 
         db_free_result(res);
 
@@ -8912,7 +8919,7 @@ CMD:eslmode(playerid, params[])
     LogAdminCommand("eslmode", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
-*/
+
 
 CMD:serverpassword(playerid, params[]) {
 	if(ServerLocked) {
@@ -9722,6 +9729,44 @@ CMD:admins(playerid, params[])
 	return 1;
 }
 
+/*CMD:lagcompmode(playerid, params[])
+{
+    if(Player[playerid][Level] < 4 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher level admin to do that.");
+
+    new Params[64], iString[160], CommandID;
+	#if PLUGINS == 1
+		sscanf(params, "s[64]", Params);
+	#else
+	    sscanf(params, "s", Params);
+	#endif
+
+	if(isnull(Params) || IsNumeric(Params)) return SendUsageMessage(playerid,"/lagcompmode [on | off]");
+
+	if(strcmp(Params, "on", true) == 0) CommandID = 1;
+	else if(strcmp(Params, "off", true) == 0) CommandID = 2;
+	else return SendUsageMessage(playerid,"/lagcompmode [on | off]");
+
+	switch(CommandID) {
+		case 1: {
+		    if(lagcompmode == 1)
+		        return SendErrorMessage(playerid,"Lag compensation is already enabled in this server.");
+		    SendRconCommand("lagcompmode 1");
+		    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has enabled {FFFFFF}Lag Compensation Mode. {3377FF}The server is restarting so changes can take effect!", Player[playerid][Name]);
+			SendClientMessageToAll(-1, iString);
+			SendRconCommand("gmx");
+		} case 2: {
+		    if(lagcompmode == 0)
+		        return SendErrorMessage(playerid,"Lag compensation is already disabled in this server.");
+		    SendRconCommand("lagcompmode 0");
+		    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has disabled {FFFFFF}Lag Compensation Mode. {3377FF}The server is restarting so changes can take effect!", Player[playerid][Name]);
+			SendClientMessageToAll(-1, iString);
+			SendRconCommand("gmx");
+		}
+	}
+	LogAdminCommand("lagcompmode", playerid, INVALID_PLAYER_ID);
+	return 1;
+}*/
+
 #if ANTICHEAT == 1
 CMD:permac(playerid, params[])
 {
@@ -10018,7 +10063,7 @@ CMD:shortcuts(playerid, params[])
 
 CMD:jetpack(playerid,params[])
 {
-//	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
+	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
 	if(Player[playerid][Playing] == true) return SendErrorMessage(playerid,"Can't use this command in round.");
 
@@ -10313,7 +10358,7 @@ CMD:rr(playerid, params[])
 	AllowStartBase = false;
     RoundPaused = false;
     RoundUnpausing = false;
-   	//TimedOutPlayers = 0;
+   	TimedOutPlayers = 0;
 	ESLPauseTime = 120;
 
 	new iString[180];
@@ -10760,7 +10805,7 @@ CMD:remove(playerid, params[])
 
 CMD:end(playerid, params[])
 {
-//   	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
+   	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
  	if(Player[playerid][Level] < 3 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
 	if(AllowStartBase == false) return SendErrorMessage(playerid,"Please Wait.");
 	if(Current == -1) return SendErrorMessage(playerid,"Round is not active.");
@@ -10989,7 +11034,7 @@ CMD:kick(playerid, params[])
 
 CMD:healall(playerid, params[])
 {
-//	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
+	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
 
 	if(Current == -1) return SendErrorMessage(playerid,"There is no active round.");
@@ -11074,7 +11119,7 @@ CMD:nolag(playerid, params[])
 
 CMD:armourall(playerid, params[])
 {
-//	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
+	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
 
 	if(Current == -1) return SendErrorMessage(playerid,"There is no active round.");
@@ -11633,7 +11678,7 @@ CMD:rt(playerid,params[])
 
 CMD:random(playerid, params[])
 {
-//   	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
+   	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
 	if(Current != -1) return SendErrorMessage(playerid,"A round is in progress, please wait for it to end.");
 	if(AllowStartBase == false) return SendErrorMessage(playerid,"Please wait.");
@@ -11988,7 +12033,7 @@ CMD:voteint(playerid, params[])
 
 CMD:start(playerid, params[])
 {
-//	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
+	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
 	if(Current != -1) return SendErrorMessage(playerid,"A round is in progress, please wait for it to end.");
 	if(AllowStartBase == false) return SendErrorMessage(playerid,"Please wait.");
@@ -16616,9 +16661,9 @@ stock ESLRules() {
 	iString = "~n~~n~~n~~w~~h~Starting Commands: /help, /cmds, /acmds, /updates";
 	strcat(iString, "~n~~w~~h~| Report bugs and add suggestions in, ~b~~h~sixtytiger.com");
 	strcat(iString, "~n~~w~~h~| No complaining/crying about random shit or ~r~~h~DDoSed");
-/*	strcat(iString, "		/eslcmds, /topduels, /votenetcheck");
+	strcat(iString, "		/eslcmds, /topduels, /votenetcheck");
 	strcat(iString, "~n~~r~| No Car/Hali killing.");
-*/
+
 	TextDrawSetString(introRules2, iString);
 }
 
@@ -18215,7 +18260,7 @@ stock LoadPlayerVariables(playerid)
 					PauseCountdown = 4;
 					UnpauseRound();
 				}
-				//TimedOutPlayers--;
+				TimedOutPlayers--;
 
 			    new attackers, defenders;
 				foreach(new x : Player) {
@@ -18231,10 +18276,10 @@ stock LoadPlayerVariables(playerid)
 				}
 
 
-//				if(TimedOutPlayers <= 0) {
-//					PauseCountdown = 4;
-//					UnpauseRound();
-//				}
+				if(TimedOutPlayers <= 0) {
+					PauseCountdown = 4;
+					UnpauseRound();
+				}
 
 			}
 
@@ -19835,7 +19880,7 @@ public OnPlayerKicked(playerid) {
 	Kick(playerid);
 	return 1;
 }
-/*
+
 forward VotekickExpire();
 public VotekickExpire() {
 
@@ -19851,7 +19896,7 @@ public VotekickExpire() {
 
 	return 1;
 }
-*/
+
 
 forward PlayerDeathIcon(playerid);
 public PlayerDeathIcon(playerid) {
@@ -21254,7 +21299,7 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 
     RoundPaused = false;
     RoundUnpausing = false;
-	//TimedOutPlayers = 0;
+	TimedOutPlayers = 0;
 	ESLPauseTime = 120;
 
 	PlayersAlive[ATTACKER] = 0;
@@ -21263,7 +21308,7 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
     GangZoneDestroy(CPZone);
 	GangZoneDestroy(ArenaZone);
 
-    //TimedOutPlayers = 0;
+    TimedOutPlayers = 0;
 
 	new iString[256], TopString[3][128];
 //	TextDrawHideForAll(RoundStats);
