@@ -22,3 +22,15 @@
 [13/02/2014][15:01:46] [KHK]Khalid [0] has used the command (/eslmode). 
 [13/02/2014][15:18:18] [KHK]Khalid [0] has used the command (/lagcompmode). 
 [13/02/2014][15:18:49] [KHK]Khalid [0] has used the command (/lagcompmode). 
+[14/02/2014][11:54:00] Niko_boy [0] has used the command (/lagcompmode). 
+[14/02/2014][13:45:45] Niko_boy [0] has used the command (/config). 
+[15/02/2014][19:43:59] Niko_boy [0] has used the command (/config). 
+[15/02/2014][19:48:34] Niko_boy [0] has used the command (/config). 
+[15/02/2014][19:48:45] Niko_boy [0] has used the command (/config). 
+[15/02/2014][19:48:54] Niko_boy [0] has used the command (/config). 
+[15/02/2014][19:50:51] Niko_boy [0] has used the command (/config). 
+[15/02/2014][19:56:09] Niko_boy [0] has used the command (/eslmode). 
+[15/02/2014][19:58:59] Niko_boy [0] has used the command (/sethp) at Heartbreakr [1]. 
+[15/02/2014][20:05:04] Niko_boy [0] has used the command (/eslmode). 
+[15/02/2014][20:28:11] Niko_boy [0] has used the command (/maxping). 
+[15/02/2014][20:48:49] Niko_boy [0] has used the command (/unfreeze) at Niko_boy [0]. 

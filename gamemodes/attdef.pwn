@@ -10,6 +10,12 @@
 	- Fixed: /accheck was mentioned in /acmds by mistake.
 	- Most of admin commands are now logged with exact time and date in 'admin_command_log.txt' in your scriptfiles directory.
 	- ESL system is back in Attdef again.
+	
+	- changed chat message scheme to Orange + white,
+		- p.s: Khalid the red one didnt looked good,
+		- it also was a bit hard to see text
+	- fixed a bug in Head shot detection i.e. it was going to "default case" of switch statement.
+	- Added /changepass for non plugin version.
 
 */
 
@@ -215,6 +221,9 @@ stock _HOOKED_PlayerTextDrawSetString(playerid, PlayerText:text, string[])
 #define ATTACKER_ASKING_HELP    0xFF777788 	// Orange red color
 #define DEFENDER_ASKING_HELP    0x7777FF88 	// Light blue color
 
+
+#define COL_PRIM    "{E66000}"
+#define COL_SEC     "{FFFFFF}"
 
 new MAIN_BACKGROUND_COLOUR = (0xEEEEEE33);
 new MAIN_TEXT_COLOUR[16] /*   =	("~l~")*/;
@@ -821,7 +830,7 @@ new OnlineInChannel[MAX_CHANNELS];
 new ChatString[128];
 new ServerPass[128];
 new hostname[64];
-new lagcompmode;
+//new lagcompmode;
 new ScoreString[4][256];
 new TotalStr[2500];
 //new Exception[24];
@@ -1754,7 +1763,7 @@ public OnPlayerHeadshotPlayer(playerid, shooterid, weaponid)
 	new shootername[MAX_PLAYER_NAME], shotname[MAX_PLAYER_NAME];
 	GetPlayerName(playerid, shotname, sizeof shotname);
 	GetPlayerName(shooterid, shootername, sizeof shootername);
-	SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {3377FF}has just head-shot {FFFFFF}%s {3377FF}({FFFFFF}%s{3377FF})", shootername, shotname, wepName));
+	SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {E66000}has just head-shot {FFFFFF}%s {E66000}({FFFFFF}%s{E66000})", shootername, shotname, wepName));
 	return 1;
 }
 
@@ -1781,9 +1790,9 @@ public OnGameModeInit()
     GetServerVarAsString("hostname", hostname, sizeof(hostname));
     GetServerVarAsString("bind", ServerIP, sizeof(ServerIP));
     
-    lagcompmode = GetServerVarAsInt("lagcompmode");
+    /*lagcompmode = GetServerVarAsInt("lagcompmode");
 
-    /*new hn[128];
+    new hn[128];
 	lagcompmode = GetServerVarAsInt("lagcompmode");
     if(lagcompmode == 2)
 		format(hn, sizeof(hn), "hostname %s [Normal Aim-leading]", hostname);
@@ -2012,16 +2021,16 @@ public OnPlayerConnect(playerid)
 	RemoveBuildingForPlayer(playerid, 1686, 0.0, 0.0, 0.0, 6000.0);
 
     new iString[140], Country[128];
-	SendClientMessage(playerid, -1, "{3377FF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-	format(iString, sizeof(iString), "{3377FF}Welcome To {FFFFFF}%s", GM_NAME);
+	SendClientMessage(playerid, -1, "{E66000}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	format(iString, sizeof(iString), "{E66000}Welcome To {FFFFFF}%s", GM_NAME);
     SendClientMessage(playerid, -1, iString);
-    SendClientMessage(playerid, -1, "{3377FF}Wanna get started? Use {FFFFFF}/help {3377FF}and {FFFFFF}/cmds");
-    SendClientMessage(playerid, -1, "{3377FF}Wanna know what our dev team has recently done? Use {FFFFFF}/updates {3377FF}for server updates");
-    SendClientMessage(playerid, -1, "{3377FF}Development team: {FFFFFF}062_{3377FF}, {FFFFFF}Whitetiger{3377FF}");
-    SendClientMessage(playerid, -1, "\t\t{FFFFFF}[KHK]Khalid{3377FF}, {FFFFFF}X.K{3377FF} and {FFFFFF}Niko_boy");
-	format(iString,sizeof(iString),"{3377FF}Server limits:  Min FPS = {FFFFFF}%d {3377FF}| Max Ping = {FFFFFF}%d {3377FF}| Max PL = {FFFFFF}%.2f", Min_FPS, Max_Ping, Float:Max_Packetloss);
+    SendClientMessage(playerid, -1, "{E66000}Wanna get started? Use {FFFFFF}/help {E66000}and {FFFFFF}/cmds");
+    SendClientMessage(playerid, -1, "{E66000}Wanna know what our dev team has recently done? Use {FFFFFF}/updates {E66000}for server updates");
+    SendClientMessage(playerid, -1, "{E66000}Development team: {FFFFFF}062_{E66000}, {FFFFFF}Whitetiger{E66000}");
+    SendClientMessage(playerid, -1, "\t\t{FFFFFF}[KHK]Khalid{E66000}, {FFFFFF}X.K{E66000} and {FFFFFF}Niko_boy");
+	format(iString,sizeof(iString),"{E66000}Server limits:  Min FPS = {FFFFFF}%d {E66000}| Max Ping = {FFFFFF}%d {E66000}| Max PL = {FFFFFF}%.2f", Min_FPS, Max_Ping, Float:Max_Packetloss);
 	SendClientMessage(playerid, -1, iString);
-	SendClientMessage(playerid, -1, "{3377FF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	SendClientMessage(playerid, -1, "{E66000}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
     GetPlayerName(playerid, Player[playerid][Name], 24); // Gets the name of every player that joins the server and saves it in 'Name' i.e. Player[playerid][Name]
 	new NewName[MAX_PLAYER_NAME];
@@ -2345,7 +2354,7 @@ public OnPlayerRequestSpawn(playerid) { return 0; }
 	    Player[playerid][IsFreezed] = false;
 	    gpInfo[playerid][hacker] = 1;
 	    new string[128],name[24]; GetPlayerName(playerid,name,24);
-		format(string, sizeof string, "{FF0000}ANTICHEAT: {FFFFFF}%s (%d) {3377FF}has been busted with {FF0000}s0beit", name, playerid);
+		format(string, sizeof string, "{FF0000}ANTICHEAT: {FFFFFF}%s (%d) {E66000}has been busted with {FF0000}s0beit", name, playerid);
 		for(new i=0; i<MAX_PLAYERS; ++i) SendClientMessage(i, -1, string);
 
 		Player[playerid][DontPause] = true;
@@ -2579,7 +2588,7 @@ public OnPlayerDisconnect(playerid, reason)
 				KillTimer(UnpauseTimer);
 				RoundUnpausing = false;
 				PauseRound();
-				SendClientMessageToAll(-1, "{3377FF}Round has been auto-paused.");
+				SendClientMessageToAll(-1, "{E66000}Round has been auto-paused.");
 			}
 		} else StorePlayerVariablesMin(playerid);
 	}
@@ -2743,14 +2752,14 @@ stock ShowConfigDialog(playerid) {
 
 	string = "";
 
-	strcat(string, "{3377FF}Team Names");
-	strcat(string, "\n{3377FF}Team Skins");
-	strcat(string, "\n{3377FF}Modify Weapons");
-	strcat(string, "\n{3377FF}A/D Settings");
-	strcat(string, "\n{3377FF}Restart Server");
-	strcat(string, "\n{3377FF}Max Ping");
-	strcat(string, "\n{3377FF}Max Packetloss");
-	strcat(string, "\n{3377FF}Min FPS");
+	strcat(string, "{E66000}Team Names");
+	strcat(string, "\n{E66000}Team Skins");
+	strcat(string, "\n{E66000}Modify Weapons");
+	strcat(string, "\n{E66000}A/D Settings");
+	strcat(string, "\n{E66000}Restart Server");
+	strcat(string, "\n{E66000}Max Ping");
+	strcat(string, "\n{E66000}Max Packetloss");
+	strcat(string, "\n{E66000}Min FPS");
 
 	if(ServerLocked == true) {
 		strcat(string, "\n{FF6666}Server Locked");
@@ -2808,7 +2817,7 @@ stock ShowConfigDialog(playerid) {
 	}
 #endif
 
-    ShowPlayerDialog(playerid, DIALOG_CONFIG, DIALOG_STYLE_LIST, "{3377FF}Config Settings", string, "OK", "Cancel");
+    ShowPlayerDialog(playerid, DIALOG_CONFIG, DIALOG_STYLE_LIST, "{E66000}Config Settings", string, "OK", "Cancel");
     return 1;
 }
 
@@ -2904,7 +2913,7 @@ public OnPlayerDeath(playerid, killerid, reason)
 		new str[180];
 
 		if(Player[playerid][InDuel] == true) {
-			format(str, sizeof(str), "%s%s {3377FF}raped %s%s {3377FF}in a duel with %s | {FFFFFF}%.0f HP", TextColor[Player[killerid][Team]], Player[killerid][Name], TextColor[Player[playerid][Team]], Player[playerid][Name], WeaponNames[reason], (HP[0] + HP[1]));
+			format(str, sizeof(str), "%s%s {E66000}raped %s%s {E66000}in a duel with %s | {FFFFFF}%.0f HP", TextColor[Player[killerid][Team]], Player[killerid][Name], TextColor[Player[playerid][Team]], Player[playerid][Name], WeaponNames[reason], (HP[0] + HP[1]));
             SendClientMessageToAll(-1, str);
 			Player[playerid][challengerid] = -1;
 			Player[killerid][challengerid] = -1;
@@ -2950,7 +2959,7 @@ public OnPlayerDeath(playerid, killerid, reason)
 				AddPlayerToBase(playerid);
 				RemovePlayerFromRound(killerid);
 
-				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been removed from the round for Heli-killing.", Player[killerid][Name]);
+				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been removed from the round for Heli-killing.", Player[killerid][Name]);
 				SendClientMessageToAll(-1, iString);
 
 				return 1;
@@ -3428,22 +3437,22 @@ public OnRconLoginAttempt(ip[], password[], success)
 	}
 
     if(!success) {
-		format(Str, sizeof(Str), "{FFFFFF}%s {3377FF}has failed to log into rcon.", iName);
+		format(Str, sizeof(Str), "{FFFFFF}%s {E66000}has failed to log into rcon.", iName);
         SendClientMessageToAll(-1, Str);
 
         Player[playerid][RconTry]++;
 		SendClientMessage(playerid, -1, "Wrong password one more time will get you kicked.");
 
 		if(Player[playerid][RconTry] >= 2){
-			format(Str, sizeof(Str), "{FFFFFF}%s {3377FF}has been kicked for fail attempt to log into rcon", iName);
+			format(Str, sizeof(Str), "{FFFFFF}%s {E66000}has been kicked for fail attempt to log into rcon", iName);
 			SendClientMessageToAll(-1, Str);
 			SetTimerEx("OnPlayerKicked", 500, false, "i", playerid);
 			return 1;
 		}
     } else {
-//		format(Str, sizeof(Str), "{FFFFFF}%s {3377FF}has successfully logged into rcon.", iName);
+//		format(Str, sizeof(Str), "{FFFFFF}%s {E66000}has successfully logged into rcon.", iName);
 //        SendClientMessageToAll(-1, Str);
-		format(Str, sizeof(Str), "{FFFFFF}%s {3377FF}has successfully logged into rcon.", iName);
+		format(Str, sizeof(Str), "{FFFFFF}%s {E66000}has successfully logged into rcon.", iName);
 		foreach(new j : Player) {
 			if(Player[j][Level] > 4) SendClientMessage(j, -1, Str);
 		}
@@ -3500,7 +3509,7 @@ public OnPlayerUpdate(playerid)
 
 	if ((ud != 128 && ud != 0 && ud != -128) || (lr != 128 && lr != 0 && lr != -128)) {
 		new str[128];
-	    format(str, sizeof(str), "{FFFFFF}** System ** {3377FF}has kicked {FFFFFF}%s {3377FF}for using joypad", Player[playerid][Name]);
+	    format(str, sizeof(str), "{FFFFFF}** System ** {E66000}has kicked {FFFFFF}%s {E66000}for using joypad", Player[playerid][Name]);
 	    SendClientMessageToAll(-1, str);
 
 		Player[playerid][DontPause] = true;
@@ -3607,9 +3616,10 @@ public OnPlayerStreamOut(playerid, forplayerid)
 
 
 //============Attempting to do something e.e
-new testObject_[MAX_PLAYERS];
+/*    new testObject_[MAX_PLAYERS];
 public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY, Float:fZ)
 {
+	//not available in lagcomp = 0
 	DestroyObject( testObject_[playerid] );
 	new Float: OX,
 		Float: OY,
@@ -3620,25 +3630,19 @@ public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY
 
 		string[ 128 ]
 	;
-	
+
     GetPlayerLastShotVectors(playerid, OX, OY, OZ, HitX, HitY, HitZ);
-    
-    format( string, sizeof(string), "* Hit Position : %0.1f | %0.1f | %0.1f *\n", fX, fY, fZ );
-//    SendClientMessage(playerid,-1,string);
 
     format( string, sizeof(string), "** Hit Vectors : %0.1f | %0.1f | %0.1f **\n", HitX, HitY, HitZ );
-//    SendClientMessage(playerid,-1,string);
+    SendClientMessage(playerid,-1,string);
 
     format( string, sizeof(string), "*** Shot From : %0.1f | %0.1f | %0.1f **", OX, OY, OZ );
-//    SendClientMessage(playerid,-1,string);
+    SendClientMessage(playerid,-1,string);
 
-
-    
     testObject_[playerid] = CreateObject( 19130, HitX, HitY, HitZ, 0.0, 0.0, 90.0, 100.0 ); //ArrowType1 0.3c
-    
 	return 1;
 }
-
+*/
 //============
 
 
@@ -3715,7 +3719,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 				return 1;
 			}
 		}
-		new wepName[32];
+		new wepName[32], bool: nan_weapon = false;
 		switch(weaponid)
 		{
 		    case WEAPON_SNIPER:
@@ -3724,11 +3728,15 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		    {format(wepName, sizeof wepName, "Rifle");}
 		    case WEAPON_DEAGLE:
 		    {format(wepName, sizeof wepName, "Deagle");}
+		    default: nan_weapon = true;
 		}
-		new shootername[MAX_PLAYER_NAME], shotname[MAX_PLAYER_NAME];
-		GetPlayerName(playerid, shotname, sizeof shotname);
-		GetPlayerName(issuerid, shootername, sizeof shootername);
-		SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {3377FF}has just head-shot {FFFFFF}%s {3377FF}({FFFFFF}%s{3377FF})", shootername, shotname, wepName));
+		if( nan_weapon == false )
+		{
+			new shootername[MAX_PLAYER_NAME], shotname[MAX_PLAYER_NAME];
+			GetPlayerName(playerid, shotname, sizeof shotname);
+			GetPlayerName(issuerid, shootername, sizeof shootername);
+			SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {E66000}has just head-shot {FFFFFF}%s {E66000}({FFFFFF}%s{E66000})", shootername, shotname, wepName));
+		}
 	}
 
 	if(ToggleTargetInfo == true) ShowTargetInfo(issuerid, playerid);
@@ -3789,7 +3797,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		if(weaponid == 49) {
 			SetPlayerHealthEx(playerid, Health[0]);
 			SetPlayerArmourEx(playerid, Health[1]);
-			SendClientMessage(issuerid,-1,"{FF0000}WARNING! {3377FF}Do not ram others with your vehicle");
+			SendClientMessage(issuerid,-1,"{FF0000}WARNING! {E66000}Do not ram others with your vehicle");
 
 
 		}
@@ -3801,7 +3809,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 
 
 
-	       	format(iString, sizeof(iString),"{FFFFFF}%s (%d) {3377FF}has been auto-kicked for heli-killing", Player[issuerid][Name], issuerid);
+	       	format(iString, sizeof(iString),"{FFFFFF}%s (%d) {E66000}has been auto-kicked for heli-killing", Player[issuerid][Name], issuerid);
 	        SendClientMessageToAll(-1,iString);
 
 			Player[issuerid][DontPause] = true;
@@ -4278,14 +4286,14 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 //	if(dialogid == DIALOG_DUEL_NAME) {
 //	    if(response) {
 //	        if(isnull(inputtext)) {
-//				format(iString, sizeof(iString), "{3377FF}Enter duel map name below for {FFFFFF}Duel ID: %d", DuelIDForName);
+//				format(iString, sizeof(iString), "{E66000}Enter duel map name below for {FFFFFF}Duel ID: %d", DuelIDForName);
 //				ShowPlayerDialog(playerid, DIALOG_DUEL_NAME, DIALOG_STYLE_INPUT,"{FFFFFF}Duel Map Name", iString, "Okay", "Close");
 //				return 1;
 //			}
 //
 //          dini_Set(CreateDuelString, "Name", inputtext);
 //
-//			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has configured Duel Name for {EEEEEE}Duel ID: %d to (%s)", Player[playerid][Name], DuelIDForName, inputtext);
+//			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has configured Duel Name for {EEEEEE}Duel ID: %d to (%s)", Player[playerid][Name], DuelIDForName, inputtext);
 //			SendClientMessageToAll(-1, iString);
 //
 //			LoadDuels();
@@ -4311,7 +4319,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 //				SendClientMessage(playerid, -1, "Level: 0 | Weather: 0 | Time: 12 | Chat Channel: -1 | Net Check: 1 | HitSound: 17802 | Get HitSound: 1131");
 
 
-				format(HashPass, sizeof(HashPass), "{3377FF}You have been successfully registered. Password: {FFFFFF}%s", inputtext);
+				format(HashPass, sizeof(HashPass), "{E66000}You have been successfully registered. Password: {FFFFFF}%s", inputtext);
 				SendClientMessage(playerid, -1, HashPass);
 
 			#else
@@ -4346,7 +4354,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 		} else {
 
-			format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has been kicked from the server for not registering.", Player[playerid][Name]);
+			format(iString, sizeof(iString),"{FFFFFF}%s {E66000}has been kicked from the server for not registering.", Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 
 			SetTimerEx("OnPlayerKicked", 500, false, "i", playerid);
@@ -4487,7 +4495,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			#endif
 		} else {
 
-			format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has been kicked from the server for not logging in.", Player[playerid][Name]);
+			format(iString, sizeof(iString),"{FFFFFF}%s {E66000}has been kicked from the server for not logging in.", Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 
 			SetTimerEx("OnPlayerKicked", 500, false, "i", playerid);
@@ -4509,7 +4517,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 		    if(isnull(inputtext)) return 1;
 			if(strlen(inputtext) > 6) {
 				SendErrorMessage(playerid,"Server password is too long.");
-			   	ShowPlayerDialog(playerid, DIALOG_SERVER_PASS, DIALOG_STYLE_INPUT,"{3377FF}Server Password","{3377FF}Enter server password below:", "Ok","Close");
+			   	ShowPlayerDialog(playerid, DIALOG_SERVER_PASS, DIALOG_STYLE_INPUT,"{E66000}Server Password","{E66000}Enter server password below:", "Ok","Close");
 				return 1;
 			}
             format(ServerPass, sizeof(ServerPass), "password %s", inputtext);
@@ -4521,7 +4529,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			format(iString, sizeof(iString), "%sServer Pass: ~r~%s", MAIN_TEXT_COLOUR, inputtext);
 			TextDrawSetString(LockServerTD, iString);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has locked the server. Password: {FFFFFF}%s",Player[playerid][Name], inputtext);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has locked the server. Password: {FFFFFF}%s",Player[playerid][Name], inputtext);
 			SendClientMessageToAll(-1, iString);
 		}
 		return 1;
@@ -4570,7 +4578,6 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				}
 				case DEFENDER:
 				{
-
 				    foreach(new i : Player)
 					{
                 		if(Player[i][Team] == DEFENDER) SendClientMessage(i, -1, iString);
@@ -4727,7 +4734,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 					}
 				}
 			} else if (Player[playerid][Team] == DEFENDER) {
-				format(iString, sizeof(iString), "{3377FF}%s{FFFFFF} has selected ({3377FF}%s{FFFFFF} and {3377FF}%s{FFFFFF}).", Player[playerid][Name], WeaponNames[ArenaWeapons[0][playerid]], WeaponNames[ArenaWeapons[1][playerid]]);
+				format(iString, sizeof(iString), "{E66000}%s{FFFFFF} has selected ({E66000}%s{FFFFFF} and {E66000}%s{FFFFFF}).", Player[playerid][Name], WeaponNames[ArenaWeapons[0][playerid]], WeaponNames[ArenaWeapons[1][playerid]]);
 
 				foreach(new i : Player) {
 				    if(Player[i][Playing] == true && Player[i][Team] == DEFENDER) {
@@ -4749,8 +4756,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 		if(isnull(inputtext)) return 1;
         if(!IsNumeric(inputtext)) {
             SendErrorMessage(playerid,"You can only use numeric input.");
-			iString = "{3377FF}Enter current round or total rounds to be played:";
-    		ShowPlayerDialog(playerid, DIALOG_CURRENT_TOTAL, DIALOG_STYLE_INPUT,"{3377FF}Rounds Dialog",iString,"Current","Total");
+			iString = "{E66000}Enter current round or total rounds to be played:";
+    		ShowPlayerDialog(playerid, DIALOG_CURRENT_TOTAL, DIALOG_STYLE_INPUT,"{E66000}Rounds Dialog",iString,"Current","Total");
 			return 1;
 		}
 
@@ -4758,20 +4765,20 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 		if(Value < 0 || Value > 100) {
             SendErrorMessage(playerid,"Current or total rounds can only be between 0 and 100.");
-			iString = "{3377FF}Enter current round or total rounds to be played:";
-    		ShowPlayerDialog(playerid, DIALOG_CURRENT_TOTAL, DIALOG_STYLE_INPUT,"{3377FF}Rounds Dialog",iString,"Current","Total");
+			iString = "{E66000}Enter current round or total rounds to be played:";
+    		ShowPlayerDialog(playerid, DIALOG_CURRENT_TOTAL, DIALOG_STYLE_INPUT,"{E66000}Rounds Dialog",iString,"Current","Total");
 			return 1;
 		}
 
 	    if(response) {
 
 	        CurrentRound = Value;
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed the current round to: {FFFFFF}%d", Player[playerid][Name], CurrentRound);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed the current round to: {FFFFFF}%d", Player[playerid][Name], CurrentRound);
 			SendClientMessageToAll(-1, iString);
 		} else {
 
 		    TotalRounds = Value;
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed the total rounds to: {FFFFFF}%d", Player[playerid][Name], TotalRounds);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed the total rounds to: {FFFFFF}%d", Player[playerid][Name], TotalRounds);
 			SendClientMessageToAll(-1, iString);
 		}
 
@@ -4787,11 +4794,11 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 		if(response) {
 		    switch(listitem) {
 		        case 0: {
-					iString = "{3377FF}Enter {FFFFFF}Attacker {3377FF}Team Name Below:";
-				    ShowPlayerDialog(playerid, DIALOG_ATT_NAME, DIALOG_STYLE_INPUT,"{3377FF}Attacker Team Name",iString,"Next","Close");
+					iString = "{E66000}Enter {FFFFFF}Attacker {E66000}Team Name Below:";
+				    ShowPlayerDialog(playerid, DIALOG_ATT_NAME, DIALOG_STYLE_INPUT,"{E66000}Attacker Team Name",iString,"Next","Close");
 				} case 1: {
-					format(iString, sizeof(iString), "{3377FF}Enter {FFFFFF}%s {3377FF}Team Score Below:", TeamName[ATTACKER]);
-				    ShowPlayerDialog(playerid, DIALOG_ATT_SCORE, DIALOG_STYLE_INPUT,"{3377FF}Attacker Team Score",iString,"Next","Close");
+					format(iString, sizeof(iString), "{E66000}Enter {FFFFFF}%s {E66000}Team Score Below:", TeamName[ATTACKER]);
+				    ShowPlayerDialog(playerid, DIALOG_ATT_SCORE, DIALOG_STYLE_INPUT,"{E66000}Attacker Team Score",iString,"Next","Close");
 				} case 2: {
 				    TeamScore[ATTACKER] = 0;
 				    TeamScore[DEFENDER] = 0;
@@ -4817,7 +4824,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 					    Player[i][TotalshotsHit] = 0;
 					}
 
-					format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has resetted the scores.", Player[playerid][Name]);
+					format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has resetted the scores.", Player[playerid][Name]);
 					SendClientMessageToAll(-1, iString);
 				}
 			}
@@ -4871,7 +4878,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 			WarMode = false;
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has disabled the Match-Mode.", Player[playerid][Name]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has disabled the Match-Mode.", Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 		}
 		return 1;
@@ -4880,14 +4887,14 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	if(dialogid == DIALOG_ATT_NAME) {
 	    if(response) {
 			if(isnull(inputtext)) {
-				iString = "{3377FF}Enter {FFFFFF}Defender {3377FF}Team Name Below:";
-			    ShowPlayerDialog(playerid, DIALOG_DEF_NAME, DIALOG_STYLE_INPUT,"{3377FF}Defender Team Name",iString,"Ok","Close");
+				iString = "{E66000}Enter {FFFFFF}Defender {E66000}Team Name Below:";
+			    ShowPlayerDialog(playerid, DIALOG_DEF_NAME, DIALOG_STYLE_INPUT,"{E66000}Defender Team Name",iString,"Ok","Close");
 				return 1;
 			}
 			if(strlen(inputtext) > 6) {
             	SendErrorMessage(playerid,"Team name is too long.");
-				iString = "{3377FF}Enter {FFFFFF}Attacker {3377FF}Team Name Below:";
-			    ShowPlayerDialog(playerid, DIALOG_ATT_NAME, DIALOG_STYLE_INPUT,"{3377FF}Attacker Team Name",iString,"Next","Close");
+				iString = "{E66000}Enter {FFFFFF}Attacker {E66000}Team Name Below:";
+			    ShowPlayerDialog(playerid, DIALOG_ATT_NAME, DIALOG_STYLE_INPUT,"{E66000}Attacker Team Name",iString,"Next","Close");
 				return 1;
 			}
 
@@ -4920,11 +4927,11 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			format(iString, sizeof(iString), "~r~%s %s(~r~%d%s)  ~b~~h~%s %s(~b~~h~%d%s)",TeamName[ATTACKER],MAIN_TEXT_COLOUR,TeamScore[ATTACKER],MAIN_TEXT_COLOUR,TeamName[DEFENDER],MAIN_TEXT_COLOUR,TeamScore[DEFENDER],MAIN_TEXT_COLOUR);
 		    TextDrawSetString(TeamScoreText, iString);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set attacker team name to: {FFFFFF}%s", Player[playerid][Name], TeamName[ATTACKER]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set attacker team name to: {FFFFFF}%s", Player[playerid][Name], TeamName[ATTACKER]);
 			SendClientMessageToAll(-1, iString);
 
-			iString = "{3377FF}Enter {FFFFFF}Defender {3377FF}Team Name Below:";
-		    ShowPlayerDialog(playerid, DIALOG_DEF_NAME, DIALOG_STYLE_INPUT,"{3377FF}Defender Team Name",iString,"Ok","Close");
+			iString = "{E66000}Enter {FFFFFF}Defender {E66000}Team Name Below:";
+		    ShowPlayerDialog(playerid, DIALOG_DEF_NAME, DIALOG_STYLE_INPUT,"{E66000}Defender Team Name",iString,"Ok","Close");
 		}
 		return 1;
 	}
@@ -4934,8 +4941,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	        if(isnull(inputtext)) return 1;
 	        if(strlen(inputtext) > 6) {
 	           	SendErrorMessage(playerid,"Team name is too long.");
-				iString = "{3377FF}Enter {FFFFFF}Defender {3377FF}Team Name Below:";
-			    ShowPlayerDialog(playerid, DIALOG_DEF_NAME, DIALOG_STYLE_INPUT,"{3377FF}Defender Team Name",iString,"Ok","Close");
+				iString = "{E66000}Enter {FFFFFF}Defender {E66000}Team Name Below:";
+			    ShowPlayerDialog(playerid, DIALOG_DEF_NAME, DIALOG_STYLE_INPUT,"{E66000}Defender Team Name",iString,"Ok","Close");
 				return 1;
 			}
 
@@ -4966,7 +4973,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			format(iString, sizeof(iString), "~r~%s %s(~r~%d%s)  ~b~~h~%s %s(~b~~h~%d%s)",TeamName[ATTACKER],MAIN_TEXT_COLOUR,TeamScore[ATTACKER],MAIN_TEXT_COLOUR,TeamName[DEFENDER],MAIN_TEXT_COLOUR,TeamScore[DEFENDER],MAIN_TEXT_COLOUR);
 		    TextDrawSetString(TeamScoreText, iString);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set defender team name to: {FFFFFF}%s", Player[playerid][Name], TeamName[DEFENDER]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set defender team name to: {FFFFFF}%s", Player[playerid][Name], TeamName[DEFENDER]);
 			SendClientMessageToAll(-1, iString);
 
 		    WarMode = true;
@@ -4982,36 +4989,36 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	if(dialogid == DIALOG_ATT_SCORE) {
 	    if(response) {
 	        if(isnull(inputtext)) {
-				format(iString, sizeof(iString), "{3377FF}Enter {FFFFFF}%s {3377FF}Team Score Below:", TeamName[DEFENDER]);
-			    ShowPlayerDialog(playerid, DIALOG_DEF_SCORE, DIALOG_STYLE_INPUT,"{3377FF}Defender Team Score",iString,"Ok","Close");
+				format(iString, sizeof(iString), "{E66000}Enter {FFFFFF}%s {E66000}Team Score Below:", TeamName[DEFENDER]);
+			    ShowPlayerDialog(playerid, DIALOG_DEF_SCORE, DIALOG_STYLE_INPUT,"{E66000}Defender Team Score",iString,"Ok","Close");
 				return 1;
 			}
 			if(!IsNumeric(inputtext)) {
 	            SendErrorMessage(playerid,"Score can only be numerical.");
-				format(iString, sizeof(iString), "{3377FF}Enter {FF3333}%s {3377FF}Team Score Below:", TeamName[ATTACKER]);
-			    ShowPlayerDialog(playerid, DIALOG_ATT_SCORE, DIALOG_STYLE_INPUT,"{3377FF}Attacker Team Score",iString,"Next","Close");
+				format(iString, sizeof(iString), "{E66000}Enter {FF3333}%s {E66000}Team Score Below:", TeamName[ATTACKER]);
+			    ShowPlayerDialog(playerid, DIALOG_ATT_SCORE, DIALOG_STYLE_INPUT,"{E66000}Attacker Team Score",iString,"Next","Close");
 				return 1;
 			}
 			new Score = strval(inputtext);
 
 			if(Score < 0 || Score > 100) {
 	            SendErrorMessage(playerid,"Score can only be between 0 and 100.");
-				format(iString, sizeof(iString), "{3377FF}Enter {FF3333}%s {3377FF}Team Score Below:", TeamName[ATTACKER]);
-			    ShowPlayerDialog(playerid, DIALOG_ATT_SCORE, DIALOG_STYLE_INPUT,"{3377FF}Attacker Team Score",iString,"Next","Close");
+				format(iString, sizeof(iString), "{E66000}Enter {FF3333}%s {E66000}Team Score Below:", TeamName[ATTACKER]);
+			    ShowPlayerDialog(playerid, DIALOG_ATT_SCORE, DIALOG_STYLE_INPUT,"{E66000}Attacker Team Score",iString,"Next","Close");
 				return 1;
 			}
 
 			if((Score + TeamScore[DEFENDER]) >= TotalRounds) {
 				SendErrorMessage(playerid,"Attacker plus defender score is bigger than or equal to total rounds.");
-				format(iString, sizeof(iString), "{3377FF}Enter {FFFFFF}%s {3377FF}Team Score Below:", TeamName[ATTACKER]);
-			    ShowPlayerDialog(playerid, DIALOG_ATT_SCORE, DIALOG_STYLE_INPUT,"{3377FF}Attacker Team Score",iString,"Next","Close");
+				format(iString, sizeof(iString), "{E66000}Enter {FFFFFF}%s {E66000}Team Score Below:", TeamName[ATTACKER]);
+			    ShowPlayerDialog(playerid, DIALOG_ATT_SCORE, DIALOG_STYLE_INPUT,"{E66000}Attacker Team Score",iString,"Next","Close");
 				return 1;
 			}
 
 			TeamScore[ATTACKER] = Score;
 			CurrentRound = TeamScore[ATTACKER] + TeamScore[DEFENDER];
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set attacker team score to: {FFFFFF}%d", Player[playerid][Name], TeamScore[ATTACKER]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set attacker team score to: {FFFFFF}%d", Player[playerid][Name], TeamScore[ATTACKER]);
 			SendClientMessageToAll(-1, iString);
 
 			format(iString, sizeof(iString), "~r~%s %s(~r~%d%s)  ~b~~h~%s %s(~b~~h~%d%s)",TeamName[ATTACKER],MAIN_TEXT_COLOUR,TeamScore[ATTACKER],MAIN_TEXT_COLOUR,TeamName[DEFENDER],MAIN_TEXT_COLOUR,TeamScore[DEFENDER],MAIN_TEXT_COLOUR);
@@ -5020,8 +5027,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			format(iString, sizeof(iString), "%sRounds ~r~~h~%d~r~/~h~~h~%d", MAIN_TEXT_COLOUR, CurrentRound, TotalRounds);
 			TextDrawSetString(RoundsPlayed, iString);
 
-			format(iString, sizeof(iString), "{3377FF}Enter {FFFFFF}%s {3377FF}Team Score Below:", TeamName[DEFENDER]);
-		    ShowPlayerDialog(playerid, DIALOG_DEF_SCORE, DIALOG_STYLE_INPUT,"{3377FF}Defender Team Score",iString,"Ok","Close");
+			format(iString, sizeof(iString), "{E66000}Enter {FFFFFF}%s {E66000}Team Score Below:", TeamName[DEFENDER]);
+		    ShowPlayerDialog(playerid, DIALOG_DEF_SCORE, DIALOG_STYLE_INPUT,"{E66000}Defender Team Score",iString,"Ok","Close");
 		}
 		return 1;
 	}
@@ -5031,8 +5038,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	        if(isnull(inputtext)) return 1;
 	        if(!IsNumeric(inputtext)) {
 	            SendErrorMessage(playerid,"Score can only be numerical.");
-				format(iString, sizeof(iString), "{3377FF}Enter {FFFFFF}%s {3377FF}Team Score Below:", TeamName[DEFENDER]);
-			    ShowPlayerDialog(playerid, DIALOG_DEF_SCORE, DIALOG_STYLE_INPUT,"{3377FF}Defender Team Score",iString,"Ok","Close");
+				format(iString, sizeof(iString), "{E66000}Enter {FFFFFF}%s {E66000}Team Score Below:", TeamName[DEFENDER]);
+			    ShowPlayerDialog(playerid, DIALOG_DEF_SCORE, DIALOG_STYLE_INPUT,"{E66000}Defender Team Score",iString,"Ok","Close");
 				return 1;
 			}
 
@@ -5040,21 +5047,21 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 			if(Score < 0 || Score > 100) {
 	            SendErrorMessage(playerid,"Score can only be between 0 and 100.");
-				format(iString, sizeof(iString), "{3377FF}Enter {FFFFFF}%s {3377FF}Team Score Below:", TeamName[DEFENDER]);
-			    ShowPlayerDialog(playerid, DIALOG_DEF_SCORE, DIALOG_STYLE_INPUT,"{3377FF}Defender Team Score",iString,"Ok","Close");
+				format(iString, sizeof(iString), "{E66000}Enter {FFFFFF}%s {E66000}Team Score Below:", TeamName[DEFENDER]);
+			    ShowPlayerDialog(playerid, DIALOG_DEF_SCORE, DIALOG_STYLE_INPUT,"{E66000}Defender Team Score",iString,"Ok","Close");
 			    return 1;
 			}
 
 			if((TeamScore[ATTACKER] + Score) >= TotalRounds) {
 	            SendErrorMessage(playerid,"Attacker plus defender score is bigger than or equal to total rounds.");
-				format(iString, sizeof(iString), "{3377FF}Enter {FFFFFF}%s {3377FF}Team Score Below:", TeamName[DEFENDER]);
-			    ShowPlayerDialog(playerid, DIALOG_DEF_SCORE, DIALOG_STYLE_INPUT,"{3377FF}Defender Team Score",iString,"Ok","Close");
+				format(iString, sizeof(iString), "{E66000}Enter {FFFFFF}%s {E66000}Team Score Below:", TeamName[DEFENDER]);
+			    ShowPlayerDialog(playerid, DIALOG_DEF_SCORE, DIALOG_STYLE_INPUT,"{E66000}Defender Team Score",iString,"Ok","Close");
 				return 1;
 			}
 			TeamScore[DEFENDER] = Score;
 			CurrentRound = TeamScore[ATTACKER] + TeamScore[DEFENDER];
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set defender team score to: {FFFFFF}%d", Player[playerid][Name], TeamScore[DEFENDER]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set defender team score to: {FFFFFF}%d", Player[playerid][Name], TeamScore[DEFENDER]);
 			SendClientMessageToAll(-1, iString);
 
 			format(iString, sizeof(iString), "~r~%s %s(~r~%d%s)  ~b~~h~%s %s(~b~~h~%d%s)",TeamName[ATTACKER],MAIN_TEXT_COLOUR,TeamScore[ATTACKER],MAIN_TEXT_COLOUR,TeamName[DEFENDER],MAIN_TEXT_COLOUR,TeamScore[DEFENDER],MAIN_TEXT_COLOUR);
@@ -5069,9 +5076,9 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 	if(dialogid == DIALOG_WEAPONS_LIMIT){
 		if(response == 1  && listitem > 0){
-		    format(iString, sizeof(iString), "{3377FF}Enter %s/%s Limit Below:", WeaponNames[GunMenuWeapons[listitem-1][0]], WeaponNames[GunMenuWeapons[listitem-1][1]]);
+		    format(iString, sizeof(iString), "{E66000}Enter %s/%s Limit Below:", WeaponNames[GunMenuWeapons[listitem-1][0]], WeaponNames[GunMenuWeapons[listitem-1][1]]);
 		    Player[playerid][LastEditWepLimit] = listitem-1;
-		    ShowPlayerDialog(playerid, DIALOG_SET_1, DIALOG_STYLE_INPUT,"{3377FF}Weapon Limit",iString,"Okay","Close");
+		    ShowPlayerDialog(playerid, DIALOG_SET_1, DIALOG_STYLE_INPUT,"{E66000}Weapon Limit",iString,"Okay","Close");
 
 		}
 		return 1;
@@ -5085,7 +5092,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			{
 			    SendErrorMessage(playerid,"You can only use numbers.");
 				new str[128];
-			    format(str, sizeof(str), "{3377FF}Enter %s/%s Limit Below:", WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][0]], WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][1]]);
+			    format(str, sizeof(str), "{E66000}Enter %s/%s Limit Below:", WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][0]], WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][1]]);
 				ShowPlayerDialog(playerid, DIALOG_SET_1, DIALOG_STYLE_INPUT,"{FFFFFF}Weapon Limit",str,"Okay","Close");
 				return 1;
 			}
@@ -5093,7 +5100,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			{
 			    SendErrorMessage(playerid,"Enter something at least stupid fuck.");
 				new str[128];
-			    format(str, sizeof(str), "{3377FF}Enter %s/%s Limit Below:", WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][0]], WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][1]]);
+			    format(str, sizeof(str), "{E66000}Enter %s/%s Limit Below:", WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][0]], WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][1]]);
 				ShowPlayerDialog(playerid, DIALOG_SET_1, DIALOG_STYLE_INPUT,"{FFFFFF}Weapon Limit",str,"Okay","Close");
 				return 1;
 			}
@@ -5107,7 +5114,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 
 			ShowWepLimit(playerid);
-			format(string, sizeof(string), "{FFFFFF}%s {3377FF}has changed {FFFFFF}| %s - %s | {3377FF}limit to {FFFFFF}%d", Player[playerid][Name], WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][0]], WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][1]], lim);
+			format(string, sizeof(string), "{FFFFFF}%s {E66000}has changed {FFFFFF}| %s - %s | {E66000}limit to {FFFFFF}%d", Player[playerid][Name], WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][0]], WeaponNames[GunMenuWeapons[Player[playerid][LastEditWepLimit]][1]], lim);
 			SendClientMessageToAll(-1, string);
 
 			return 1;
@@ -5126,13 +5133,13 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	        switch(listitem)
 			{
 	            case 0: {
-	                iString = "{3377FF}Enter {FFFFFF}Attacker {3377FF}Team Name Below:";
-				    ShowPlayerDialog(playerid, DIALOG_ATT_NAME, DIALOG_STYLE_INPUT,"{3377FF}Attacker Team Name",iString,"Next","Close");
+	                iString = "{E66000}Enter {FFFFFF}Attacker {E66000}Team Name Below:";
+				    ShowPlayerDialog(playerid, DIALOG_ATT_NAME, DIALOG_STYLE_INPUT,"{E66000}Attacker Team Name",iString,"Next","Close");
 	            }
 	            case 1: {
 	                new str[128];
 	                format(str, sizeof(str), "%sAttacker Team\n%sDefender Team", TextColor[ATTACKER], TextColor[DEFENDER]);
-	                ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_TEAM_SKIN, DIALOG_STYLE_LIST, "{3377FF}Select team", str, "OK", "Cancel");
+	                ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_TEAM_SKIN, DIALOG_STYLE_LIST, "{E66000}Select team", str, "OK", "Cancel");
 	            }
 	            case 2: {
 					new WepTStr[700];
@@ -5152,23 +5159,23 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 					ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_WEAPONS, DIALOG_STYLE_LIST, "Select Weapons to change", WepTStr, "OK", "Cancel");
 	            }
 				case 3: {
-				    ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_AAD, DIALOG_STYLE_LIST, "{3377FF}A/D Config", "{3377FF}Health\n{3377FF}Armour\n{3377FF}Round Time\n{3377FF}CP Time", "OK", "Cancel");
+				    ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_AAD, DIALOG_STYLE_LIST, "{E66000}A/D Config", "{E66000}Health\n{E66000}Armour\n{E66000}Round Time\n{E66000}CP Time", "OK", "Cancel");
 				}
 				case 4: {
 				    SendRconCommand("gmx");
 				}
 				case 5: {
-				    ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_MAX_PING, DIALOG_STYLE_INPUT, "{3377FF}Set max Ping", "Set the max ping:", "OK", "Cancel");
+				    ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_MAX_PING, DIALOG_STYLE_INPUT, "{E66000}Set max Ping", "Set the max ping:", "OK", "Cancel");
 				}
 				case 6: {
-				    ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_MAX_PACKET, DIALOG_STYLE_INPUT, "{3377FF}Set max Packetloss", "Set the max packetloss:", "OK", "Cancel");
+				    ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_MAX_PACKET, DIALOG_STYLE_INPUT, "{E66000}Set max Packetloss", "Set the max packetloss:", "OK", "Cancel");
 				}
 				case 7: {
-				    ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_MIN_FPS, DIALOG_STYLE_INPUT, "{3377FF}Set Minimum FPS", "Set the minimum FPS:", "OK", "Cancel");
+				    ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_MIN_FPS, DIALOG_STYLE_INPUT, "{E66000}Set Minimum FPS", "Set the minimum FPS:", "OK", "Cancel");
 				}
 				case 8: {
 				    if(!ServerLocked) {
-				        ShowPlayerDialog(playerid, DIALOG_SERVER_PASS, DIALOG_STYLE_INPUT,"{3377FF}Server Password","{3377FF}Enter server password below:", "Ok","Close");
+				        ShowPlayerDialog(playerid, DIALOG_SERVER_PASS, DIALOG_STYLE_INPUT,"{E66000}Server Password","{E66000}Enter server password below:", "Ok","Close");
 				    } else {
 				        SendRconCommand("password 0");
 				        ServerLocked = false;
@@ -5184,10 +5191,10 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 							PlayerTextDrawHide(i, TargetInfoTD);
 						}
 
-						format(iStr, sizeof(iStr), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}target player information", Player[playerid][Name]);
+						format(iStr, sizeof(iStr), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}target player information", Player[playerid][Name]);
 					} else {
 					    ToggleTargetInfo = true;
-					    format(iStr, sizeof(iStr), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}target player information", Player[playerid][Name]);
+					    format(iStr, sizeof(iStr), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}target player information", Player[playerid][Name]);
 					}
 					SendClientMessageToAll(-1, iStr);
 
@@ -5199,11 +5206,11 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				case 10: {
 				    if(AntiSpam == false) {
 					    AntiSpam = true;
-	    				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}anti-spam.", Player[playerid][Name]);
+	    				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}anti-spam.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iString);
 				    } else {
 				        AntiSpam = false;
-	    				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}anti-spam.", Player[playerid][Name]);
+	    				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}anti-spam.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iString);
 					}
                     ShowConfigDialog(playerid);
@@ -5211,11 +5218,11 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				case 11: {
 				    if(AutoBal == false) {
 					    AutoBal = true;
-	    				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}auto-balance in non war mode.", Player[playerid][Name]);
+	    				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}auto-balance in non war mode.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iString);
 				    } else {
 				        AutoBal = false;
-	    				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}auto-balance in non war mode.", Player[playerid][Name]);
+	    				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}auto-balance in non war mode.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iString);
 					}
                     ShowConfigDialog(playerid);
@@ -5223,11 +5230,11 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				case 12: {
 				    if(AutoPause == false) {
 					    AutoPause = true;
-	    				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}Auto-Pause on player disconnect in war mode.", Player[playerid][Name]);
+	    				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}Auto-Pause on player disconnect in war mode.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iString);
 				    } else {
 				        AutoPause = false;
-	    				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}Auto-Pause on player disconnect in war mode.", Player[playerid][Name]);
+	    				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}Auto-Pause on player disconnect in war mode.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iString);
 					}
                     ShowConfigDialog(playerid);
@@ -5235,11 +5242,11 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				case 13: {
 					if(LobbyGuns == true) {
 						LobbyGuns = false;
-				    	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}guns in lobby.", Player[playerid][Name]);
+				    	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}guns in lobby.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iString);
 					} else {
 						LobbyGuns = true;
-					    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}guns in lobby.", Player[playerid][Name]);
+					    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}guns in lobby.", Player[playerid][Name]);
 				        SendClientMessageToAll(-1, iString);
 					}
 				    ShowConfigDialog(playerid);
@@ -5247,11 +5254,11 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				case 14: {
 				    if(ShortCuts == false) {
 					    ShortCuts = true;
-	    				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}shortcut team messages.", Player[playerid][Name]);
+	    				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}shortcut team messages.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iString);
 				    } else {
 				        ShortCuts = false;
-	    				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}shortcut team messages.", Player[playerid][Name]);
+	    				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}shortcut team messages.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iString);
 					}
                     ShowConfigDialog(playerid);
@@ -5284,7 +5291,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 					}
 
 					new iStringg[180];
-					format(iStringg, sizeof(iStringg), "{FFFFFF}%s {3377FF}has %s server Anti-Lag.", Player[playerid][Name], (ServerAntiLag == true ? ("{FFFFFF}enabled") : ("{FFFFFF}disabled")));
+					format(iStringg, sizeof(iStringg), "{FFFFFF}%s {E66000}has %s server Anti-Lag.", Player[playerid][Name], (ServerAntiLag == true ? ("{FFFFFF}enabled") : ("{FFFFFF}disabled")));
 					SendClientMessageToAll(-1, iStringg);
 
 					format(iStringg, sizeof(iStringg), "UPDATE Configs SET Value = %d WHERE Option = 'AntiLag'", (ServerAntiLag == false ? 0 : 1));
@@ -5296,11 +5303,11 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				case 16: {
 				    if(ShowIcons == false) {
 					    ShowIcons = true;
-	    				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}skin icons in round stats.", Player[playerid][Name]);
+	    				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}skin icons in round stats.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iString);
 				    } else {
 				        ShowIcons = false;
-	    				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}skin icons in round stats.", Player[playerid][Name]);
+	    				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}skin icons in round stats.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iString);
 					}
                     ShowConfigDialog(playerid);
@@ -5313,8 +5320,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	if(dialogid == DIALOG_CONFIG_SET_TEAM_SKIN) {
 	    if(response) {
 			switch(listitem) {
-				case 0: { ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ATT_SKIN, DIALOG_STYLE_INPUT, "{3377FF}Attacker Name", "{3377FF}Set the attacker skin below:", "OK", "Cancel"); }
-		        case 1: { ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_DEF_SKIN, DIALOG_STYLE_INPUT, "{3377FF}Defender Name", "{3377FF}Set the defender skin below:", "OK", "Cancel"); }
+				case 0: { ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ATT_SKIN, DIALOG_STYLE_INPUT, "{E66000}Attacker Name", "{E66000}Set the attacker skin below:", "OK", "Cancel"); }
+		        case 1: { ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_DEF_SKIN, DIALOG_STYLE_INPUT, "{E66000}Defender Name", "{E66000}Set the defender skin below:", "OK", "Cancel"); }
 			}
 		} else {
             ShowConfigDialog(playerid);
@@ -5325,16 +5332,16 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	    if(response) {
 		    switch(listitem) {
 		        case 0: { // set round health
-		            ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ROUND_HEALTH, DIALOG_STYLE_INPUT, "{3377FF}Round Health", "{3377FF}Set round health:", "OK", "");
+		            ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ROUND_HEALTH, DIALOG_STYLE_INPUT, "{E66000}Round Health", "{E66000}Set round health:", "OK", "");
 		        }
 		        case 1: { // set round armour
-		            ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ROUND_ARMOUR, DIALOG_STYLE_INPUT, "{3377FF}Round Armour", "{3377FF}Set round armour:", "OK", "");
+		            ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ROUND_ARMOUR, DIALOG_STYLE_INPUT, "{E66000}Round Armour", "{E66000}Set round armour:", "OK", "");
 		        }
 		        case 2: { // Round time
-					ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ROUND_TIME, DIALOG_STYLE_INPUT, "{3377FF}Round Time", "{3377FF}Set round time:", "OK", "Cancel");
+					ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ROUND_TIME, DIALOG_STYLE_INPUT, "{E66000}Round Time", "{E66000}Set round time:", "OK", "Cancel");
 		        }
 		        case 3: { // CP time
-		            ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_CP_TIME, DIALOG_STYLE_INPUT, "{3377FF}CP Time", "{3377FF}Set CP time:", "OK", "Cancel");
+		            ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_CP_TIME, DIALOG_STYLE_INPUT, "{E66000}CP Time", "{E66000}Set CP time:", "OK", "Cancel");
 		        }
 			}
 		} else {
@@ -5346,14 +5353,14 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         new Float:hp = floatstr(inputtext);
 		if(hp <= 0 || hp > 100) {
 			SendErrorMessage(playerid,"Health value can be between 0 and 100 maximum.");
-			ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ROUND_HEALTH, DIALOG_STYLE_INPUT, "{3377FF}Round Health", "{3377FF}Set round health:", "OK", "");
+			ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ROUND_HEALTH, DIALOG_STYLE_INPUT, "{E66000}Round Health", "{E66000}Set round health:", "OK", "");
 			return 1;
 		}
 
 		RoundHP = hp;
 
 		new str[150];
-		format(str, sizeof(str), "%s {3377FF}has changed the round health to: {FFFFFF}%0.2f", Player[playerid][Name], RoundHP);
+		format(str, sizeof(str), "%s {E66000}has changed the round health to: {FFFFFF}%0.2f", Player[playerid][Name], RoundHP);
 		SendClientMessageToAll(-1, str);
 
 		format(str, sizeof(str), "UPDATE `Configs` SET `Value` = '%f,%f' WHERE `Option` = 'RoundHPAR'", RoundHP, RoundAR);
@@ -5367,14 +5374,14 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         new Float:hp = floatstr(inputtext);
 		if(hp <= 0 || hp > 100) {
 			SendErrorMessage(playerid,"Armour value can be between 0 and 100 maximum.");
-			ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ROUND_ARMOUR, DIALOG_STYLE_INPUT, "{3377FF}Round Armour", "{3377FF}Set round armour:", "OK", "");
+			ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_ROUND_ARMOUR, DIALOG_STYLE_INPUT, "{E66000}Round Armour", "{E66000}Set round armour:", "OK", "");
 			return 1;
 		}
 
 		RoundAR = hp;
 
 		new str[150];
-		format(str, sizeof(str), "%s {3377FF}has changed the round armour to: {FFFFFF}%0.2f", Player[playerid][Name], RoundAR);
+		format(str, sizeof(str), "%s {E66000}has changed the round armour to: {FFFFFF}%0.2f", Player[playerid][Name], RoundAR);
 		SendClientMessageToAll(-1, str);
 
 		format(str, sizeof(str), "UPDATE `Configs` SET `Value` = '%f,%f' WHERE `Option` = 'RoundHPAR'", RoundHP, RoundAR);
@@ -5421,9 +5428,9 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	    if(response) {
 
 			new str[128];
-			format(str, sizeof(str), "{3377FF}Set Primary weapon for gunmenu ID {FFFFFF}%d", listitem);
+			format(str, sizeof(str), "{E66000}Set Primary weapon for gunmenu ID {FFFFFF}%d", listitem);
 			Player[playerid][LastEditWeaponSlot] = listitem-1;
-			ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_FIRST_WEAPON, DIALOG_STYLE_INPUT, "{3377FF}Set Primary Weapon", str, "OK", "Cancel");
+			ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_FIRST_WEAPON, DIALOG_STYLE_INPUT, "{E66000}Set Primary Weapon", str, "OK", "Cancel");
 		} else {
             ShowConfigDialog(playerid);
 		}
@@ -5434,14 +5441,14 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(!IsNumeric(inputtext)) {
 				SendErrorMessage(playerid,"Invalid weapon ID, find valid weapon id's here: http://wiki.sa-mp.com/wiki/Weapons");
 				new str[128];
-				format(str, sizeof(str), "{3377FF}Set Primary weapon for gunmenu ID {FFFFFF}%d", Player[playerid][LastEditWeaponSlot]+1);
-				ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_FIRST_WEAPON, DIALOG_STYLE_INPUT, "{3377FF}Set Primary Weapon", str, "OK", "Cancel");
+				format(str, sizeof(str), "{E66000}Set Primary weapon for gunmenu ID {FFFFFF}%d", Player[playerid][LastEditWeaponSlot]+1);
+				ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_FIRST_WEAPON, DIALOG_STYLE_INPUT, "{E66000}Set Primary Weapon", str, "OK", "Cancel");
 				return 1;
 			}
 			GunMenuWeapons[Player[playerid][LastEditWeaponSlot]][0] = strval(inputtext);
 			new str[128];
-			format(str, sizeof(str), "{3377FF}Set Secondary weapon for gunmenu ID {FFFFFF}%d", Player[playerid][LastEditWeaponSlot]+1);
-			ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_SECOND_WEAPON, DIALOG_STYLE_INPUT, "{3377FF}Set Secondary Weapon", str, "OK", "");
+			format(str, sizeof(str), "{E66000}Set Secondary weapon for gunmenu ID {FFFFFF}%d", Player[playerid][LastEditWeaponSlot]+1);
+			ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_SECOND_WEAPON, DIALOG_STYLE_INPUT, "{E66000}Set Secondary Weapon", str, "OK", "");
 		} else {
 			ShowConfigDialog(playerid);
 		}
@@ -5452,8 +5459,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(!IsNumeric(inputtext)) {
 				SendErrorMessage(playerid,"Invalid weapon ID, find valid weapon id's here: http://wiki.sa-mp.com/wiki/Weapons");
 				new str[128];
-				format(str, sizeof(str), "{3377FF}Set Secondary weapon for gunmenu ID {FFFFFF}%d", Player[playerid][LastEditWeaponSlot]+1);
-				ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_SECOND_WEAPON, DIALOG_STYLE_LIST, "{3377FF}Set Secondary Weapon", str, "OK", "");
+				format(str, sizeof(str), "{E66000}Set Secondary weapon for gunmenu ID {FFFFFF}%d", Player[playerid][LastEditWeaponSlot]+1);
+				ShowPlayerDialog(playerid, DIALOG_CONFIG_SET_SECOND_WEAPON, DIALOG_STYLE_LIST, "{E66000}Set Secondary Weapon", str, "OK", "");
 				return 1;
 			}
 			GunMenuWeapons[Player[playerid][LastEditWeaponSlot]][1] = strval(inputtext);
@@ -5789,14 +5796,14 @@ public OnPlayerClickTextDraw(playerid, Text:clickedid)
 	}
 */
 	if(clickedid == RoundsPlayed) {
-		iString = "{3377FF}Enter current round or total rounds to be played:";
-	    ShowPlayerDialog(playerid, DIALOG_CURRENT_TOTAL, DIALOG_STYLE_INPUT,"{3377FF}Rounds Dialog",iString,"Current","Total");
+		iString = "{E66000}Enter current round or total rounds to be played:";
+	    ShowPlayerDialog(playerid, DIALOG_CURRENT_TOTAL, DIALOG_STYLE_INPUT,"{E66000}Rounds Dialog",iString,"Current","Total");
 	    return 1;
 	}
 
 	if(clickedid == TeamScoreText) {
-	    iString = "{3377FF}Team Names\n{3377FF}Team Scores\n{3377FF}Reset Scores";
-	    ShowPlayerDialog(playerid, DIALOG_TEAM_SCORE, DIALOG_STYLE_LIST,"{3377FF}Team Dialog",iString,"Select","Close");
+	    iString = "{E66000}Team Names\n{E66000}Team Scores\n{E66000}Reset Scores";
+	    ShowPlayerDialog(playerid, DIALOG_TEAM_SCORE, DIALOG_STYLE_LIST,"{E66000}Team Dialog",iString,"Select","Close");
 		return 1;
 	}
 
@@ -5829,10 +5836,10 @@ public OnPlayerClickTextDraw(playerid, Text:clickedid)
 			    Player[i][TotalshotsHit] = 0;
 			}
 
-			iString = "{3377FF}Enter {FFFFFF}Attacker {3377FF}Team Name Below:";
-	    	ShowPlayerDialog(playerid, DIALOG_ATT_NAME, DIALOG_STYLE_INPUT,"{3377FF}Attacker Team Name",iString,"Next","Close");
+			iString = "{E66000}Enter {FFFFFF}Attacker {E66000}Team Name Below:";
+	    	ShowPlayerDialog(playerid, DIALOG_ATT_NAME, DIALOG_STYLE_INPUT,"{E66000}Attacker Team Name",iString,"Next","Close");
 		} else {
-	    	ShowPlayerDialog(playerid, DIALOG_WAR_RESET, DIALOG_STYLE_MSGBOX,"{3377FF}War Dialog","{3377FF}Are you sure you want to turn War Mode off?","Yes","No");
+	    	ShowPlayerDialog(playerid, DIALOG_WAR_RESET, DIALOG_STYLE_MSGBOX,"{E66000}War Dialog","{E66000}Are you sure you want to turn War Mode off?","Yes","No");
 		}
 
 		return 1;
@@ -5840,7 +5847,7 @@ public OnPlayerClickTextDraw(playerid, Text:clickedid)
 
 	if(clickedid == LockServerTD) {
 		if(ServerLocked == false) {
-		   ShowPlayerDialog(playerid, DIALOG_SERVER_PASS, DIALOG_STYLE_INPUT,"{3377FF}Server Password","{3377FF}Enter server password below:", "Ok","Close");
+		   ShowPlayerDialog(playerid, DIALOG_SERVER_PASS, DIALOG_STYLE_INPUT,"{E66000}Server Password","{E66000}Enter server password below:", "Ok","Close");
 		} else {
 			iString = "password 0";
 			SendRconCommand(iString);
@@ -5851,7 +5858,7 @@ public OnPlayerClickTextDraw(playerid, Text:clickedid)
 			ServerLocked = false;
 			PermLocked = false;
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has unlocked the server.", Player[playerid][Name]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has unlocked the server.", Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 		}
 		return 1;
@@ -5923,7 +5930,7 @@ public OnHashUpdate(const iIdx, szHash[]) {
 	    format(query, sizeof(query), "INSERT INTO Players (Name, Password, Level, Weather, Time, ChatChannel, NetCheck, Widescreen, HitSound, GetHitSound) VALUES('%s', '%s', 0, 0, 12, -1, 1, 0, 17802, 1131)", DB_Escape(Player[playerid][Name]), szHash);
 		db_free_result(db_query(sqliteconnection, query));
 //		SendClientMessage(playerid, -1, "Level: 0 | Weather: 0 | Time: 12 | Chat Channel: -1 | Net Check: 1 | HitSound: 17802 | Get HitSound: 1131");
-		SendClientMessage(playerid, -1, "{3377FF}Type {FFFFFF}/cmds {3377FF}for commands, and {FFFFFF}/updates {3377FF}for latest gamemode updates.");
+		SendClientMessage(playerid, -1, "{E66000}Type {FFFFFF}/cmds {E66000}for commands, and {FFFFFF}/updates {E66000}for latest gamemode updates.");
 
 
 	} else { // login
@@ -6056,7 +6063,7 @@ public OnPlayerCommandReceived(playerid, cmdtext[])
 	 	if(strcmp(CmdText, "/rq", true) == 0) return 1;
 //	 	else {
 	 	else if(Player[playerid][Level] < 3 && !IsPlayerAdmin(playerid)) {
-	 		SendErrorMessage(playerid, "Can't use any command in duel. Type {FFFFFF}/rq {3377FF}to quit duel.");
+	 		SendErrorMessage(playerid, "Can't use any command in duel. Type {FFFFFF}/rq {E66000}to quit duel.");
 			return 0;
 		}
 	}
@@ -6073,7 +6080,7 @@ public OnPlayerCommandPerformed(playerid, cmdtext[], success)
 {
 	if(success == 0) { // If the command does not exist or returned 0
 		new iString[140];
-	    format(iString, sizeof(iString), "{FFFFFF}ERROR: {3377FF}Command \"{FFFFFF}%s\" {3377FF}is unknown. Available command list: {FFFFFF}/cmds, /acmds", cmdtext);
+	    format(iString, sizeof(iString), "{FFFFFF}ERROR: {E66000}Command \"{FFFFFF}%s\" {E66000}is unknown. Available command list: {FFFFFF}/cmds, /acmds", cmdtext);
 		SendClientMessage(playerid, -1, iString);
 	}
 
@@ -6211,7 +6218,7 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Textdraws improved by 062_");
 	strcat(string, "\n{FFFFFF}- F4 class selection bug fixed by Whitetiger");*/
 
-	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,"{3377FF}Attack-Defend Updates", string, "OK","");
+	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,"{E66000}Attack-Defend Updates", string, "OK","");
 	return 1;
 }
 
@@ -6224,29 +6231,29 @@ CMD:cmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}Use {FFFF00}! {FFFFFF}for team chat");
 	strcat(string, "\n{FFFFFF}Press {FFFF00}N {FFFFFF}to request for backup in a round");
 
-	strcat(string, "\n\n{3377FF}Basic commands:");
+	strcat(string, "\n\n{E66000}Basic commands:");
 	strcat(string, "\n{FFFFFF}/help   /updates   /s(ync)   /v   /car   /spec   /specoff   /kill   /severstats   /sstats");
 	strcat(string, "\n{FFFFFF}/radio   /lobby   /switch   /afk   /back   /dance   /showagain   /lastplayed   /rounds   /getgun");
 
-	strcat(string, "\n\n{3377FF}DM commands:");
+	strcat(string, "\n\n{E66000}DM commands:");
 	strcat(string, "\n{FFFFFF}/dm   /vworld   /heal   /dmq   /antilag   /headshot");
 
-	strcat(string, "\n\n{3377FF}Duel commands:");
+	strcat(string, "\n\n{E66000}Duel commands:");
 	strcat(string, "\n{FFFFFF}/duel   /yes   /no   /rq");
 
-	strcat(string, "\n\n{3377FF}Base commands:");
+	strcat(string, "\n\n{E66000}Base commands:");
 	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr   /fix   /para   /vote   /voteint");
 
-	strcat(string, "\n\n{3377FF}Player profile commands:");
+	strcat(string, "\n\n{E66000}Player profile commands:");
 	strcat(string, "\n{FFFFFF}/weather (/w)   /time (/t)   /changepass   /sound   /testsound   /textdraw   /togspec(all)   /shortcuts");
 
-	strcat(string, "\n\n{3377FF}Chat-related commands:");
-	strcat(string, "\n{FFFFFF}/pm   /r   /blockpm(all)   /nopm(all)   /cchannel   /pchannel   Use {3377FF}# {FFFFFF}to talk in chat channel");
+	strcat(string, "\n\n{E66000}Chat-related commands:");
+	strcat(string, "\n{FFFFFF}/pm   /r   /blockpm(all)   /nopm(all)   /cchannel   /pchannel   Use {E66000}# {FFFFFF}to talk in chat channel");
 
-	strcat(string, "\n\n{3377FF}Other commands:");
+	strcat(string, "\n\n{E66000}Other commands:");
 	strcat(string, "\n{FFFFFF}/admins   /credits   /view   /getpos   /serverpassword   /sp   /settings   /freecam   /porn   /int");
 
-	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,"{3377FF}Player Commands", string, "OK","");
+	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,"{E66000}Player Commands", string, "OK","");
 	return 1;
 }
 
@@ -6258,36 +6265,36 @@ CMD:acmds(playerid, params[])
 	string = "";
 	strcat(string, "{00CC00}@ {FFFFFF}for admin chat");
 
-	strcat(string, "\n\n{3377FF}Level 1:");
+	strcat(string, "\n\n{E66000}Level 1:");
 	strcat(string, "\n{FFFFFF}/add   /remove   /readd   /addall   /replace   /random   /randomint   /start   /war   /teamskin   /defaultskins   /rr   /givemenu");
 	strcat(string, "\n{FFFFFF}/match   /select   /pause   /unpause   /balance   /swap   /setteam   /lock   /unlock   /weaponlimit   /spas   /setradio   /lobbyguns");
 	strcat(string, "\n{FFFFFF}/sethp   /setarmour   /healall   /hl   /armourall  /al   /teamname   /allvs   /setscore   /resetscores   /netcheck   /nolag");
 	strcat(string, "\n{FFFFFF}/jetpack   /teamdmg   /showspectateinfo   /resetallguns   /tr   /cr   /setafk   /move   /goto   /get   /roundtime   /cptime   /shortcuts");
 	strcat(string, "\n{FFFFFF}/cc   /minfps   /maxping   /maxpacket   /giveallgun   /givegun   /giveweapon   /freeze   /unfreeze   /autobalance   /antispam   /autopause");
 
-	strcat(string, "\n{FFFFFF}/ra /rb /rt {CACACA}(random arena/base/TDM)");
+	strcat(string, "\n{FFFFFF}/ra /rb /rt {CACACA}(random arena/base/TDM)	{FFFFFF}/MaxTdmKills");
 
 	if(Player[playerid][Level] > 1) {
-		strcat(string, "\n\n{3377FF}Level 2:");
+		strcat(string, "\n\n{E66000}Level 2:");
 		strcat(string, "\n{FFFFFF}/mute   /unmute   /slap   /explode   /asay   /ann");
 	}
 
 	if(Player[playerid][Level] > 2) {
-		strcat(string, "\n\n{3377FF}Level 3:");
+		strcat(string, "\n\n{E66000}Level 3:");
 		strcat(string, "\n{FFFFFF}/kick   /ban   /unbanip   /ac   /end   /limit   /muteall   /unmuteall   /skinicons   /aka");
 	}
 
 	if(Player[playerid][Level] > 3) {
-		strcat(string, "\n\n{3377FF}Level 4:");
+		strcat(string, "\n\n{E66000}Level 4:");
 		strcat(string, "\n{FFFFFF}/acar   /banip   /mainspawn");
 	}
 
 	if(Player[playerid][Level] > 4) {
-		strcat(string, "\n\n{3377FF}Level 5:");
+		strcat(string, "\n\n{E66000}Level 5:");
 		strcat(string, "\n{FFFFFF}/setlevel   /config   /base   /website   /themes   /deleteacc   /setacclevel  /permac  /permlock");
 	}
 
-	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,"{3377FF}Admin Commands", string, "OK","");
+	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,"{E66000}Admin Commands", string, "OK","");
 	return 1;
 }
 
@@ -6350,12 +6357,12 @@ CMD:credits(playerid, params[])
 
 	string = "";
 	strcat(string, "{00BBFF}Creators: {FFFFFF}062_ & Whitetiger");
-	strcat(string, "\n{00BBFF}Dev Team: {FFFFFF}062_, Whitetiger, [KHK]Khalid, X.K, and Niko_Boy");
+	strcat(string, "\n{00BBFF}Dev Team: {FFFFFF}062_, Whitetiger, [KHK]Khalid, X.K, and Niko_boy");
 	strcat(string, "\n{00BBFF}Most of textdraws by: {FFFFFF}Insanity & Niko_boy");
 	strcat(string, "\n{00BBFF}Allowed By: {FFFFFF}Deloera");
 	strcat(string, "\n\n{FFFFFF}For suggestions and bug reports, visit: {00BBFF}https://sixtytiger.com/forum/index.php?board=15.0");
 
-	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,"{3377FF}Credits", string, "OK","");
+	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,"{E66000}Credits", string, "OK","");
 	return 1;
 }
 
@@ -6364,12 +6371,12 @@ CMD:settings(playerid, params[])
 {
 	new string[200];
 
-	SendClientMessage(playerid, -1, "{3377FF}Server settings:");
-	format(string, sizeof(string), "{FFFFFF}CP Time = {3377FF}%d {FFFFFF}seconds | Round Time = {3377FF}%d {FFFFFF}minutes | Anti-Cheat = %s", ConfigCPTime, ConfigRoundTime, (AntiCheat == true ? ("{66FF66}Enabled") : ("{FF6666}Disabled")));
+	SendClientMessage(playerid, -1, "{E66000}Server settings:");
+	format(string, sizeof(string), "{FFFFFF}CP Time = {E66000}%d {FFFFFF}seconds | Round Time = {E66000}%d {FFFFFF}minutes | Anti-Cheat = %s", ConfigCPTime, ConfigRoundTime, (AntiCheat == true ? ("{66FF66}Enabled") : ("{FF6666}Disabled")));
 	SendClientMessage(playerid, -1, string);
-	format(string, sizeof(string), "{FFFFFF}Attacker Skin = {3377FF}%d {FFFFFF}| Defender Skin = {3377FF}%d {FFFFFF}| Referee Skin = {3377FF}%d", Skin[ATTACKER], Skin[DEFENDER], Skin[REFEREE]);
+	format(string, sizeof(string), "{FFFFFF}Attacker Skin = {E66000}%d {FFFFFF}| Defender Skin = {E66000}%d {FFFFFF}| Referee Skin = {E66000}%d", Skin[ATTACKER], Skin[DEFENDER], Skin[REFEREE]);
 	SendClientMessage(playerid, -1, string);
-	format(string, sizeof(string), "{FFFFFF}Min FPS = {3377FF}%d {FFFFFF}| Max Ping = {3377FF}%d {FFFFFF}| Max Packetloss = {3377FF}%.2f", Min_FPS, Max_Ping, Float:Max_Packetloss);
+	format(string, sizeof(string), "{FFFFFF}Min FPS = {E66000}%d {FFFFFF}| Max Ping = {E66000}%d {FFFFFF}| Max Packetloss = {E66000}%.2f", Min_FPS, Max_Ping, Float:Max_Packetloss);
 	SendClientMessage(playerid, -1, string);
 #if SKINICONS == 1
 	format(string, sizeof(string), "{FFFFFF}Skin Icons = %s {FFFFFF}| Auto-Balance = %s {FFFFFF}| Anti-Spam = %s", (ShowIcons == true ? ("{66FF66}Enabled") : ("{FF6666}Disabled")), (AutoBal == true ? ("{66FF66}Enabled") : ("{FF6666}Disabled")), (AntiSpam == true ? ("{66FF66}Enabled") : ("{FF6666}Disabled")));
@@ -6390,7 +6397,7 @@ CMD:getgun(playerid, params[])
 {
 	if(LobbyGuns == false) return SendErrorMessage(playerid,"Guns in lobby are disabled.");
 	if(Player[playerid][Playing] == true) return SendErrorMessage(playerid,"Can't use this command while playing.");
-	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
 	if(Player[playerid][InDM] == true) return SendErrorMessage(playerid,"Can't use this command during DM.");
 	if(Player[playerid][InHeadShot] == true) return SendErrorMessage(playerid,"Can't use this command in headshot zone.");
 	if(Player[playerid][AntiLag] == true) return SendErrorMessage(playerid,"Can't use this command in anti-lag zone.");
@@ -6411,7 +6418,7 @@ CMD:getgun(playerid, params[])
 
 	GivePlayerWeapon(playerid, WeaponID, Ammo);
 
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has given himself {FFFFFF}%s {3377FF}with {FFFFFF}%d {3377FF}ammo.", Player[playerid][Name], WeaponNames[WeaponID], Ammo);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has given himself {FFFFFF}%s {E66000}with {FFFFFF}%d {E66000}ammo.", Player[playerid][Name], WeaponNames[WeaponID], Ammo);
 	SendClientMessageToAll(-1, iString);
 
 	return 1;
@@ -6425,12 +6432,12 @@ CMD:lobbyguns(playerid, params[])
 
 	if(LobbyGuns == true) {
 		LobbyGuns = false;
-    	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}guns in lobby.", Player[playerid][Name]);
+    	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}guns in lobby.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 
 	} else {
 		LobbyGuns = true;
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}guns in lobby.", Player[playerid][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}guns in lobby.", Player[playerid][Name]);
         SendClientMessageToAll(-1, iString);
 	}
 	LogAdminCommand("lobbyguns", playerid, INVALID_PLAYER_ID);
@@ -6447,12 +6454,12 @@ CMD:autopause(playerid, params[])
 
  	if(AutoPause == true) {
 		AutoPause = false;
-    	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}Auto-Pause on player disconnect in war mode.", Player[playerid][Name]);
+    	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}Auto-Pause on player disconnect in war mode.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 
 	} else {
 		AutoPause = true;
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}Auto-Pause on player disconnect in war mode.", Player[playerid][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}Auto-Pause on player disconnect in war mode.", Player[playerid][Name]);
         SendClientMessageToAll(-1, iString);
 	}
     LogAdminCommand("autopause", playerid, INVALID_PLAYER_ID);
@@ -6478,7 +6485,7 @@ CMD:ann(playerid, params[])
 	if(!IsSafeGametext(str))
 	{
 	    SendErrorMessage(playerid, "You're probably missing a '~' which can crash you and/or other clients!");
-        SendClientMessage(playerid, -1, "{FFFFFF}Note: {3377FF}Always leave a space between a '~' and the character 'K'");
+        SendClientMessage(playerid, -1, "{FFFFFF}Note: {E66000}Always leave a space between a '~' and the character 'K'");
 		return 1;
 	}
 
@@ -6488,7 +6495,7 @@ CMD:ann(playerid, params[])
 	TextDrawShowForAll(AnnTD);
 	AnnTimer = SetTimer("HideAnnForAll", 3000, false);
 
-	format(str, sizeof(str), "{FFFFFF}%s {3377FF}made an announcement.", Player[playerid][Name]);
+	format(str, sizeof(str), "{FFFFFF}%s {E66000}made an announcement.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, str);
     LogAdminCommand("ann", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -6499,7 +6506,7 @@ CMD:freecam(playerid, params[])
 {
 	if(Player[playerid][Playing] == true) return 1;
 	if(Player[playerid][InDM] == true) return 1;
-	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
 	if(Player[playerid][AntiLag] == true) return 1;
 	if(Player[playerid][InHeadShot] == true) return 1;
 	if(Player[playerid][Spectating] == true) return 1;
@@ -6540,12 +6547,12 @@ CMD:antispam(playerid, params[])
 
  	if(AntiSpam == true) {
 		AntiSpam = false;
-    	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}anti-spam.", Player[playerid][Name]);
+    	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}anti-spam.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 
 	} else {
 		AntiSpam = true;
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}anti-spam.", Player[playerid][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}anti-spam.", Player[playerid][Name]);
         SendClientMessageToAll(-1, iString);
 	}
     LogAdminCommand("antispam", playerid, INVALID_PLAYER_ID);
@@ -6562,12 +6569,12 @@ CMD:autobalance(playerid, params[])
 
  	if(AutoBal == true) {
 		AutoBal = false;
-    	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}auto-balance in non war mode.", Player[playerid][Name]);
+    	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}auto-balance in non war mode.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 
 	} else {
 		AutoBal = true;
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}auto-balance in non war mode.", Player[playerid][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}auto-balance in non war mode.", Player[playerid][Name]);
         SendClientMessageToAll(-1, iString);
 	}
     LogAdminCommand("autobalance", playerid, INVALID_PLAYER_ID);
@@ -6605,7 +6612,7 @@ CMD:gmx(playerid, params[])
 	if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a level 5 admin to do that.");
 
 	new iString[128];
-	format(iString, sizeof(iString), "{FFFFFF}%s (%d) {3377FF}has restarted server", Player[playerid][Name], playerid);
+	format(iString, sizeof(iString), "{FFFFFF}%s (%d) {E66000}has restarted server", Player[playerid][Name], playerid);
 	SendClientMessageToAll(-1, iString);
 
     LogAdminCommand("gmx", playerid, INVALID_PLAYER_ID);
@@ -6633,7 +6640,7 @@ CMD:website(playerid, params[])
 	if(!IsSafeGametext(str))
 	{
 	    SendErrorMessage(playerid, "You're probably missing a '~' which can crash you and/or other clients!");
-        SendClientMessage(playerid, -1, "{FFFFFF}Note: {3377FF}Always leave a space between a '~' and the character 'K'");
+        SendClientMessage(playerid, -1, "{FFFFFF}Note: {E66000}Always leave a space between a '~' and the character 'K'");
 		return 1;
 	}
 	format(WebString, 128, str);
@@ -6644,7 +6651,7 @@ CMD:website(playerid, params[])
 
 	TextDrawSetString(WebText, WebString);
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed Website text.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed Website text.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("website", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -6678,7 +6685,7 @@ CMD:banip(playerid,params[])
 	SendRconCommand("reloadbans");
 
 	new iString2[128];
-	format(iString2, sizeof(iString2), "%s%s (%d) {3377FF}has banned IP: {FFFFFF}%s", TextColor[Player[playerid][Team]], Player[playerid][Name], playerid, params);
+	format(iString2, sizeof(iString2), "%s%s (%d) {E66000}has banned IP: {FFFFFF}%s", TextColor[Player[playerid][Team]], Player[playerid][Name], playerid, params);
 	SendClientMessageToAll(-1, iString2);
     LogAdminCommand("banip", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -6707,14 +6714,14 @@ CMD:spas(playerid, params[])
 			format(string,sizeof(string),"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",WeaponLimit[0],WeaponLimit[1],WeaponLimit[2],WeaponLimit[3],WeaponLimit[4],WeaponLimit[5],WeaponLimit[6],WeaponLimit[7],WeaponLimit[8],WeaponLimit[9]);
 			format(iString, sizeof(iString), "UPDATE Configs SET Value = '%s' WHERE Option = 'Weapon Limits'", string);
 			db_free_result(db_query(sqliteconnection, iString));
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed {FFFFFF}| Spas - Rifle | {3377FF}limit to {FFFFFF}1", Player[playerid][Name]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed {FFFFFF}| Spas - Rifle | {E66000}limit to {FFFFFF}1", Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 		} case 2: {
 		    WeaponLimit[8] = 0;
    			format(string,sizeof(string),"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",WeaponLimit[0],WeaponLimit[1],WeaponLimit[2],WeaponLimit[3],WeaponLimit[4],WeaponLimit[5],WeaponLimit[6],WeaponLimit[7],WeaponLimit[8],WeaponLimit[9]);
 			format(iString, sizeof(iString), "UPDATE Configs SET Value = '%s' WHERE Option = 'Weapon Limits'", string);
 			db_free_result(db_query(sqliteconnection, iString));
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed {FFFFFF}| Spas - Rifle | {3377FF}limit to {FFFFFF}0", Player[playerid][Name]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed {FFFFFF}| Spas - Rifle | {E66000}limit to {FFFFFF}0", Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 		}
 	}
@@ -6727,18 +6734,18 @@ CMD:lobby(playerid, params[])
 	new iString[180];
 
 	if(Player[playerid][InDM] == true) QuitDM(playerid);
-   	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+   	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
    	if(Player[playerid][InHeadShot] == true) {
 	    Player[playerid][InHeadShot] = false;
 
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has quit the HeadShot zone.", Player[playerid][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has quit the HeadShot zone.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 	}
 
 	if(Player[playerid][AntiLag] == true) {
 	    Player[playerid][AntiLag] = false;
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has quit the Anti-Lag zone.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has quit the Anti-Lag zone.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 	}
 
@@ -6747,7 +6754,7 @@ CMD:lobby(playerid, params[])
 		new Float:HP[2];
 		GetPlayerHealth(playerid, HP[0]);
 		GetPlayerArmour(playerid, HP[1]);
-		format(iString, sizeof(iString), "{FFFFFF}%s (%d) {3377FF}has removed himself from the round. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, HP[0], HP[1]);
+		format(iString, sizeof(iString), "{FFFFFF}%s (%d) {E66000}has removed himself from the round. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, HP[0], HP[1]);
 		SendClientMessageToAll(-1, iString);
         RemovePlayerFromRound(playerid);
         FixVsTextDraw();
@@ -6923,12 +6930,12 @@ CMD:skinicons(playerid, params[])
  	if(ShowIcons == true) {
 		ShowIcons = false;
         if(Current != -1) HideAllForAll();
-    	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}skin icons in round stats", Player[playerid][Name], playerid);
+    	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}skin icons in round stats", Player[playerid][Name], playerid);
 		SendClientMessageToAll(-1, iString);
 	} else {
 		ShowIcons = true;
         if(Current != -1) UpdateAliveForAll();
-    	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}skin icons in round stats", Player[playerid][Name], playerid);
+    	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}skin icons in round stats", Player[playerid][Name], playerid);
 		SendClientMessageToAll(-1, iString);
 	}
 	return 1;
@@ -6939,10 +6946,10 @@ CMD:skinicons(playerid, params[])
 //radio
 CMD:radio(playerid, params[])
 {
-   	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/radio [1 - 10] {FFFFFF}to change radio. {3377FF}/radio 0 {FFFFFF}to turn off radio");
+   	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/radio [1 - 10] {FFFFFF}to change radio. {E66000}/radio 0 {FFFFFF}to turn off radio");
 
 	new CommandID = strval(params);
-	if(CommandID < 0 || CommandID > 10) return SendUsageMessage(playerid,"/radio [1 - 10] {FFFFFF}to change radio. {3377FF}/radio 0 {FFFFFF}to turn off radio");
+	if(CommandID < 0 || CommandID > 10) return SendUsageMessage(playerid,"/radio [1 - 10] {FFFFFF}to change radio. {E66000}/radio 0 {FFFFFF}to turn off radio");
 
 	switch(CommandID) {
 		case 0: {
@@ -7062,7 +7069,7 @@ CMD:setradio(playerid, params[])
 		}
 	}
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed Radio %d link to: {FFFFFF}%s", Player[playerid][Name], Param, link);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed Radio %d link to: {FFFFFF}%s", Player[playerid][Name], Param, link);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("setradio", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -7116,7 +7123,7 @@ CMD:limit(playerid, params[])
 				}
 			}
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed weather limit to: {FFFFFF}%d", Player[playerid][Name], WeatherLimit);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed weather limit to: {FFFFFF}%d", Player[playerid][Name], WeatherLimit);
 			SendClientMessageToAll(-1, iString);
 
 	    } case 2: { //Time
@@ -7144,7 +7151,7 @@ CMD:limit(playerid, params[])
 				}
 			}
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed time limit to: {FFFFFF}%d",Player[playerid][Name], TimeLimit);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed time limit to: {FFFFFF}%d",Player[playerid][Name], TimeLimit);
 			SendClientMessageToAll(-1, iString);
 	    }
 	}
@@ -7168,10 +7175,10 @@ CMD:eslac(playerid, params[])
 
 	if(ESLAC == 1) {
 	    ESLAC = 0;
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has disabled Anticheat from configs.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has disabled Anticheat from configs.", Player[playerid][Name]);
 	} else {
 	    ESLAC = 1;
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has enabled Anticheat from configs.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has enabled Anticheat from configs.", Player[playerid][Name]);
 	}
 	SendClientMessageToAll(-1, iString);
 
@@ -7256,7 +7263,7 @@ CMD:base(playerid, params[])
 			format(iString, sizeof(iString), "INSERT INTO Bases (ID, AttSpawn, CPSpawn, DefSpawn, Interior, Name) VALUES (%d, 0, 0, 0, 0, 'No Name')", BaseID);
 			db_free_result(db_query(sqliteconnection, iString));
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has created {FFFFFF}Base ID: %d", Player[playerid][Name], BaseID);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has created {FFFFFF}Base ID: %d", Player[playerid][Name], BaseID);
 			SendClientMessageToAll(-1, iString);
 
 			LoadBases();
@@ -7277,7 +7284,7 @@ CMD:base(playerid, params[])
 			format(iString, sizeof(iString), "UPDATE Bases SET AttSpawn = '%s' WHERE ID = %d", PositionA, baseid);
 			db_free_result(db_query(sqliteconnection, iString));
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has configured Attacker position for {FFFFFF}Base ID: %d", Player[playerid][Name], baseid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has configured Attacker position for {FFFFFF}Base ID: %d", Player[playerid][Name], baseid);
 			SendClientMessageToAll(-1, iString);
 
 			LoadBases();
@@ -7298,7 +7305,7 @@ CMD:base(playerid, params[])
 			format(iString, sizeof(iString), "UPDATE Bases SET DefSpawn = '%s' WHERE ID = %d", PositionB, baseid);
 			db_free_result(db_query(sqliteconnection, iString));
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has configured Defender position for {FFFFFF}Base ID: %d", Player[playerid][Name], baseid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has configured Defender position for {FFFFFF}Base ID: %d", Player[playerid][Name], baseid);
 			SendClientMessageToAll(-1, iString);
 
 			LoadBases();
@@ -7319,7 +7326,7 @@ CMD:base(playerid, params[])
 			format(iString, sizeof(iString), "UPDATE Bases SET CPSpawn = '%s', Interior = %d WHERE ID = %d", cp, GetPlayerInterior(playerid), baseid);
 			db_free_result(db_query(sqliteconnection, iString));
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has configured CP/Interior position for {FFFFFF}Base ID: %d", Player[playerid][Name], baseid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has configured CP/Interior position for {FFFFFF}Base ID: %d", Player[playerid][Name], baseid);
 			SendClientMessageToAll(-1, iString);
 
 			LoadBases();
@@ -7337,7 +7344,7 @@ CMD:base(playerid, params[])
 			format(iString, sizeof(iString), "UPDATE Bases SET Name = '%s' WHERE ID = %d", BaseName, baseid);
 			db_free_result(db_query(sqliteconnection, iString));
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has configured Name for {FFFFFF}Base ID: %d", Player[playerid][Name], baseid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has configured Name for {FFFFFF}Base ID: %d", Player[playerid][Name], baseid);
 			SendClientMessageToAll(-1, iString);
 
 			LoadBases();
@@ -7354,7 +7361,7 @@ CMD:base(playerid, params[])
 			format(iString, sizeof(iString), "DELETE FROM Bases WHERE ID = %d", baseid);
 			db_free_result(db_query(sqliteconnection, iString));
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has deleted {FFFFFF}Base ID: %d", Player[playerid][Name], baseid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has deleted {FFFFFF}Base ID: %d", Player[playerid][Name], baseid);
 			SendClientMessageToAll(-1, iString);
 
 			LoadBases();
@@ -7373,7 +7380,7 @@ CMD:map(playerid, params[])
 {
 	if(Player[playerid][Playing] == true) return SendErrorMessage(playerid,"Can't use this command while playing.");
 	if(Player[playerid][InDM] == true) return SendErrorMessage(playerid,"Can't use this command while in DM.");
-	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
 	if(Player[playerid][Spectating] == true) return SendErrorMessage(playerid,"Can't use this command while spectating.");
 	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/map [Map ID]");
 
@@ -7401,7 +7408,7 @@ CMD:map(playerid, params[])
 	SetPlayerVirtualWorld(playerid, 0);
 
 	new iString[160];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has teleported to Map {FFFFFF}(ID: %d | /map).", Player[playerid][Name], Map);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has teleported to Map {FFFFFF}(ID: %d | /map).", Player[playerid][Name], Map);
 	SendClientMessageToAll(-1, iString);
 
 
@@ -7432,13 +7439,13 @@ CMD:permlock(playerid, params[])
 	    if(PermLocked == true)
 		{
 			PermLocked = false;
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has made the server lock permanent!",Player[playerid][Name]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has made the server lock permanent!",Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 		}
 		else
 		{
 		    PermLocked = true;
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has disabled the server permanent lock!",Player[playerid][Name]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has disabled the server permanent lock!",Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 		}
 	}
@@ -7465,7 +7472,7 @@ CMD:lock(playerid, params[])
 		format(iString, sizeof(iString), "%sServer Pass: ~r~%s", MAIN_TEXT_COLOUR, params);
 		TextDrawSetString(LockServerTD, iString);
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has locked the server. Password: {FFFFFF}%s",Player[playerid][Name], params);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has locked the server. Password: {FFFFFF}%s",Player[playerid][Name], params);
 		SendClientMessageToAll(-1, iString);
 
 	} else {
@@ -7476,7 +7483,7 @@ CMD:lock(playerid, params[])
 		ServerLocked = false;
 		PermLocked = false;
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has unlocked the server.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has unlocked the server.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 	}
     LogAdminCommand("lock", playerid, INVALID_PLAYER_ID);
@@ -7495,7 +7502,7 @@ CMD:unlock(playerid, params[])
 	ServerLocked = false;
 	PermLocked = false;
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has unlocked the server.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has unlocked the server.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("unlock", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -7530,7 +7537,7 @@ CMD:resetscores(playerid, params[])
 	    Player[i][TotalshotsHit] = 0;
 	}
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has resetted the scores.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has resetted the scores.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 	return 1;
 }
@@ -7577,7 +7584,7 @@ CMD:eslcmds(playerid, params[])
 CMD:topversus(playerid, params[])
 {
     StatsString = "";
-	strcat(StatsString, "{3377FF}Rank\t\tKills\t\tDeaths\t\tDamage\tRounds\t\tRounds\t\tRounds\t\tMatches\tMatches\tMatches\tAverage\tName\n");
+	strcat(StatsString, "{E66000}Rank\t\tKills\t\tDeaths\t\tDamage\tRounds\t\tRounds\t\tRounds\t\tMatches\tMatches\tMatches\tAverage\tName\n");
 	strcat(StatsString, "\t\t\t\t\t\t\t\tPlayed\t\tWon\t\tLost\t\tPlayed\t\tWon\t\tLost\t\tDamage\t\t\n");
     strcat(StatsString, "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
 
@@ -7596,7 +7603,7 @@ CMD:topversus(playerid, params[])
 	ShowPlayerDialog(playerid,DIALOG_VERSUS_STATS ,DIALOG_STYLE_MSGBOX,"{FFFFFF}VERSUS Stats", StatsString,"Close","");
 
 	new iString[150];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has opened VERSUS stats. Use {FFFFFF}/topversus {3377FF}for VERSUS stats.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has opened VERSUS stats. Use {FFFFFF}/topversus {E66000}for VERSUS stats.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 
 	return 1;
@@ -7605,7 +7612,7 @@ CMD:topversus(playerid, params[])
 CMD:topduels(playerid, params[])
 {
     StatsString = "";
-	strcat(StatsString, "{3377FF}Rank\t\tKills\t\tDeaths\t\tDamage\tRounds\t\tRounds\t\tRounds\t\tDuels\t\tDuels\t\tDuels\t\tAverage\tName\n");
+	strcat(StatsString, "{E66000}Rank\t\tKills\t\tDeaths\t\tDamage\tRounds\t\tRounds\t\tRounds\t\tDuels\t\tDuels\t\tDuels\t\tAverage\tName\n");
 	strcat(StatsString, "\t\t\t\t\t\t\t\tPlayed\t\tWon\t\tLost\t\tPlayed\t\tWon\t\tLost\t\tDamage\t\t\n");
     strcat(StatsString, "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
 
@@ -7622,7 +7629,7 @@ CMD:topduels(playerid, params[])
 	ShowPlayerDialog(playerid,DIALOG_DUEL_STATS ,DIALOG_STYLE_MSGBOX,"{FFFFFF}VERSUS Stats", StatsString,"Close","");
 
 	new iString[150];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has opened Duel stats. Use {FFFFFF}/topduels {3377FF}for Duel stats.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has opened Duel stats. Use {FFFFFF}/topduels {E66000}for Duel stats.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 
 	return 1;
@@ -7667,7 +7674,7 @@ CMD:view(playerid, params[])
 	    Player[playerid][InDM] = false;
     	Player[playerid][DMReadd] = 0;
 	}
-	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
 
 	Player[playerid][AntiLag] = false;
 	Player[playerid][InHeadShot] = false;
@@ -7689,7 +7696,7 @@ CMD:view(playerid, params[])
 			format(iString, sizeof(iString), "%sBase ~n~%s%s (ID: ~r~~h~%d%s)", MAIN_TEXT_COLOUR, MAIN_TEXT_COLOUR, BName[Round], Round, MAIN_TEXT_COLOUR);
 			PlayerTextDrawSetString(playerid, TD_RoundSpec, iString);
 
-	    	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}is spectating Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[Round], Round);
+	    	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}is spectating Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[Round], Round);
 	    } case 2: { // Arena
 			if(Round > MAX_ARENAS) return SendErrorMessage(playerid,"That arena does not exist.");
 			if(!AExist[Round]) return SendErrorMessage(playerid,"That arena does not exist.");
@@ -7703,7 +7710,7 @@ CMD:view(playerid, params[])
 			format(iString, sizeof(iString), "%sArena ~n~%s%s (ID: ~r~~h~%d%s)", MAIN_TEXT_COLOUR, MAIN_TEXT_COLOUR, AName[Round], Round, MAIN_TEXT_COLOUR);
 			PlayerTextDrawSetString(playerid, TD_RoundSpec, iString);
 
-	    	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}is spectating Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[Round], Round);
+	    	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}is spectating Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[Round], Round);
 /*
 	    } case 3: { // Duel
 		    if(Round > MAX_DUELS) return SendErrorMessage(playerid,"That duel map does not exist.");
@@ -7718,7 +7725,7 @@ CMD:view(playerid, params[])
 			format(iString, sizeof(iString), "%sDuel ~n~%s%s (ID: ~r~~h~%d%s)", MAIN_TEXT_COLOUR, MAIN_TEXT_COLOUR, DuelName[Round], Round, MAIN_TEXT_COLOUR);
 			PlayerTextDrawSetString(playerid, TD_RoundSpec, iString);
 
-	    	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}is spectating Duel: {FFFFFF}%s (ID: %d)", Player[playerid][Name], DuelName[Round], Round);
+	    	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}is spectating Duel: {FFFFFF}%s (ID: %d)", Player[playerid][Name], DuelName[Round], Round);
 */
 	    }
 
@@ -7763,7 +7770,7 @@ CMD:createduel(playerid, params[])
 		 	format(iString, sizeof(iString), "attackdefend/duels/%d.ini", duelid);
 	 		dini_Create(iString);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has created {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has created {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
 			SendClientMessageToAll(-1, iString);
 
 			LoadDuels();
@@ -7788,7 +7795,7 @@ CMD:createduel(playerid, params[])
 
 			dini_Set(DuelString, "DuelPositionA", iString);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has configured Position A for {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has configured Position A for {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
 			SendClientMessageToAll(-1, iString);
 
 			LoadDuels();
@@ -7813,7 +7820,7 @@ CMD:createduel(playerid, params[])
 
             dini_Set(DuelString, "DuelPositionB", iString);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has configured Position B for {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has configured Position B for {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
 			SendClientMessageToAll(-1, iString);
 
 			LoadDuels();
@@ -7843,7 +7850,7 @@ CMD:createduel(playerid, params[])
 	            dini_Set(DuelString, "DuelMin", "-9999, -9999");
 			}
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has configured Camera location for {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has configured Camera location for {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
 			SendClientMessageToAll(-1, iString);
 
 			LoadDuels();
@@ -7862,7 +7869,7 @@ CMD:createduel(playerid, params[])
 				dini_Remove(DuelFile(duelid));
 			}
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has deleted {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has deleted {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
 			SendClientMessageToAll(-1, iString);
 
 			LoadDuels();
@@ -7881,7 +7888,7 @@ CMD:createduel(playerid, params[])
 			DuelIDForName = duelid;
 			format(CreateDuelString, sizeof(CreateDuelString), "attackdefend/duels/%d.ini", duelid);
 
-			format(iString, sizeof(iString), "{3377FF}Enter duel map name below for {FFFFFF}Duel ID: %d", duelid);
+			format(iString, sizeof(iString), "{E66000}Enter duel map name below for {FFFFFF}Duel ID: %d", duelid);
 			ShowPlayerDialog(playerid, DIALOG_DUEL_NAME, DIALOG_STYLE_INPUT,"{FFFFFF}Duel Map Name", iString, "Okay", "Close");
 
 			return 1;
@@ -7904,7 +7911,7 @@ CMD:createduel(playerid, params[])
 			ZMax[0] = P[0];
 			ZMin[1] = P[1];
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has configured AreaCheck Start-Location for {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has configured AreaCheck Start-Location for {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
 			SendClientMessageToAll(-1, iString);
 
 			return 1;
@@ -7958,7 +7965,7 @@ CMD:createduel(playerid, params[])
 				}
 			}
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has configured AreaCheck End-Location for {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has configured AreaCheck End-Location for {FFFFFF}Duel ID: %d", Player[playerid][Name], duelid);
 			SendClientMessageToAll(-1, iString);
 
 			LoadDuels();
@@ -7991,7 +7998,7 @@ CMD:createduel(playerid, params[])
 
             dini_Set(DuelString, "DuelWeapons", iString);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has configured Weapons for {FFFFFF}Duel ID: %d {3377FF}to {FFFFFF}Weapons: %s & %s", Player[playerid][Name], duelid, WeaponNames[Weapon[0]], WeaponNames[Weapon[1]]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has configured Weapons for {FFFFFF}Duel ID: %d {E66000}to {FFFFFF}Weapons: %s & %s", Player[playerid][Name], duelid, WeaponNames[Weapon[0]], WeaponNames[Weapon[1]]);
 			SendClientMessageToAll(-1, iString);
 
 			LoadDuels();
@@ -8019,7 +8026,7 @@ CMD:maxplayers(playerid, params[])
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'Maximum ESL Players'", MaxESLPlayers);
     db_free_result(db_query(sqliteconnection, iString));
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed Max ESL Players to: {FFFFFF}%d", Player[playerid][Name], MaxESLPlayers);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed Max ESL Players to: {FFFFFF}%d", Player[playerid][Name], MaxESLPlayers);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("maxplayers", playerid, INVALID_PLAYER_ID);
     return 1;
@@ -8035,10 +8042,10 @@ CMD:1on1(playerid, params[])
 
 	if(OneOnOne == false) {
 	    OneOnOne = true;
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has enabled {FFFFFF}One-On-One {3377FF}mode.", Player[playerid][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has enabled {FFFFFF}One-On-One {E66000}mode.", Player[playerid][Name]);
 	} else {
 	    OneOnOne = false;
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has disabled {FFFFFF}One-On-One {3377FF}mode.", Player[playerid][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has disabled {FFFFFF}One-On-One {E66000}mode.", Player[playerid][Name]);
 	}
 	SendClientMessageToAll(-1, iString);
 
@@ -8102,11 +8109,11 @@ CMD:votekick(playerid, params[])
 
 	new iString[160];
 	if(OneOnOne == false) {
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has voted to kick: {FFFFFF}%s (ID: %d) | %d / %d", Player[playerid][Name], Player[pID][Name], pID, PlayersVoted, (MaxESLPlayers-1));
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has voted to kick: {FFFFFF}%s (ID: %d) | %d / %d", Player[playerid][Name], Player[pID][Name], pID, PlayersVoted, (MaxESLPlayers-1));
 		SendClientMessageToAll(-1, iString);
 
 	    if(PlayersVoted >= MaxESLPlayers-1) {
-	        format(iString, sizeof(iString), "{3377FF}%s {FFFFFF}has been successfully votekicked.", Player[pID][Name]);
+	        format(iString, sizeof(iString), "{E66000}%s {FFFFFF}has been successfully votekicked.", Player[pID][Name]);
 	        SendClientMessageToAll(-1, iString);
 	        SetTimerEx("OnPlayerKicked", 500, false, "i", pID);
 
@@ -8115,11 +8122,11 @@ CMD:votekick(playerid, params[])
 			}
 	    }
 	} else {
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has voted to kick: {FFFFFF}%s (ID: %d) | %d / %d", Player[playerid][Name], Player[pID][Name], pID, PlayersVoted, TotalPlayers);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has voted to kick: {FFFFFF}%s (ID: %d) | %d / %d", Player[playerid][Name], Player[pID][Name], pID, PlayersVoted, TotalPlayers);
 		SendClientMessageToAll(-1, iString);
 
 	    if(PlayersVoted >= TotalPlayers && TotalPlayers > 1) {
-	        format(iString, sizeof(iString), "{3377FF}%s {FFFFFF}has been successfully votekicked.", Player[pID][Name]);
+	        format(iString, sizeof(iString), "{E66000}%s {FFFFFF}has been successfully votekicked.", Player[pID][Name]);
 	        SendClientMessageToAll(-1, iString);
 	        SetTimerEx("OnPlayerKicked", 500, false, "i", pID);
 
@@ -8148,7 +8155,7 @@ CMD:votekick(playerid, params[])
 
 	    if(VotesForVotekick == 1) {
 	        new str[160];
-	        format(str, sizeof(str), "{3377FF}%s {FFFFFF}has started a votekick for {3377FF}%s{FFFFFF} Type {3377FF}/votekick {FFFFFF}to kick this player.", Player[playerid][Name], Player[VoteKickedPlayer][Name]);
+	        format(str, sizeof(str), "{E66000}%s {FFFFFF}has started a votekick for {E66000}%s{FFFFFF} Type {E66000}/votekick {FFFFFF}to kick this player.", Player[playerid][Name], Player[VoteKickedPlayer][Name]);
 			SendClientMessageToAll(-1, str);
 	        SetTimer("VotekickExpire", 60000, 0);
 
@@ -8158,13 +8165,13 @@ CMD:votekick(playerid, params[])
 		if(OneOnOne == false) {
 		    if(VotesForVotekick >= MaxESLPlayers-1) {
 		        new str[128];
-		        format(str, sizeof(str), "{3377FF}%s {FFFFFF}has been successfully votekicked.", Player[VoteKickedPlayer][Name]);
+		        format(str, sizeof(str), "{E66000}%s {FFFFFF}has been successfully votekicked.", Player[VoteKickedPlayer][Name]);
 		        SendClientMessageToAll(-1, str);
 		        SetTimerEx("OnPlayerKicked", 500, false, "i", VoteKickedPlayer);
 
 		    } else {
 		        new str[128];
-		        format(str, sizeof(str), "{3377FF}%s {FFFFFF}has voted to kick: {3377FF}%s", Player[playerid][Name], Player[VoteKickedPlayer][Name]);
+		        format(str, sizeof(str), "{E66000}%s {FFFFFF}has voted to kick: {E66000}%s", Player[playerid][Name], Player[VoteKickedPlayer][Name]);
 		        SendClientMessageToAll(-1, str);
 		        return 1;
 		    }
@@ -8177,13 +8184,13 @@ CMD:votekick(playerid, params[])
 
 		    if(VotesForVotekick >= (attackers+defenders)-1) {
 		        new str[128];
-		        format(str, sizeof(str), "{3377FF}%s {FFFFFF}has been successfully votekicked.", Player[VoteKickedPlayer][Name]);
+		        format(str, sizeof(str), "{E66000}%s {FFFFFF}has been successfully votekicked.", Player[VoteKickedPlayer][Name]);
 		        SendClientMessageToAll(-1, str);
 		        SetTimerEx("OnPlayerKicked", 500, false, "i", VoteKickedPlayer);
 
 		    } else {
 		        new str[128];
-		        format(str, sizeof(str), "{3377FF}%s {FFFFFF}has voted to kick: {3377FF}%s", Player[playerid][Name], Player[VoteKickedPlayer][Name]);
+		        format(str, sizeof(str), "{E66000}%s {FFFFFF}has voted to kick: {E66000}%s", Player[playerid][Name], Player[VoteKickedPlayer][Name]);
 		        SendClientMessageToAll(-1, str);
 		        return 1;
 		    }
@@ -8228,7 +8235,7 @@ CMD:voteadd(playerid, params[])
 		}
 
 		new iString[160];
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has voted to add: {FFFFFF}%s (ID: %d) | %d / %d", Player[playerid][Name], Player[pID][Name], pID, PlayersVoted, TotalPlayers);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has voted to add: {FFFFFF}%s (ID: %d) | %d / %d", Player[playerid][Name], Player[pID][Name], pID, PlayersVoted, TotalPlayers);
 		SendClientMessageToAll(-1, iString);
 
 		if(PlayersVoted >= TotalPlayers && PlayersAlive[ATTACKER] > 0 && PlayersAlive[DEFENDER] > 0 && TotalPlayers > 1) {
@@ -8241,7 +8248,7 @@ CMD:voteadd(playerid, params[])
 			if(GameType == BASE) AddPlayerToBase(pID);
 			else if(GameType == ARENA) AddPlayerToArena(pID);
 
-		    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been added/re-added to the round.", Player[pID][Name]);
+		    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been added/re-added to the round.", Player[pID][Name]);
 		    SendClientMessageToAll(-1, iString);
 
 		    foreach(new i : Player) {
@@ -8287,13 +8294,13 @@ CMD:votenetcheck(playerid, params[])
 			}
 
 			new iString[160];
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has voted to disable Net-Check on: {FFFFFF}%s (ID: %d) | %d / %d (Command: /votenetcheck)", Player[playerid][Name], Player[pID][Name], pID, PlayersVoted, (MaxESLPlayers-1));
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has voted to disable Net-Check on: {FFFFFF}%s (ID: %d) | %d / %d (Command: /votenetcheck)", Player[playerid][Name], Player[pID][Name], pID, PlayersVoted, (MaxESLPlayers-1));
 			SendClientMessageToAll(-1, iString);
 
 			if(PlayersVoted >= (MaxESLPlayers - 1)) {
                 Player[pID][NetCheck] = 0;
 
-			    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}will not be kicked for FPS/Ping/Packetloss, Net-Check disabled.", Player[pID][Name]);
+			    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}will not be kicked for FPS/Ping/Packetloss, Net-Check disabled.", Player[pID][Name]);
 			    SendClientMessageToAll(-1, iString);
 
 			    foreach(new i : Player) {
@@ -8323,10 +8330,10 @@ CMD:netcheck(playerid, params[])
 	new iString[180];
 	if(Player[pID][NetCheck] == 1) {
 	    Player[pID][NetCheck] = 0;
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has disabled Net-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has disabled Net-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
 	} else {
 	    Player[pID][NetCheck] = 1;
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has enabled Net-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has enabled Net-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
 	}
 	SendClientMessageToAll(-1, iString);
 
@@ -8437,7 +8444,7 @@ CMD:ready(playerid, params[])
 				SetTimerEx("OnBaseStart", 4000, false, "i", BaseID);
                 Current = BaseID;
 
-				format(iString, sizeof(iString), "{FFFFFF}System {3377FF}has randomly started Base: {FFFFFF}%s (ID: %d)", BName[BaseID], BaseID);
+				format(iString, sizeof(iString), "{FFFFFF}System {E66000}has randomly started Base: {FFFFFF}%s (ID: %d)", BName[BaseID], BaseID);
 				SendClientMessageToAll(-1, iString);
 
 				GameType = BASE;
@@ -8448,7 +8455,7 @@ CMD:ready(playerid, params[])
 				AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 				SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
 
-				format(iString, sizeof(iString), "{FFFFFF}System {3377FF}has started Arena: {FFFFFF}%s (ID: %d)", AName[ArenaID], ArenaID);
+				format(iString, sizeof(iString), "{FFFFFF}System {E66000}has started Arena: {FFFFFF}%s (ID: %d)", AName[ArenaID], ArenaID);
 				SendClientMessageToAll(-1, iString);
 
 				GameType = ARENA;
@@ -8467,7 +8474,7 @@ CMD:ready(playerid, params[])
 			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 			SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
 
-			format(iString, sizeof(iString), "{FFFFFF}System {3377FF}has started Duel: {FFFFFF}%s (ID: %d)", DuelName[ArenaID], ArenaID);
+			format(iString, sizeof(iString), "{FFFFFF}System {E66000}has started Duel: {FFFFFF}%s (ID: %d)", DuelName[ArenaID], ArenaID);
 			SendClientMessageToAll(-1, iString);
 
 			GameType = ARENA;
@@ -8572,8 +8579,8 @@ CMD:war(playerid, params[])
 	if(strcmp(TeamAName, "end", true) == 0 && isnull(TeamBName) && WarMode == true) {
 
 		SetTimer("WarEnded", 5000, 0);
-		SendClientMessageToAll(-1, "{3377FF}Preparing End Match Results..");
-		SendClientMessageToAll(-1, "{3377FF}If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
+		SendClientMessageToAll(-1, "{E66000}Preparing End Match Results..");
+		SendClientMessageToAll(-1, "{E66000}If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
 
 		return 1;
 	} else if(isnull(TeamBName)) return SendUsageMessage(playerid,"/war ([Team A] [Team B]) (end)");
@@ -8600,7 +8607,7 @@ CMD:war(playerid, params[])
 	format(iString, sizeof(iString), "~r~%s %s(~r~%d%s)  ~b~~h~%s %s(~b~~h~%d%s)",TeamName[ATTACKER],MAIN_TEXT_COLOUR,TeamScore[ATTACKER],MAIN_TEXT_COLOUR,TeamName[DEFENDER],MAIN_TEXT_COLOUR,TeamScore[DEFENDER],MAIN_TEXT_COLOUR);
     TextDrawSetString(TeamScoreText, iString);
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has enabled the Match-Mode.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has enabled the Match-Mode.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 
 	MatchRoundsStarted = 0;
@@ -8716,7 +8723,7 @@ CMD:teamname(playerid, params[])
 			format(iString, sizeof(iString), "%s~h~%s", MAIN_TEXT_COLOUR, TeamName[ATTACKER_SUB]);
 			TextDrawSetString(AttackerSubText, iString);
 */
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set attacker team name to: {FFFFFF}%s", Player[playerid][Name], TeamName[ATTACKER]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set attacker team name to: {FFFFFF}%s", Player[playerid][Name], TeamName[ATTACKER]);
 			SendClientMessageToAll(-1, iString);
 	    } case 1: {
 			format(TeamName[DEFENDER], 24, TeamNamee);
@@ -8731,7 +8738,7 @@ CMD:teamname(playerid, params[])
 			format(iString, sizeof(iString), "%s~h~%s", MAIN_TEXT_COLOUR, TeamName[DEFENDER_SUB]);
 			TextDrawSetString(DefenderSubText, iString);
 */
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set defender team name to: {FFFFFF}%s", Player[playerid][Name], TeamName[DEFENDER]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set defender team name to: {FFFFFF}%s", Player[playerid][Name], TeamName[DEFENDER]);
 			SendClientMessageToAll(-1, iString);
 	    }
 	}
@@ -8764,7 +8771,7 @@ CMD:tr(playerid, params[])
 	TotalRounds = Value;
 
 	new iString[180];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed the total rounds to: {FFFFFF}%d", Player[playerid][Name], TotalRounds);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed the total rounds to: {FFFFFF}%d", Player[playerid][Name], TotalRounds);
 	SendClientMessageToAll(-1, iString);
 
 	format(iString, sizeof(iString), "%sRounds ~r~~h~%d~r~/~h~~h~%d", MAIN_TEXT_COLOUR, CurrentRound, TotalRounds);
@@ -8784,7 +8791,7 @@ CMD:cr(playerid, params[])
 	CurrentRound = Value;
 
 	new iString[180];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed the current round to: {FFFFFF}%d", Player[playerid][Name], CurrentRound);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed the current round to: {FFFFFF}%d", Player[playerid][Name], CurrentRound);
 	SendClientMessageToAll(-1, iString);
 
 	format(iString, sizeof(iString), "%sRounds ~r~~h~%d~r~/~h~~h~%d", MAIN_TEXT_COLOUR, CurrentRound, TotalRounds);
@@ -8826,7 +8833,7 @@ CMD:eslmode(playerid, params[])
 		Min_FPS = 35;
 		Max_Ping = 350;
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has enabled ESL mode.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has enabled ESL mode.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 
 		format(iString, sizeof(iString), "Total Rounds: %d | Packetloss: %.2f | Ping: %d | FPS: %d", TotalRounds, Max_Packetloss, Max_Ping, Min_FPS);
@@ -8890,7 +8897,7 @@ CMD:eslmode(playerid, params[])
     	TextDrawSetString(Ready[1], "_");
 
 		WarMode = false;
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has disabled ESL mode.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has disabled ESL mode.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 
 		format(iString, sizeof(iString), "Total Rounds: %d | Packetloss: %.2f | Ping: %d | FPS: %d", TotalRounds, Max_Packetloss, Max_Ping, Min_FPS);
@@ -8924,7 +8931,7 @@ CMD:eslmode(playerid, params[])
 CMD:serverpassword(playerid, params[]) {
 	if(ServerLocked) {
 		new str[128];
-		format(str, sizeof(str), "{3377FF}Current Server Password: {FFFFFF}%s", ServerPass[9]);
+		format(str, sizeof(str), "{E66000}Current Server Password: {FFFFFF}%s", ServerPass[9]);
 		SendClientMessageToAll(-1, str);
 	} else return 0;
 	LogAdminCommand("serverpassword", playerid, INVALID_PLAYER_ID);
@@ -8951,7 +8958,7 @@ CMD:freeze(playerid, params[])
 
 
 	new iString[160];
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has frozen {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has frozen {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
 	SendClientMessageToAll(-1, iString);
 
     LogAdminCommand("freeze", playerid, pID);
@@ -8977,7 +8984,7 @@ CMD:giveweapon(playerid, params[])
 
 	GivePlayerWeapon(pID, WeaponID, Ammo);
 
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has given {FFFFFF}%s {3377FF}| Weapon: {FFFFFF}%s {3377FF}- Ammo: {FFFFFF}%d", Player[playerid][Name], Player[pID][Name], WeaponNames[WeaponID], Ammo);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has given {FFFFFF}%s {E66000}| Weapon: {FFFFFF}%s {E66000}- Ammo: {FFFFFF}%d", Player[playerid][Name], Player[pID][Name], WeaponNames[WeaponID], Ammo);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("giveweapon", playerid, pID);
 	return 1;
@@ -9006,7 +9013,7 @@ CMD:giveallgun(playerid, params[])
 		}
 	}
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has given everyone | Weapon: {FFFFFF}%s {3377FF}- Ammo: {FFFFFF}%d",Player[playerid][Name] ,WeaponNames[weapon], Ammo);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has given everyone | Weapon: {FFFFFF}%s {E66000}- Ammo: {FFFFFF}%d",Player[playerid][Name] ,WeaponNames[weapon], Ammo);
  	SendClientMessageToAll(-1, iString);
     LogAdminCommand("giveallgun", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -9024,7 +9031,7 @@ CMD:unfreeze(playerid, params[])
 
 
 	new iString[160];
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has unfrozen {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has unfrozen {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
 	SendClientMessageToAll(-1, iString);
 
     LogAdminCommand("unfreeze", playerid, pID);
@@ -9046,7 +9053,7 @@ CMD:maxtdmkills(playerid,params[])
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'Max TDM Kills'", MaxTDMKills);
     db_free_result(db_query(sqliteconnection, iString));
 
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has changed the Max Tdm Kills to {FFFFFF}%d kills", Player[playerid][Name], MaxTDMKills);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has changed the Max Tdm Kills to {FFFFFF}%d kills", Player[playerid][Name], MaxTDMKills);
 	SendClientMessageToAll(-1, iString);
 	LogAdminCommand("maxtdmkills", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -9067,7 +9074,7 @@ CMD:roundtime(playerid,params[])
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'Round Time'", rTime);
     db_free_result(db_query(sqliteconnection, iString));
 
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has changed the round time to: {FFFFFF}%d mints", Player[playerid][Name], rTime);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has changed the round time to: {FFFFFF}%d mints", Player[playerid][Name], rTime);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("roundtime", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -9089,7 +9096,7 @@ CMD:cptime(playerid, params[])
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'CP Time'", cpTime);
     db_free_result(db_query(sqliteconnection, iString));
 
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has changed the CP time to: {FFFFFF}%d seconds", Player[playerid][Name], cpTime);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has changed the CP time to: {FFFFFF}%d seconds", Player[playerid][Name], cpTime);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("cptime", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -9101,7 +9108,7 @@ CMD:cptime(playerid, params[])
 CMD:lastplayed(playerid,params[])
 {
 	new iString[140];
-	format(iString, sizeof(iString), "{3377FF}Last Played: {FFFFFF}%d {3377FF}| Requested by {FFFFFF}%s", ServerLastPlayed, Player[playerid][Name]);
+	format(iString, sizeof(iString), "{E66000}Last Played: {FFFFFF}%d {E66000}| Requested by {FFFFFF}%s", ServerLastPlayed, Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 	return 1;
 }
@@ -9155,7 +9162,7 @@ CMD:resetallguns(playerid, params[])
 	}
 
 	new iString[160];
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has resetted everyone's weapons.", Player[playerid][Name]);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has resetted everyone's weapons.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("resetallguns", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -9248,7 +9255,7 @@ CMD:cc(playerid, params[])
     ClearChat();
 
     new iString[128];
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has cleared chat.", Player[playerid][Name]);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has cleared chat.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("cc", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -9257,7 +9264,7 @@ CMD:cc(playerid, params[])
 CMD:vworld(playerid, params[])
 {
 	if(Player[playerid][InDM] == false) return SendErrorMessage(playerid,"Can't use this command while you are not in a DM.");
-	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
 	if(Player[playerid][Playing] == true) return SendErrorMessage(playerid,"Can't use this command while playing.");
 	if(Player[playerid][Spectating] == true) return 1;
 
@@ -9299,7 +9306,7 @@ CMD:cchannel(playerid, params[])
 	new iString[180];
 	if(isnull(params)) {
 		if(Player[playerid][ChatChannel] != -1) {
-		    format(iString, sizeof(iString), "{FFFFFF}>> {3377FF}Current chat channel ID: {FFFFFF}%d", Player[playerid][ChatChannel]);
+		    format(iString, sizeof(iString), "{FFFFFF}>> {E66000}Current chat channel ID: {FFFFFF}%d", Player[playerid][ChatChannel]);
 		    SendClientMessage(playerid, -1, iString);
 		} else {
 			SendUsageMessage(playerid,"/chatchannel [Channel ID]");
@@ -9328,10 +9335,10 @@ CMD:cchannel(playerid, params[])
 
 	foreach(new i : Player) {
 	    if(Player[i][ChatChannel] == Player[playerid][ChatChannel] && i != playerid) {
-	        format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has joined this chat channel.", Player[playerid][Name]);
+	        format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has joined this chat channel.", Player[playerid][Name]);
 	        SendClientMessage(i, -1, iString);
 		} else {
-	        format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has joined a chat channel.", Player[playerid][Name]);
+	        format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has joined a chat channel.", Player[playerid][Name]);
 	        SendClientMessage(i, -1, iString);
 		}
 	}
@@ -9371,7 +9378,7 @@ CMD:teamdmg(playerid, params[])
 
 		}
 
-		format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has disabled {FFFFFF}Show HP and Damage.",Player[playerid][Name]);
+		format(iString, sizeof(iString),"{FFFFFF}%s {E66000}has disabled {FFFFFF}Show HP and Damage.",Player[playerid][Name]);
 		SendClientMessageToAll(-1,iString);
 	} else {
 	    TeamHPDamage = true;
@@ -9404,7 +9411,7 @@ CMD:teamdmg(playerid, params[])
 			}
 		}
 
-		format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has enabled {FFFFFF}Show HP and Damage.",Player[playerid][Name]);
+		format(iString, sizeof(iString),"{FFFFFF}%s {E66000}has enabled {FFFFFF}Show HP and Damage.",Player[playerid][Name]);
 		SendClientMessageToAll(-1,iString);
 	}
 
@@ -9442,7 +9449,7 @@ CMD:kiss(playerid, params[])
 	//	SetTimer("OnPlayersTrolling", 15000, false);
 
 		new iString[180];
-		format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}is kissing {FFFFFF}%s",Player[playerid][Name],Player[pID][Name]);
+		format(iString, sizeof(iString),"{FFFFFF}%s {E66000}is kissing {FFFFFF}%s",Player[playerid][Name],Player[pID][Name]);
 		SendClientMessageToAll(-1,iString);
 	} else return 0;
 
@@ -9492,7 +9499,7 @@ CMD:muteall(playerid, params[])
 	AllMuted = true;
 	new admName[MAX_PLAYER_NAME];
 	GetPlayerName(playerid, admName, sizeof(admName));
-	SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {3377FF}has muted everyone!", admName));
+	SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {E66000}has muted everyone!", admName));
     LogAdminCommand("muteall", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
@@ -9505,7 +9512,7 @@ CMD:unmuteall(playerid, params[])
 	AllMuted = false;
 	new admName[MAX_PLAYER_NAME];
 	GetPlayerName(playerid, admName, sizeof(admName));
-	SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {3377FF}has unmuted everyone!", admName));
+	SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {E66000}has unmuted everyone!", admName));
     LogAdminCommand("unmuteall", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
@@ -9530,8 +9537,8 @@ CMD:mute(playerid,params[])
 	Player[pID][Mute] = true;
 
 
-	if(strlen(Reason)) format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has muted {FFFFFF}%s {3377FF}| Reason: {FFFFFF}%s",Player[playerid][Name],Player[pID][Name], Reason);
-	else format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has muted {FFFFFF}%s {3377FF}| Reason: {FFFFFF}No reason given.",Player[playerid][Name],Player[pID][Name]);
+	if(strlen(Reason)) format(iString, sizeof(iString),"{FFFFFF}%s {E66000}has muted {FFFFFF}%s {E66000}| Reason: {FFFFFF}%s",Player[playerid][Name],Player[pID][Name], Reason);
+	else format(iString, sizeof(iString),"{FFFFFF}%s {E66000}has muted {FFFFFF}%s {E66000}| Reason: {FFFFFF}No reason given.",Player[playerid][Name],Player[pID][Name]);
 	SendClientMessageToAll(-1,iString);
     LogAdminCommand("mute", playerid, pID);
 	return 1;
@@ -9548,7 +9555,7 @@ CMD:unmute(playerid, params[])
 	Player[pID][Mute] = false;
 
 	new iString[180];
-	format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has unmuted {FFFFFF}%s",Player[playerid][Name],Player[pID][Name]);
+	format(iString, sizeof(iString),"{FFFFFF}%s {E66000}has unmuted {FFFFFF}%s",Player[playerid][Name],Player[pID][Name]);
 	SendClientMessageToAll(-1,iString);
     LogAdminCommand("unmute", playerid, pID);
 	return 1;
@@ -9573,7 +9580,7 @@ CMD:slap(playerid,params[])
 	PlayerPlaySound(sid,1190,0.0,0.0,0.0);
 
 	new iString[128];
-	format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has slapped {FFFFFF}%s",Player[playerid][Name],Player[sid][Name]);
+	format(iString, sizeof(iString),"{FFFFFF}%s {E66000}has slapped {FFFFFF}%s",Player[playerid][Name],Player[sid][Name]);
 	SendClientMessageToAll(-1,iString);
 	LogAdminCommand("slap", playerid, sid);
 	return 1;
@@ -9594,7 +9601,7 @@ CMD:explode(playerid,params[])
 	CreateExplosion(Pos[0], Pos[1], Pos[2], 7, 6.0);
 
 	new iString[128];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has exploded {FFFFFF}%s",Player[playerid][Name],Player[eid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has exploded {FFFFFF}%s",Player[playerid][Name],Player[eid][Name]);
 	SendClientMessageToAll(-1, iString);
 	LogAdminCommand("explode", playerid, eid);
 	return 1;
@@ -9626,7 +9633,7 @@ CMD:pm(playerid,params[])
 	new String[180];
 	format(String,sizeof(String),"{66CC00}*** PM from %s (%d): %s",Player[playerid][Name], playerid, text);
 	SendClientMessage(recieverid,-1,String);
-	SendClientMessage(recieverid,-1,"{3377FF}Use {FFFFFF}/r [Message]{3377FF} to reply");
+	SendClientMessage(recieverid,-1,"{E66000}Use {FFFFFF}/r [Message]{E66000} to reply");
 
 	Player[recieverid][LastMsgr] = playerid;
 
@@ -9686,7 +9693,7 @@ CMD:blockpm(playerid, params[])
   	Player[playerid][blockedid] = pID;
 
 	new String[128];
-  	format(String,sizeof(String),"{3377FF}You have blocked PMs from {FFFFFF}%s", Player[pID][Name]);
+  	format(String,sizeof(String),"{E66000}You have blocked PMs from {FFFFFF}%s", Player[pID][Name]);
   	SendClientMessage(playerid,-1,String);
 
 	return 1;
@@ -9695,7 +9702,7 @@ CMD:blockpm(playerid, params[])
 CMD:blockpmall(playerid, params[])
 {
   	Player[playerid][blockedall] = true;
-  	SendClientMessage(playerid,-1,"{3377FF}You have blocked PMs from everyone.");
+  	SendClientMessage(playerid,-1,"{E66000}You have blocked PMs from everyone.");
 
 	return 1;
 }
@@ -9729,6 +9736,21 @@ CMD:admins(playerid, params[])
 	return 1;
 }
 
+CMD:connstats( playerid, params[] )
+{
+    if(Player[playerid][Level] < 3 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher level admin to do that.");
+
+	new pID = INVALID_PLAYER_ID;
+
+	if( sscanf(params, "d", pID) ) return SendUsageMessage(playerid,"/connStats <playerid>");
+	if( !IsPlayerConnected(pID) ) return SendErrorMessage(playerid,"** Invalid PlayerID! ");
+	
+	new szString[80];
+	format(szString, sizeof(szString), "(%d)%s's current connection status: %i.", pID, Player[pID][Name], NetStats_ConnectionStatus(pID) );
+	SendClientMessage(playerid, -1, szString);
+	return 1;
+}
+
 /*CMD:lagcompmode(playerid, params[])
 {
     if(Player[playerid][Level] < 4 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher level admin to do that.");
@@ -9751,21 +9773,22 @@ CMD:admins(playerid, params[])
 		    if(lagcompmode == 1)
 		        return SendErrorMessage(playerid,"Lag compensation is already enabled in this server.");
 		    SendRconCommand("lagcompmode 1");
-		    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has enabled {FFFFFF}Lag Compensation Mode. {3377FF}The server is restarting so changes can take effect!", Player[playerid][Name]);
+		    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has enabled {FFFFFF}Lag Compensation Mode. {E66000}The server is restarting so changes can take effect!", Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 			SendRconCommand("gmx");
 		} case 2: {
 		    if(lagcompmode == 0)
 		        return SendErrorMessage(playerid,"Lag compensation is already disabled in this server.");
 		    SendRconCommand("lagcompmode 0");
-		    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has disabled {FFFFFF}Lag Compensation Mode. {3377FF}The server is restarting so changes can take effect!", Player[playerid][Name]);
+		    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has disabled {FFFFFF}Lag Compensation Mode. {E66000}The server is restarting so changes can take effect!", Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 			SendRconCommand("gmx");
 		}
 	}
 	LogAdminCommand("lagcompmode", playerid, INVALID_PLAYER_ID);
 	return 1;
-}*/
+}
+*/
 
 #if ANTICHEAT == 1
 CMD:permac(playerid, params[])
@@ -9811,7 +9834,7 @@ CMD:ac(playerid, params[])
 
 	    AC_Toggle(false);
 	    PermAC = false;
-    	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}Anti-Cheat.", Player[playerid][Name]);
+    	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}Anti-Cheat.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 
 	} else {
@@ -9824,17 +9847,65 @@ CMD:ac(playerid, params[])
 		}
 
 		ACTimer = SetTimer("OnACStart", 60000, false);
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}Anti-Cheat.", Player[playerid][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}Anti-Cheat.", Player[playerid][Name]);
         SendClientMessageToAll(-1, iString);
 
 		SendClientMessageToAll(-1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-		SendClientMessageToAll(-1, "{FFFFFF}>> {3377FF}Turn your {FFFFFF}Anti-Cheat {3377FF}on within one minute or get kicked.");
+		SendClientMessageToAll(-1, "{FFFFFF}>> {E66000}Turn your {FFFFFF}Anti-Cheat {E66000}on within one minute or get kicked.");
 		SendClientMessageToAll(-1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 	}
     LogAdminCommand("ac", playerid, INVALID_PLAYER_ID);
 	return 1;
 
 }
+/*
+CMD:accheck(playerid,params[])
+{
+	if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
+
+	new pID;
+
+	if( sscanf(params, "d", pID) )
+		return SendUsageMessage(playerid,"/acCheck [Player ID]");
+
+    if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player isnt connected.");
+	if(Player[pID][Level] >= Player[playerid][Level]) return SendErrorMessage(playerid,"Can't slap someone of same or higher admin level.");
+
+    format(iString, sizeof(iString), "AC Check {FFFFFF}enabled on player {FFFFFF}%s {E66000}by Admin {FFFFFF}\"%s\".", Player[playerid][Name]);
+    SendClientMessageToAll(0x3377FF, iString);
+
+	SendClientMessage(pID, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	SendClientMessage(pID, -1, "{FFFFFF}>> {E66000}Turn your {FFFFFF}Anti-Cheat {E66000}on within one minute or get kicked.");
+	SendClientMessage(pID, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
+	Player[playerid][ACCheck] = true;
+	Player[playerid][ACEnabled] = 60;
+
+    LogAdminCommand("accheck", playerid, pID);
+    return 1;
+}
+
+if(Player[playerid][ACCheck] == true)
+{
+	if( !HaveAC )
+	{
+		if(Player[playerid][ACEnabled]== 30)
+			SendClientMessage(pID, -1, "{FFFFFF}>> [AC Warning] {E66000} You have less than {FFFFFF}30 seconds{E66000} before getting kicked.");
+		else if(Player[playerid][ACEnabled] == 10)
+			SendClientMessage(pID, -1, "{FFFFFF}>> [AC Warning] {E66000} You have less than {FFFFFF}10 seconds{E66000} before getting kicked.");
+		else if(Player[playerid][ACEnabled] == 1)
+			SendClientMessage(pID, -1, "{FFFFFF}>> [AC Warning] {E66000} ADIOS Motherfucker!");
+		else if(Player[playerid][ACEnabled] == 0)
+		{
+            Player[playerid][ACEnabled] = 0;
+		}
+	    Player[playerid][ACEnabled]--;
+	}
+	else
+	{
+	    Player[playerid][ACEnabled] = 0;
+	}
+}*/
 #endif
 
 
@@ -9861,7 +9932,7 @@ CMD:maxpacket(playerid, params[])
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %.2f WHERE Option = 'Maximum Packetloss'", iPacket);
     db_free_result(db_query(sqliteconnection, iString));
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed maximum packet-loss to: {FFFFFF}%.2f", Player[playerid][Name], iPacket);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed maximum packet-loss to: {FFFFFF}%.2f", Player[playerid][Name], iPacket);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("maxpacket", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -9884,7 +9955,7 @@ CMD:maxping(playerid, params[])
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'Maximum Ping'", Max_Ping);
     db_free_result(db_query(sqliteconnection, iString));
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed maximum ping limit to: {FFFFFF}%d", Player[playerid][Name], iPacket);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed maximum ping limit to: {FFFFFF}%d", Player[playerid][Name], iPacket);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("maxping", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -9905,7 +9976,7 @@ CMD:minfps(playerid, params[])
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'Minimum FPS'", Min_FPS);
     db_free_result(db_query(sqliteconnection, iString));
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed minimum FPS limit to: {FFFFFF}%d", Player[playerid][Name], iPacket);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed minimum FPS limit to: {FFFFFF}%d", Player[playerid][Name], iPacket);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("minfps", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -9985,7 +10056,7 @@ CMD:allvs(playerid,params[])
 		}
     }
 
-    format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has changed the teams to {FFFFFF}\"%s\" vs all.", Player[playerid][Name], TempTeamName);
+    format(iString, sizeof(iString),"{FFFFFF}%s {E66000}has changed the teams to {FFFFFF}\"%s\" vs all.", Player[playerid][Name], TempTeamName);
     SendClientMessageToAll(-1, iString);
     FixVsTextDraw();
     return 1;
@@ -10013,7 +10084,7 @@ CMD:move(playerid, params[])
     }
     else SetPlayerPos(pID[0], Pos[0]+2, Pos[1], Pos[2]);
 
-    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has moved {FFFFFF}%s {3377FF}to {FFFFFF}%s", Player[playerid][Name], Player[pID[0]][Name], Player[pID[1]][Name]);
+    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has moved {FFFFFF}%s {E66000}to {FFFFFF}%s", Player[playerid][Name], Player[pID[0]][Name], Player[pID[1]][Name]);
     SendClientMessageToAll( -1, iString);
     LogAdminCommand("move", playerid, pID[0]);
     return 1;
@@ -10048,11 +10119,11 @@ CMD:shortcuts(playerid, params[])
 		switch(CommandID) {
 			case 1: {
 			    ShortCuts = true;
-	    		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}enabled {3377FF}shortcut team messages.", Player[playerid][Name]);
+	    		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}enabled {E66000}shortcut team messages.", Player[playerid][Name]);
 				SendClientMessageToAll(-1, iString);
 			} case 2: {
 			    ShortCuts = false;
-	    		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has {FFFFFF}disabled {3377FF}shortcut team messages.", Player[playerid][Name]);
+	    		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has {FFFFFF}disabled {E66000}shortcut team messages.", Player[playerid][Name]);
 				SendClientMessageToAll(-1, iString);
 			}
 		}
@@ -10073,7 +10144,7 @@ CMD:jetpack(playerid,params[])
     if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player isn't connected.");
 
 	new iString[160];
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}gave a jetpack to {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}gave a jetpack to {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
 	SendClientMessageToAll(-1, iString);
 
     SetPlayerSpecialAction(pID, 2);
@@ -10083,19 +10154,19 @@ CMD:jetpack(playerid,params[])
 CMD:help(playerid, params[])
 {
 	HelpString = "";
-	strcat(HelpString, "{3377FF}Attack-Defend Gamemode Created By: {FFFFFF}062_ {3377FF}and {FFFFFF}Whitetiger");
-	strcat(HelpString, "\n{3377FF}For detailed credits about development team, type {FFFFFF}/credits");
+	strcat(HelpString, "{E66000}Attack-Defend Gamemode Created By: {FFFFFF}062_ {E66000}and {FFFFFF}Whitetiger");
+	strcat(HelpString, "\n{E66000}For detailed credits about development team, type {FFFFFF}/credits");
 	strcat(HelpString, "\n\n{0044FF}Match-Mode Help:");
-	strcat(HelpString, "\n{3377FF}To enable Match-Mode, press {FFFFFF}'Y' {3377FF}in lobby or {FFFFFF}'H' {3377FF}in round and most textdraws will be clickable.");
-	strcat(HelpString, "\nAlternatively, just type {FFFFFF}/war [Team A] [Team B] {3377FF}to enable the Match-Mode and type {FFFFFF}/war end {3377FF}to disable it.");
+	strcat(HelpString, "\n{E66000}To enable Match-Mode, press {FFFFFF}'Y' {E66000}in lobby or {FFFFFF}'H' {E66000}in round and most textdraws will be clickable.");
+	strcat(HelpString, "\nAlternatively, just type {FFFFFF}/war [Team A] [Team B] {E66000}to enable the Match-Mode and type {FFFFFF}/war end {E66000}to disable it.");
 	strcat(HelpString, "\nOnce Match-Mode is enabled, team names and score, current and total rounds can be changed by clicking on their textdraw.");
 	strcat(HelpString, "\nOther useful commands for match: {FFFFFF}/tr (Total Rounds), /cr (Current Round), /hl (Heal All), /al (Armour All), /replace, /sethp, /setarmour");
 	strcat(HelpString, "\n/start [Base | Arena] and /random [Base | Arena], /setteam, /setscore, /teamname");
 	strcat(HelpString, "\n\n{0044FF}Server Help:");
-	strcat(HelpString, "\n{3377FF}For any admin commands, type {FFFFFF}/acmds {3377FF}and for public commands type {FFFFFF}/cmds");
-	strcat(HelpString, "\n{3377FF}Round can be paused by pressing {FFFFFF}'Y' {3377FF}(for admins only).");
-	strcat(HelpString, "\nYou can request for backup from your team by pressing {FFFFFF}'N' {3377FF}in round.");
-	strcat(HelpString, "\nYou can ask for pausing the round by pressing {FFFFFF}'Y' {3377FF}in round.");
+	strcat(HelpString, "\n{E66000}For any admin commands, type {FFFFFF}/acmds {E66000}and for public commands type {FFFFFF}/cmds");
+	strcat(HelpString, "\n{E66000}Round can be paused by pressing {FFFFFF}'Y' {E66000}(for admins only).");
+	strcat(HelpString, "\nYou can request for backup from your team by pressing {FFFFFF}'N' {E66000}in round.");
+	strcat(HelpString, "\nYou can ask for pausing the round by pressing {FFFFFF}'Y' {E66000}in round.");
 
 	ShowPlayerDialog(playerid,DIALOG_SERVER_HELP,DIALOG_STYLE_MSGBOX,"{0044FF}Server Help", HelpString, "OK","");
 
@@ -10156,7 +10227,7 @@ CMD:defaultskins(playerid, params[])
 		}
 	}
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed {FFFFFF}skins {3377FF}to default.", Player[playerid][Name] );
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed {FFFFFF}skins {E66000}to default.", Player[playerid][Name] );
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("defaultskins", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -10199,7 +10270,7 @@ CMD:teamskin(playerid, params[])
 		}
 	}
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed {FFFFFF}%s {3377FF}skin to: {FFFFFF}%d", Player[playerid][Name], TeamName[Params[0]+1], Skin[Params[0]+1]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed {FFFFFF}%s {E66000}skin to: {FFFFFF}%d", Player[playerid][Name], TeamName[Params[0]+1], Skin[Params[0]+1]);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("teamskin", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -10267,7 +10338,7 @@ CMD:setteam(playerid, params[])
 	else format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDmg ~r~%.0f~n~%sT. Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[Params[0]][RoundKills], MAIN_TEXT_COLOUR, Player[Params[0]][RoundDamage], MAIN_TEXT_COLOUR, Player[Params[0]][TotalDamage]);
 	PlayerTextDrawSetString(Params[0], RoundKillDmgTDmg, iString);
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has switched {FFFFFF}%s {3377FF}to: {FFFFFF}%s", Player[playerid][Name], Player[Params[0]][Name], TeamName[Params[1]+1]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has switched {FFFFFF}%s {E66000}to: {FFFFFF}%s", Player[playerid][Name], Player[Params[0]][Name], TeamName[Params[1]+1]);
 	SendClientMessageToAll(-1, iString);
     FixVsTextDraw();
 	return 1;
@@ -10287,11 +10358,11 @@ CMD:setscore(playerid, params[])
 	if(TeamID == 0) {
 		if((Score + TeamScore[DEFENDER]) >= TotalRounds) return SendErrorMessage(playerid,"Attacker plus defender score is bigger than or equal to the total rounds.");
 		TeamScore[ATTACKER] = Score;
-        format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set attacker team score to: {FFFFFF}%d", Player[playerid][Name], TeamScore[ATTACKER]);
+        format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set attacker team score to: {FFFFFF}%d", Player[playerid][Name], TeamScore[ATTACKER]);
 	} else {
    		if((Score + TeamScore[ATTACKER]) >= TotalRounds) return SendErrorMessage(playerid,"Attacker plus defender score is bigger than or equal to the total rounds.");
 		TeamScore[DEFENDER] = Score;
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set defender team score to: {FFFFFF}%d", Player[playerid][Name], TeamScore[DEFENDER]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set defender team score to: {FFFFFF}%d", Player[playerid][Name], TeamScore[DEFENDER]);
 	}
  	SendClientMessageToAll(-1, iString);
 
@@ -10312,6 +10383,7 @@ CMD:changepass(playerid, params[])
 {
 	if(Player[playerid][Logged] == false) return SendErrorMessage(playerid,"You must be logged in.");
 	if(isnull(params)) return SendUsageMessage(playerid,"/changepass [New Password]");
+	if(strlen(params) < 3) return SendErrorMessage(playerid,"Password too short (Minimum 3 characters).");
 
 	#if PLUGINS == 1
 	new HashPass[140];
@@ -10327,7 +10399,18 @@ CMD:changepass(playerid, params[])
     #else
     //Hash(WHIRLPOOL, HASH_OFFSET + MAX_PLAYERS + playerid, params);
 
-	SendErrorMessage(playerid,"This command is not fixed for non-plugin version.");
+//	SendErrorMessage(playerid,"This command is not fixed for non-plugin version.");
+
+	new HashPass[140];
+	format(HashPass, sizeof(HashPass), "%d", udb_hash(params));
+
+	new iString[356];
+	format(iString, sizeof(iString), "UPDATE Players SET Password = '%s' WHERE Name = '%s'", HashPass, DB_Escape(Player[playerid][Name]));
+    db_free_result(db_query(sqliteconnection, iString));
+
+	format(HashPass, sizeof(HashPass), "Your password is changed to: %s", params);
+	SendClientMessage(playerid, -1, HashPass);
+
 	#endif
 
 	return 1;
@@ -10339,7 +10422,7 @@ CMD:heal(playerid, params[])
 	if(Player[playerid][Playing] == true) return SendErrorMessage(playerid,"Can't heal while playing.");
 	if(Player[playerid][InHeadShot] == true) return SendErrorMessage(playerid,"Can't heal in headshot zone.");
 	if(Player[playerid][AntiLag] == true) return SendErrorMessage(playerid,"Can't heal in anti-lag zone.");
-	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
 
 	SetPlayerHealthEx(playerid, 100);
 	SetPlayerArmourEx(playerid, 100);
@@ -10362,7 +10445,7 @@ CMD:rr(playerid, params[])
 	ESLPauseTime = 120;
 
 	new iString[180];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has restarted the round. Round restarting...", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has restarted the round. Round restarting...", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 
  	for( new i; i < 10; i ++ ) { // Reset the number of times a weapon is picked for each team.
@@ -10434,7 +10517,7 @@ CMD:aka(playerid, params[]) {
 	format(AKAString, sizeof(AKAString), "{FFFFFF}%s", AKAString);
 
 	new title[50];
-	format(title, sizeof(title), "{3377FF}%s's AKA", Player[pID][Name]);
+	format(title, sizeof(title), "{E66000}%s's AKA", Player[pID][Name]);
     ShowPlayerDialog(playerid, DIALOG_AKA, DIALOG_STYLE_MSGBOX,title,AKAString,"Close","");
 
     return 1;
@@ -10454,7 +10537,7 @@ CMD:afk(playerid, params[])
 	if(Player[pID][Playing] == true) RemovePlayerFromRound(pID);
 	if(Player[pID][Spectating] == true) StopSpectate(pID);
 	if(Player[pID][InDM] == true) QuitDM(pID);
-	if(Player[pID][InDuel] == true) return SendErrorMessage(pID,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+	if(Player[pID][InDuel] == true) return SendErrorMessage(pID,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
 
 	Player[pID][Team] = NON;
 	SetPlayerColor(pID, 0xAAAAAAAA);
@@ -10465,9 +10548,9 @@ CMD:afk(playerid, params[])
 
 	new iString[160];
 	if(pID != playerid) {
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set {FFFFFF}%s {3377FF}to AFK mode.", Player[playerid][Name], Player[pID][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set {FFFFFF}%s {E66000}to AFK mode.", Player[playerid][Name], Player[pID][Name]);
 	} else {
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set himself to AFK mode.", Player[pID][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set himself to AFK mode.", Player[pID][Name]);
 	}
  	SendClientMessageToAll(-1, iString);
     FixVsTextDraw();
@@ -10493,7 +10576,7 @@ CMD:setafk(playerid, params[])
 	SetPlayerHealthEx(pID, 9999999);
 
 	new iString[180];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set {FFFFFF}%s {3377FF}to AFK mode.", Player[playerid][Name], Player[pID][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set {FFFFFF}%s {E66000}to AFK mode.", Player[playerid][Name], Player[pID][Name]);
 	SendClientMessageToAll(-1, iString);
     FixVsTextDraw();
     LogAdminCommand("setafk", playerid, pID);
@@ -10522,7 +10605,7 @@ CMD:back(playerid, params[])
     SelectTextDraw(playerid, 0xFF0000FF);
 */
 	new iString[160];
- 	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}is back from AFK mode.", Player[playerid][Name]);
+ 	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}is back from AFK mode.", Player[playerid][Name]);
  	SendClientMessageToAll(-1, iString);
  	FixVsTextDraw();
 
@@ -10542,7 +10625,7 @@ CMD:swap(playerid, params[])
 	FixVsTextDraw();
 
 	new iString[160];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has swaped the teams.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has swaped the teams.", Player[playerid][Name]);
 	SendClientMessage(playerid, -1, iString);
 
 	return 1;
@@ -10558,7 +10641,7 @@ CMD:balance(playerid, params[])
 	FixVsTextDraw();
 
 	new iString[160];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has balanced the teams.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has balanced the teams.", Player[playerid][Name]);
 	SendClientMessage(playerid, -1, iString);
 
 	return 1;
@@ -10606,7 +10689,7 @@ CMD:mainspawn(playerid, params[])
 	format(query, sizeof(query), "UPDATE Configs SET Value = '%s' WHERE Option = 'Main Spawn'", iString);
     db_free_result(db_query(sqliteconnection, query));
 
-    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed the main spawn location.", Player[playerid][Name]);
+    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed the main spawn location.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("mainspawn", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -10633,7 +10716,7 @@ CMD:givemenu(playerid, params[])
 	}
 
     new iString[180];
-    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has showed {FFFFFF}%s {3377FF}weapon menu.", Player[playerid][Name], Player[pID][Name]);
+    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has showed {FFFFFF}%s {E66000}weapon menu.", Player[playerid][Name], Player[pID][Name]);
     SendClientMessageToAll(-1, iString);
 
 	return 1;
@@ -10649,7 +10732,7 @@ CMD:gunmenu(playerid, params[])
 		else if(GameType == ARENA || GameType == TDM) GivePlayerArenaWeapons(playerid);
 
 	    new iString[180];
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has showed weapon menu for himself.", Player[playerid][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has showed weapon menu for himself.", Player[playerid][Name]);
 
 		foreach(new i : Player) {
 		    if(Player[playerid][Team] == ATTACKER) {
@@ -10683,7 +10766,7 @@ CMD:addall(playerid, params[])
 	}
 
     new iString[180];
-    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has added everyone to the round.", Player[playerid][Name]);
+    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has added everyone to the round.", Player[playerid][Name]);
     SendClientMessageToAll(-1, iString);
 
 	return 1;
@@ -10706,7 +10789,7 @@ CMD:add(playerid, params[])
 		else if(GameType == ARENA || GameType == TDM) AddPlayerToArena(pID);
 
 	    new iString[180];
-	    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has added {FFFFFF}%s {3377FF}to the round.", Player[playerid][Name], Player[pID][Name]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has added {FFFFFF}%s {E66000}to the round.", Player[playerid][Name], Player[pID][Name]);
 	    SendClientMessageToAll(-1, iString);
 
 	} else {
@@ -10727,7 +10810,7 @@ CMD:readd(playerid, params[])
 				else if(GameType == ARENA || GameType == TDM) AddPlayerToArena(playerid);
 
 			    new iString[180];
-			    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has re-added himself to the round.", Player[playerid][Name]);
+			    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has re-added himself to the round.", Player[playerid][Name]);
 			    SendClientMessageToAll(-1, iString);
 			} else {
 	    		SendErrorMessage(playerid,"You must be part of one of the following teams: Attacker, Defender or Referee.");
@@ -10752,7 +10835,7 @@ CMD:readd(playerid, params[])
 			else if(GameType == ARENA || GameType == TDM) AddPlayerToArena(pID);
 
 		    new iString[180];
-		    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has re-added {FFFFFF}%s {3377FF}to the round.", Player[playerid][Name], Player[pID][Name]);
+		    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has re-added {FFFFFF}%s {E66000}to the round.", Player[playerid][Name], Player[pID][Name]);
 		    SendClientMessageToAll(-1, iString);
 		    LogAdminCommand("readd", playerid, pID);
 		} else {
@@ -10772,7 +10855,7 @@ CMD:rem(playerid, params[])
     GetPlayerHealth(playerid, HP[0]);
     GetPlayerArmour(playerid, HP[1]);
 
-    format(iString, sizeof(iString), "{FFFFFF}%s (%d) {3377FF}removed himself from round. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, HP[0], HP[1]);
+    format(iString, sizeof(iString), "{FFFFFF}%s (%d) {E66000}removed himself from round. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, HP[0], HP[1]);
     SendClientMessageToAll(-1, iString);
 
 	RemovePlayerFromRound(playerid);
@@ -10794,7 +10877,7 @@ CMD:remove(playerid, params[])
 	if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player isn't connected.");
 	if(Player[pID][Playing] == false) return SendErrorMessage(playerid,"That player is not playing.");
 
-    format(iString, sizeof(iString), "{FFFFFF}%s (%d) {3377FF}removed {FFFFFF}%s (%d) {3377FF}from round. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, Player[pID][Name], pID, HP[0], HP[1]);
+    format(iString, sizeof(iString), "{FFFFFF}%s (%d) {E66000}removed {FFFFFF}%s (%d) {E66000}from round. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, Player[pID][Name], pID, HP[0], HP[1]);
     SendClientMessageToAll(-1, iString);
 
 	RemovePlayerFromRound(pID);
@@ -10884,7 +10967,7 @@ CMD:end(playerid, params[])
 	SetGameModeText(GM_NAME);
 
 	new iString[160];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has ended the round.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has ended the round.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 
 
@@ -10923,7 +11006,7 @@ CMD:ban(playerid, params[])
 //noip
 //    GetPlayerIp(pID, IP, sizeof(IP));
 
-    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has banned {FFFFFF}%s {3377FF}| Reason: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name], /*IP,*/ Reason);
+    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has banned {FFFFFF}%s {E66000}| Reason: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name], /*IP,*/ Reason);
 	SendClientMessageToAll(-1, iString);
 
 	if(ESLMode == false) Player[pID][DontPause] = true;
@@ -10970,7 +11053,7 @@ CMD:unbanip(playerid,params[])
 
 	#endif
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has unbanned IP: {FFFFFF}%s",Player[playerid][Name], params);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has unbanned IP: {FFFFFF}%s",Player[playerid][Name], params);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("unbanip", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -11014,10 +11097,10 @@ CMD:kick(playerid, params[])
 	else GiveReason = true;
 
 	if(GiveReason == false) {
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has kicked {FFFFFF}%s {3377FF}| Reason: {FFFFFF}No Reason Given", Player[playerid][Name], Player[pID][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has kicked {FFFFFF}%s {E66000}| Reason: {FFFFFF}No Reason Given", Player[playerid][Name], Player[pID][Name]);
 		SendClientMessageToAll(-1, iString);
 	} else {
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has kicked {FFFFFF}%s {3377FF}| Reason: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name], Params[1]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has kicked {FFFFFF}%s {E66000}| Reason: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name], Params[1]);
 		SendClientMessageToAll(-1, iString);
 	}
 
@@ -11048,7 +11131,7 @@ CMD:healall(playerid, params[])
 
 
 	new iString[160];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has healed everyone.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has healed everyone.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 
 	return 1;
@@ -11108,7 +11191,7 @@ CMD:nolag(playerid, params[])
 
 
 	new iString[180];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has %s server Anti-Lag.", Player[playerid][Name], (ServerAntiLag == true ? ("enabled") : ("disabled")));
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has %s server Anti-Lag.", Player[playerid][Name], (ServerAntiLag == true ? ("enabled") : ("disabled")));
 	SendClientMessageToAll(-1, iString);
 
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'AntiLag'", (ServerAntiLag == false ? 0 : 1));
@@ -11132,7 +11215,7 @@ CMD:armourall(playerid, params[])
 
 
 	new iString[160];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has armoured everyone.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has armoured everyone.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 
 	return 1;
@@ -11153,7 +11236,7 @@ CMD:sethp(playerid, params[])
 
 
 	new iString[180];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set {FFFFFF}%s's {3377FF}HP to: {FFFFFF}%d", Player[playerid][Name], Player[pID][Name], Amount);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set {FFFFFF}%s's {E66000}HP to: {FFFFFF}%d", Player[playerid][Name], Player[pID][Name], Amount);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("sethp", playerid, pID);
 	return 1;
@@ -11174,7 +11257,7 @@ CMD:setarmour(playerid, params[])
 
 
 	new iString[180];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has set {FFFFFF}%s's {3377FF}Armour to: {FFFFFF}%d", Player[playerid][Name], Player[pID][Name], Amount);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has set {FFFFFF}%s's {E66000}Armour to: {FFFFFF}%d", Player[playerid][Name], Player[pID][Name], Amount);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("setarmour", playerid, pID);
 	return 1;
@@ -11195,7 +11278,7 @@ CMD:pause(playerid, params[])
 
 	    PauseRound();
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has paused the current round.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has paused the current round.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 	} else {
 		if(PausePressed == true) return SendErrorMessage(playerid,"Please Wait.");
@@ -11205,7 +11288,7 @@ CMD:pause(playerid, params[])
 		PauseCountdown = 4;
 	    UnpauseRound();
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has unpaused the current round.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has unpaused the current round.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 	}
 
@@ -11223,7 +11306,7 @@ CMD:unpause(playerid, param[])
 	UnpauseRound();
 
 	new iString[160];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has unpaused the current round.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has unpaused the current round.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 
 	return 1;
@@ -11288,7 +11371,7 @@ CMD:goto(playerid,params[])
 
 
 	new tstr[180];
-	format(tstr,180,"{FFFFFF}%s {3377FF}has teleported to {FFFFFF}%s",Player[playerid][Name],Player[gid][Name]);
+	format(tstr,180,"{FFFFFF}%s {E66000}has teleported to {FFFFFF}%s",Player[playerid][Name],Player[gid][Name]);
 	SendClientMessageToAll(-1,tstr);
     LogAdminCommand("goto", playerid, gid);
 	return 1;
@@ -11336,7 +11419,7 @@ CMD:get(playerid,params[])
 	SetPlayerVirtualWorld(gid,GetPlayerVirtualWorld(playerid));
 
 	new iString[160];
-	format(iString, sizeof(iString),"{FFFFFF}%s {3377FF}has teleported {FFFFFF}%s {3377FF}to himself.",Player[playerid][Name],Player[gid][Name]);
+	format(iString, sizeof(iString),"{FFFFFF}%s {E66000}has teleported {FFFFFF}%s {E66000}to himself.",Player[playerid][Name],Player[gid][Name]);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("", playerid, gid);
 	return 1;
@@ -11380,7 +11463,7 @@ CMD:specoff(playerid, params[])
 	}
 	else
 	{
- 		SendClientMessage(playerid,-1,"{FFFFFF}Error: {3377FF}You are not spectating anyone.");
+ 		SendClientMessage(playerid,-1,"{FFFFFF}Error: {E66000}You are not spectating anyone.");
 	}
 
 	return 1;
@@ -11394,7 +11477,7 @@ CMD:kill(playerid, params[])
 	    new iString[180], Float:HP[2];
 	    GetPlayerHealth(playerid, HP[0]);
 	    GetPlayerArmour(playerid, HP[1]);
-	    format(iString, sizeof(iString), "{FFFFFF}%s (%d) {3377FF}killed himself. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, HP[0], HP[1]);
+	    format(iString, sizeof(iString), "{FFFFFF}%s (%d) {E66000}killed himself. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, HP[0], HP[1]);
     	SendClientMessageToAll(-1, iString);
 	}
 
@@ -11456,7 +11539,7 @@ CMD:acar(playerid, params[])
 	if(isnull(params)) return SendUsageMessage(playerid,"/acar [Vehicle Name]");
 	if(Player[playerid][Spectating] == true) return 1;
 //	if(Player[playerid][InDM] == true) return SendErrorMessage(playerid,"You can't spawn vehicle in DM.");
-    if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+    if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
 	if(Player[playerid][Playing] == true && Player[playerid][TimesSpawned] >= 3) return SendErrorMessage(playerid,"You have spawned the maximum number of vehicles.");
 	if(IsPlayerInAnyVehicle(playerid) && GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendErrorMessage(playerid,"Can't spawn a vehicle while you are not the driver.");
 
@@ -11539,11 +11622,11 @@ CMD:acar(playerid, params[])
 
 CMD:car(playerid, params[])
 {
-	if(isnull(params)) return SendUsageMessage(playerid,"/v [Vehicle Name] {FFFFFF}or {3377FF}/car [Vehicle Name]");
+	if(isnull(params)) return SendUsageMessage(playerid,"/v [Vehicle Name] {FFFFFF}or {E66000}/car [Vehicle Name]");
 	if(Player[playerid][Spectating] == true) return 1;
 	if(RoundPaused == true && Player[playerid][Playing] == true) return 1;
 	if(Player[playerid][InDM] == true) return SendErrorMessage(playerid,"You can't spawn vehicle in DM.");
-    if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+    if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
 	if(Player[playerid][Playing] == true && Player[playerid][TimesSpawned] >= 3) return SendErrorMessage(playerid,"You have spawned the maximum number of vehicles.");
 	if(IsPlayerInAnyVehicle(playerid) && GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendErrorMessage(playerid,"Can't spawn a vehicle while you are not the driver.");
 
@@ -11725,7 +11808,7 @@ CMD:random(playerid, params[])
 			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 			SetTimerEx("OnBaseStart", 4000, false, "i", BaseID);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has randomly started Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has randomly started Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
 			SendClientMessageToAll(-1, iString);
 
 			GameType = BASE;
@@ -11745,7 +11828,7 @@ CMD:random(playerid, params[])
 			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 			SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has randomly started Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has randomly started Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
 			SendClientMessageToAll(-1, iString);
 
 
@@ -11768,7 +11851,7 @@ CMD:random(playerid, params[])
 			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 			SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has randomly started TDM: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has randomly started TDM: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
 			SendClientMessageToAll(-1, iString);
 
 			OneOnOne = false;
@@ -11789,7 +11872,7 @@ CMD:random(playerid, params[])
 CMD:vote(playerid, params[])
 {
 	foreach(new i : Player) {
-	    if(Player[i][Level] > 0) return SendErrorMessage(playerid,"Cannot vote when an admin is online. Type {FFFFFF}/admins {3377FF}to see online admins.");
+	    if(Player[i][Level] > 0) return SendErrorMessage(playerid,"Cannot vote when an admin is online. Type {FFFFFF}/admins {E66000}to see online admins.");
 	}
 	if(Current != -1) return SendErrorMessage(playerid,"A round is in progress, please wait for it to end.");
 	if(AllowStartBase == false) return SendErrorMessage(playerid,"Please wait.");
@@ -11822,7 +11905,7 @@ CMD:vote(playerid, params[])
 			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 			SetTimerEx("OnBaseStart", 4000, false, "i", BaseID);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has voted to randomly started Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has voted to randomly started Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
 			SendClientMessageToAll(-1, iString);
 
 			GameType = BASE;
@@ -11840,7 +11923,7 @@ CMD:vote(playerid, params[])
 			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 			SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has voted to randomly started Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has voted to randomly started Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
 			SendClientMessageToAll(-1, iString);
 
 			GameType = ARENA;
@@ -11904,7 +11987,7 @@ CMD:randomint(playerid, params[])
 			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 			SetTimerEx("OnBaseStart", 4000, false, "i", BaseID);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has randomly started interior Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has randomly started interior Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
 			SendClientMessageToAll(-1, iString);
 
 			GameType = BASE;
@@ -11924,7 +12007,7 @@ CMD:randomint(playerid, params[])
 			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 			SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has randomly started interior Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has randomly started interior Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
 			SendClientMessageToAll(-1, iString);
 		}
 		#if ENABLED_TDM == 1
@@ -11944,7 +12027,7 @@ CMD:randomint(playerid, params[])
 			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 			SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has randomly started interior TDM: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has randomly started interior TDM: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
 			SendClientMessageToAll(-1, iString);
 		}
 		#endif
@@ -11963,7 +12046,7 @@ CMD:randomint(playerid, params[])
 CMD:voteint(playerid, params[])
 {
 	foreach(new i : Player) {
-    	if(Player[i][Level] > 0) return SendErrorMessage(playerid,"Cannot vote when an admin is online. Type {FFFFFF}/admins {3377FF}to see online admins.");
+    	if(Player[i][Level] > 0) return SendErrorMessage(playerid,"Cannot vote when an admin is online. Type {FFFFFF}/admins {E66000}to see online admins.");
 	}
 	if(Current != -1) return SendErrorMessage(playerid,"A round is in progress, please wait for it to end.");
 	if(AllowStartBase == false) return SendErrorMessage(playerid,"Please wait.");
@@ -11995,7 +12078,7 @@ CMD:voteint(playerid, params[])
 			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 			SetTimerEx("OnBaseStart", 4000, false, "i", BaseID);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has voted to randomly start interior Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has voted to randomly start interior Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
 			SendClientMessageToAll(-1, iString);
 
 			GameType = BASE;
@@ -12013,7 +12096,7 @@ CMD:voteint(playerid, params[])
 			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 			SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
 
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has voted to randomly start interior Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has voted to randomly start interior Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
 			SendClientMessageToAll(-1, iString);
 
 			GameType = ARENA;
@@ -12066,7 +12149,7 @@ CMD:start(playerid, params[])
 				AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 				SetTimerEx("OnBaseStart", 2000, false, "i", BaseID);
 
-				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has started the last played Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
+				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has started the last played Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
 				SendClientMessageToAll(-1, iString);
 
 				GameType = BASE;
@@ -12086,7 +12169,7 @@ CMD:start(playerid, params[])
 				AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 				SetTimerEx("OnArenaStart", 2000, false, "i", ArenaID);
 
-				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has started the last played Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
+				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has started the last played Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
 				SendClientMessageToAll(-1, iString);
 
 				OneOnOne = false;
@@ -12107,7 +12190,7 @@ CMD:start(playerid, params[])
 
 				SetTimerEx("OnArenaStart", 2000, false, "i", ArenaID);
 
-				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has started the last played TDM: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
+				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has started the last played TDM: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
 				SendClientMessageToAll(-1, iString);
 
 				OneOnOne = false;
@@ -12143,7 +12226,7 @@ CMD:start(playerid, params[])
 		AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 		SetTimerEx("OnBaseStart", 2000, false, "i", BaseID);
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has started Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has started Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
 		SendClientMessageToAll(-1, iString);
 
 		GameType = BASE;
@@ -12160,7 +12243,7 @@ CMD:start(playerid, params[])
 		AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 		SetTimerEx("OnArenaStart", 2000, false, "i", ArenaID);
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has started Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has started Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
 		SendClientMessageToAll(-1, iString);
 
 		OneOnOne = false;
@@ -12179,7 +12262,7 @@ CMD:start(playerid, params[])
 
 		SetTimerEx("OnArenaStart", 2000, false, "i", ArenaID);
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has started TDM: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has started TDM: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
 		SendClientMessageToAll(-1, iString);
 
 		OneOnOne = false;
@@ -12194,7 +12277,7 @@ CMD:start(playerid, params[])
 	    AllowStartBase = false;
 	    SetTimerEx("OnArenaStart", 4000, false, "i", DuelID);
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has started Duel: {FFFFFF}%s (ID: %d)", Player[playerid][Name], DuelName[DuelID], DuelID);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has started Duel: {FFFFFF}%s (ID: %d)", Player[playerid][Name], DuelName[DuelID], DuelID);
 		SendClientMessageToAll(-1, iString);
 
 		GameType = ARENA;
@@ -12270,8 +12353,8 @@ CMD:setlevel(playerid, params[])
 
 	Player[GiveID][Level] = LEVEL;
 
-	if(LEVEL != 0) format(iString,sizeof(iString),"{FFFFFF}\"%s\" {3377FF}has set {FFFFFF}\"%s\"'s {3377FF}level to: {FFFFFF}%d", Player[playerid][Name], Player[GiveID][Name], LEVEL);
-	else format(iString,sizeof(iString),"{FFFFFF}\"%s\" {3377FF}has set {FFFFFF}\"%s\"'s {3377FF}level to: {FFFFFF}DonBox level (AKA: 0)", Player[playerid][Name], Player[GiveID][Name]);
+	if(LEVEL != 0) format(iString,sizeof(iString),"{FFFFFF}\"%s\" {E66000}has set {FFFFFF}\"%s\"'s {E66000}level to: {FFFFFF}%d", Player[playerid][Name], Player[GiveID][Name], LEVEL);
+	else format(iString,sizeof(iString),"{FFFFFF}\"%s\" {E66000}has set {FFFFFF}\"%s\"'s {E66000}level to: {FFFFFF}DonBox level (AKA: 0)", Player[playerid][Name], Player[GiveID][Name]);
 	SendClientMessageToAll(-1, iString);
     LogAdminCommand("setlevel", playerid, GiveID);
 	return 1;
@@ -12343,7 +12426,7 @@ CMD:porn(playerid, params[])
     PlayAudioStreamForPlayer(playerid, "http://sixtytiger.com/mihawk/SoundTracks/Shes%20Cumming.mp3");
 
 	new iString[140];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has used the porn command.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has used the porn command.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 
 
@@ -12465,7 +12548,7 @@ CMD:sound(playerid, params[])
 	}
 
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has changed his {FFFFFF}%s {3377FF}to {FFFFFF}ID: %d", Player[playerid][Name], (CommandID == 1 ? ("Hit Sound") : ("Get Hit Sound")), (CommandID == 1 ? Player[playerid][HitSound] : Player[playerid][GetHitSound]));
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has changed his {FFFFFF}%s {E66000}to {FFFFFF}ID: %d", Player[playerid][Name], (CommandID == 1 ? ("Hit Sound") : ("Get Hit Sound")), (CommandID == 1 ? Player[playerid][HitSound] : Player[playerid][GetHitSound]));
 	SendClientMessageToAll(-1, iString);
 
 	return 1;
@@ -12513,7 +12596,7 @@ CMD:antilag(playerid, params[])
 	    Player[playerid][AntiLag] = false;
 	    SpawnPlayerEx(playerid);
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has quit the Anti-Lag zone.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has quit the Anti-Lag zone.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 	    return 1;
 	}
@@ -12524,13 +12607,13 @@ CMD:antilag(playerid, params[])
 	    Player[playerid][InDM] = false;
     	Player[playerid][DMReadd] = 0;
 	}
-	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
 	if(Player[playerid][InHeadShot] == true) Player[playerid][InHeadShot] = false;
 
 	Player[playerid][AntiLag] = true;
 	SpawnInAntiLag(playerid);
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has joined Anti-Lag zone. {FFFFFF}/antilag", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has joined Anti-Lag zone. {FFFFFF}/antilag", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 
 	if(Player[playerid][BeingSpeced] == true) {
@@ -12552,7 +12635,7 @@ CMD:headshot(playerid, params[])
 	    Player[playerid][InHeadShot] = false;
 	    SpawnPlayerEx(playerid);
 
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has quit the HeadShot zone.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has quit the HeadShot zone.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 	    return 1;
 	}
@@ -12563,7 +12646,7 @@ CMD:headshot(playerid, params[])
 	    Player[playerid][InDM] = false;
     	Player[playerid][DMReadd] = 0;
 	}
-	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
+	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
 	if(Player[playerid][AntiLag] == true) Player[playerid][AntiLag] = false;
 
 	Player[playerid][InHeadShot] = true;
@@ -12587,7 +12670,7 @@ CMD:headshot(playerid, params[])
 
 	SetPlayerTeamEx(playerid, NO_TEAM);
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has joined HeadShot zone. {FFFFFF}/headshot", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has joined HeadShot zone. {FFFFFF}/headshot", Player[playerid][Name]);
 	SendClientMessageToAll(-1, iString);
 
 	if(Player[playerid][BeingSpeced] == true) {
@@ -12640,9 +12723,9 @@ CMD:dm(playerid, params[])
 
 	new iString[140];
 
-    if(DMWeapons[DMID][1] == 0 && DMWeapons[DMID][2] == 0) format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has joined DM %d {FFFFFF}(%s).", Player[playerid][Name], DMID, WeaponNames[DMWeapons[DMID][0]]); // If the second and third weapons are punch or no weapons then it'll show you just one weapon instead of saying (Deagle - Punch - Punch)
-	else if(DMWeapons[DMID][2] == 0) format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has joined DM %d {FFFFFF}(%s - %s).", Player[playerid][Name], DMID, WeaponNames[DMWeapons[DMID][0]], WeaponNames[DMWeapons[DMID][1]]); //If only the third weapons is punch then it'll show two weapons e.g. (Deagle - Shotgun) instead of (Deagle - Shotgun - Punch)
-	else format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has joined DM %d {FFFFFF}(%s - %s - %s).", Player[playerid][Name], DMID, WeaponNames[DMWeapons[DMID][0]], WeaponNames[DMWeapons[DMID][1]], WeaponNames[DMWeapons[DMID][2]] ); //If all the weapons are known then it'll show u all three weapons e.g. (Deagle - Shotgun - Sniper)
+    if(DMWeapons[DMID][1] == 0 && DMWeapons[DMID][2] == 0) format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has joined DM %d {FFFFFF}(%s).", Player[playerid][Name], DMID, WeaponNames[DMWeapons[DMID][0]]); // If the second and third weapons are punch or no weapons then it'll show you just one weapon instead of saying (Deagle - Punch - Punch)
+	else if(DMWeapons[DMID][2] == 0) format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has joined DM %d {FFFFFF}(%s - %s).", Player[playerid][Name], DMID, WeaponNames[DMWeapons[DMID][0]], WeaponNames[DMWeapons[DMID][1]]); //If only the third weapons is punch then it'll show two weapons e.g. (Deagle - Shotgun) instead of (Deagle - Shotgun - Punch)
+	else format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has joined DM %d {FFFFFF}(%s - %s - %s).", Player[playerid][Name], DMID, WeaponNames[DMWeapons[DMID][0]], WeaponNames[DMWeapons[DMID][1]], WeaponNames[DMWeapons[DMID][2]] ); //If all the weapons are known then it'll show u all three weapons e.g. (Deagle - Shotgun - Sniper)
 
 	SendClientMessageToAll(-1, iString); // Send the formatted message to everyone.
 
@@ -12669,12 +12752,12 @@ CMD:dmq(playerid, params[])
 
 CMD:int(playerid,params[])
 {
-	if(Player[playerid][Playing] == true) return SendClientMessage(playerid, -1, "{FFFFFF}Error: {3377FF}Can't use while round is active.");
-	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {3377FF}instead.");
-	if(isnull(params) || !IsNumeric(params)) return SendClientMessage(playerid, -1, "{FFFFFF}USAGE: {3377FF}/int [1-147]");
+	if(Player[playerid][Playing] == true) return SendClientMessage(playerid, -1, "{FFFFFF}Error: {E66000}Can't use while round is active.");
+	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq {E66000}instead.");
+	if(isnull(params) || !IsNumeric(params)) return SendClientMessage(playerid, -1, "{FFFFFF}USAGE: {E66000}/int [1-147]");
 
 	new id = strval(params);
-	if(id <= 0 || id > 147) return SendClientMessage(playerid,-1 ,"{FFFFFF}USAGE: {3377FF}/int [1-147]");
+	if(id <= 0 || id > 147) return SendClientMessage(playerid,-1 ,"{FFFFFF}USAGE: {E66000}/int [1-147]");
 
 	if(Player[playerid][Spectating] == true) StopSpectate(playerid);
 	if(Player[playerid][InDM] == true) QuitDM(playerid);
@@ -12702,7 +12785,7 @@ CMD:int(playerid,params[])
 	}
 
 	new iString[160];
-	format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has entered Interior ID: {FFFFFF}%d {3377FF}| Interior: {FFFFFF}%d",Player[playerid][Name],id,id,Interiors[id][int_interior]);
+	format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has entered Interior ID: {FFFFFF}%d {E66000}| Interior: {FFFFFF}%d",Player[playerid][Name],id,id,Interiors[id][int_interior]);
 	SendClientMessageToAll(-1,iString);
 
 	return 1;
@@ -15190,7 +15273,7 @@ public OnBasesLoaded(Result:res) {
 	sql_free_result(res);
 
 
-	//format(iString, sizeof(iString), "{FFFFFF}%d {3377FF}bases are loaded.", TotalBases);
+	//format(iString, sizeof(iString), "{FFFFFF}%d {E66000}bases are loaded.", TotalBases);
     //SendClientMessageToAll(-1, iString);
 
 	printf("Bases Loaded: %d", TotalBases);
@@ -15304,7 +15387,7 @@ public OnBanCheck(Result:result, playerid) {
         new iString[128], admin_name[MAX_PLAYER_NAME], reason[128];
         sql_get_field_assoc(result, "Admin Name", admin_name);
 		sql_get_field_assoc(result, "Reason", reason);
-        format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has banned you from this server for: {FFFFFF}%s", admin_name, reason);
+        format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has banned you from this server for: {FFFFFF}%s", admin_name, reason);
         SendClientMessage(playerid, -1, iString);
         SetTimerEx("OnPlayerKicked", 500, false, "i", playerid);
 	}
@@ -16671,12 +16754,12 @@ stock ESLRules() {
 stock ESLHelpDialog(playerid) {
 
     EslString = "";
-	strcat(EslString, "{3377FF}\t\t\t\t\t>> ESL Mode <<");
-    strcat(EslString, "\n\n{3377FF}To Enable/Disable the ESL mode, use: {FFFFFF}/eslmode");
-    strcat(EslString, "\n{3377FF}ESL Limits: {FFFFFF}Maximum Packetloss: 2.0 | Maximum Ping: 350 | Minimum FPS: 35 {3377FF}** Unchangable");
-	strcat(EslString, "\n\n{3377FF}Make sure you have your SAMP opened from the ESL wire and you are using a clean GTA-SA.");
-	strcat(EslString, "\n{3377FF}Select your team as Alpha or Beta based on the team that the ESL match-board selected for you.");
-	strcat(EslString, "\n\n{3377FF}Useful commands: {FFFFFF}/ready, /voters, /maxplayers, /votekick, /1on1, /votenetcheck");
+	strcat(EslString, "{E66000}\t\t\t\t\t>> ESL Mode <<");
+    strcat(EslString, "\n\n{E66000}To Enable/Disable the ESL mode, use: {FFFFFF}/eslmode");
+    strcat(EslString, "\n{E66000}ESL Limits: {FFFFFF}Maximum Packetloss: 2.0 | Maximum Ping: 350 | Minimum FPS: 35 {E66000}** Unchangable");
+	strcat(EslString, "\n\n{E66000}Make sure you have your SAMP opened from the ESL wire and you are using a clean GTA-SA.");
+	strcat(EslString, "\n{E66000}Select your team as Alpha or Beta based on the team that the ESL match-board selected for you.");
+	strcat(EslString, "\n\n{E66000}Useful commands: {FFFFFF}/ready, /voters, /maxplayers, /votekick, /1on1, /votenetcheck");
 
 	ShowPlayerDialog(playerid,DIALOG_ESL_TEAMS,DIALOG_STYLE_MSGBOX," ", EslString, "Alpha","Beta");
 }
@@ -17252,7 +17335,7 @@ forward DoAutoBalance();
 public DoAutoBalance() {
     BalanceTeams();
 	if(PreMatchResultsShowing == false) AllowStartBase = true;
-	SendClientMessageToAll(-1, "{3377FF}Teams have been auto-balanced.");
+	SendClientMessageToAll(-1, "{E66000}Teams have been auto-balanced.");
 }
 
 forward DontAutoBalance();
@@ -17338,7 +17421,7 @@ stock SwitchTeamFix(playerid) {
     CancelSelectTextDraw(playerid);
 */
     new iString[160];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has switched to: {FFFFFF}%s", Player[playerid][Name], TeamName[Player[playerid][Team]]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has switched to: {FFFFFF}%s", Player[playerid][Name], TeamName[Player[playerid][Team]]);
 	SendClientMessageToAll(-1, iString);
 
 	if(Player[playerid][TextPos] == false) format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDamage ~r~%.0f~n~%sTotal Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[playerid][RoundKills], MAIN_TEXT_COLOUR, Player[playerid][RoundDamage], MAIN_TEXT_COLOUR, Player[playerid][TotalDamage]);
@@ -17479,7 +17562,7 @@ stock ShowWepLimit(playerid) {
         else format(str, sizeof(str), "{FF6666}%d\t%s\t\t\t%s\t\t%s%d\n", i+1, WeaponNames[GunMenuWeapons[i][0]], WeaponNames[GunMenuWeapons[i][1]], tabs, WeaponLimit[i] - TimesPicked[ATTACKER][i]);
         strcat(WepTStr, str);
     }
-    ShowPlayerDialog(playerid, DIALOG_WEAPONS_LIMIT, DIALOG_STYLE_LIST, "{3377FF}Weapon limits",WepTStr, "Select", "Exit");
+    ShowPlayerDialog(playerid, DIALOG_WEAPONS_LIMIT, DIALOG_STYLE_LIST, "{E66000}Weapon limits",WepTStr, "Select", "Exit");
 }
 
 stock EnableInterface(playerid) {
@@ -17579,13 +17662,13 @@ stock PauseRound() {
 
 
 	if(AntiCheat) {
-		SendClientMessageToAll(-1, "{FFFF00}** {3377FF}Checking all players for 2 PC trick");
+		SendClientMessageToAll(-1, "{FFFF00}** {E66000}Checking all players for 2 PC trick");
 	}
 
 	RoundPaused = true;
 
 	if(ESLMode == true) {
-	    SendClientMessageToAll(-1, "{3377FF}Available public command to unpause the round: {FFFFFF}/voteunpause");
+	    SendClientMessageToAll(-1, "{E66000}Available public command to unpause the round: {FFFFFF}/voteunpause");
 	}
 
 }
@@ -17990,7 +18073,7 @@ stock StorePlayerVariables(playerid) {
 
 			if(ESLMode == true) SaveVariables[i][PauseWait] = true;
 
-	        format(iString,sizeof(iString),"{FFFFFF}%s's {3377FF}variables saved.", Player[playerid][Name]);
+	        format(iString,sizeof(iString),"{FFFFFF}%s's {E66000}variables saved.", Player[playerid][Name]);
 	    	SendClientMessageToAll(-1, iString);
 	    	break;
         } else continue;
@@ -18021,7 +18104,7 @@ stock LoadPlayerVariables(playerid)
 
                 ResetSaveVariables(i);
 
-				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has spawned as: {FFFFFF}%s", Player[playerid][Name], TeamName[Player[playerid][Team]]);
+				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has spawned as: {FFFFFF}%s", Player[playerid][Name], TeamName[Player[playerid][Team]]);
 				SendClientMessageToAll(-1, iString);
 
 				if(Player[playerid][TextPos] == false) format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDamage ~r~%.0f~n~%sTotal Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[playerid][RoundKills], MAIN_TEXT_COLOUR, Player[playerid][RoundDamage], MAIN_TEXT_COLOUR, Player[playerid][TotalDamage]);
@@ -18051,7 +18134,7 @@ stock LoadPlayerVariables(playerid)
 
                 ResetSaveVariables(i);
 
-				format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has spawned as: {FFFFFF}%s", Player[playerid][Name], TeamName[Player[playerid][Team]]);
+				format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has spawned as: {FFFFFF}%s", Player[playerid][Name], TeamName[Player[playerid][Team]]);
 				SendClientMessageToAll(-1, iString);
 
 				if(Player[playerid][TextPos] == false) format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDamage ~r~%.0f~n~%sTotal Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[playerid][RoundKills], MAIN_TEXT_COLOUR, Player[playerid][RoundDamage], MAIN_TEXT_COLOUR, Player[playerid][TotalDamage]);
@@ -18226,7 +18309,7 @@ stock LoadPlayerVariables(playerid)
 			}
 
 
-	        format(iString,sizeof(iString),"{3377FF}Re-added player {FFFFFF}%s. {3377FF}Variables successfully loaded.", Player[playerid][Name]);
+	        format(iString,sizeof(iString),"{E66000}Re-added player {FFFFFF}%s. {E66000}Variables successfully loaded.", Player[playerid][Name]);
 	    	SendClientMessageToAll(-1, iString);
 
 #if SKINICONS == 1
@@ -18289,7 +18372,7 @@ stock LoadPlayerVariables(playerid)
 		}
 	}
 
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has spawned as: {FFFFFF}%s", Player[playerid][Name], TeamName[Player[playerid][Team]]);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has spawned as: {FFFFFF}%s", Player[playerid][Name], TeamName[Player[playerid][Team]]);
 	SendClientMessageToAll(-1, iString);
 
 	return 1;
@@ -18575,6 +18658,7 @@ stock strmatch(const sStr1[], const sStr2[]) {
 	return (strcmp(sStr1, sStr2, true) == 0) && (strlen(sStr2) == strlen(sStr1)) ? true : false;
 }
 */
+
 forward Float:GetPlayerPacketLoss(playerid);
 public Float:GetPlayerPacketLoss(playerid) {
 
@@ -18790,9 +18874,9 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 		}
 		if(newkeys == 32) {
 		    switch(Player[playerid][SpectatingType]) {
-				case BASE: format(iString, sizeof(iString), "{3377FF}Spectating Base: {FFFFFF}%s (ID: %d)", BName[Player[playerid][SpectatingRound]], Player[playerid][SpectatingRound]);
-				case ARENA: format(iString, sizeof(iString), "{3377FF}Spectating Arena: {FFFFFF}%s (ID: %d)", AName[Player[playerid][SpectatingRound]], Player[playerid][SpectatingRound]);
-				case DUEL: format(iString, sizeof(iString), "{3377FF}Spectating Duel: {FFFFFF}%s (ID: %d)", DuelName[Player[playerid][SpectatingRound]], Player[playerid][SpectatingRound]);
+				case BASE: format(iString, sizeof(iString), "{E66000}Spectating Base: {FFFFFF}%s (ID: %d)", BName[Player[playerid][SpectatingRound]], Player[playerid][SpectatingRound]);
+				case ARENA: format(iString, sizeof(iString), "{E66000}Spectating Arena: {FFFFFF}%s (ID: %d)", AName[Player[playerid][SpectatingRound]], Player[playerid][SpectatingRound]);
+				case DUEL: format(iString, sizeof(iString), "{E66000}Spectating Duel: {FFFFFF}%s (ID: %d)", DuelName[Player[playerid][SpectatingRound]], Player[playerid][SpectatingRound]);
 			}
 		    SendClientMessage(playerid, -1, iString);
 			SetCameraBehindPlayer(playerid);
@@ -18879,7 +18963,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 						SetTimerEx("OnBaseStart", 4000, false, "i", BaseID);
 		                Current = BaseID;
 
-						format(iString, sizeof(iString), "{FFFFFF}System {3377FF}has randomly started Base: {FFFFFF}%s (ID: %d)", BName[BaseID], BaseID);
+						format(iString, sizeof(iString), "{FFFFFF}System {E66000}has randomly started Base: {FFFFFF}%s (ID: %d)", BName[BaseID], BaseID);
 						SendClientMessageToAll(-1, iString);
 
 						GameType = BASE;
@@ -18890,7 +18974,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 						AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 						SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
 
-						format(iString, sizeof(iString), "{FFFFFF}System {3377FF}has started Arena: {FFFFFF}%s (ID: %d)", AName[ArenaID], ArenaID);
+						format(iString, sizeof(iString), "{FFFFFF}System {E66000}has started Arena: {FFFFFF}%s (ID: %d)", AName[ArenaID], ArenaID);
 						SendClientMessageToAll(-1, iString);
 
 						GameType = ARENA;
@@ -18909,7 +18993,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
 					SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
 
-					format(iString, sizeof(iString), "{FFFFFF}System {3377FF}has started Duel: {FFFFFF}%s (ID: %d)", DuelName[ArenaID], ArenaID);
+					format(iString, sizeof(iString), "{FFFFFF}System {E66000}has started Duel: {FFFFFF}%s (ID: %d)", DuelName[ArenaID], ArenaID);
 					SendClientMessageToAll(-1, iString);
 
 					GameType = ARENA;
@@ -18953,7 +19037,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 
 				    PauseRound();
 
-					format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has paused the current round.", Player[playerid][Name]);
+					format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has paused the current round.", Player[playerid][Name]);
 					SendClientMessageToAll(-1, iString);
 					return 1;
 				}
@@ -18966,7 +19050,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					PauseCountdown = 4;
 				    UnpauseRound();
 
-					format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has unpaused the current round.", Player[playerid][Name]);
+					format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has unpaused the current round.", Player[playerid][Name]);
 					SendClientMessageToAll(-1, iString);
 					return 1;
 				}
@@ -18982,7 +19066,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					return 0;
 				}
 				Player[playerid][lastChat] = GetTickCount();
-				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {3377FF}is asking for a pause!", Player[playerid][Name]));
+				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {E66000}is asking for a pause!", Player[playerid][Name]));
 			}
 			if(PRESSED(65536) && RoundPaused == true)
             {
@@ -18992,7 +19076,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					return 0;
 				}
 				Player[playerid][lastChat] = GetTickCount();
-				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {3377FF}is asking for an unpause!", Player[playerid][Name]));
+				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s {E66000}is asking for an unpause!", Player[playerid][Name]));
 			}
 		}
 
@@ -19262,7 +19346,7 @@ public OnScriptUpdate()
 			    SendClientMessage(i, -1, iString);
 
 				if (Player[i][FPSKick] == 7) {
-			        format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been kicked from the server .: {FFFFFF}Low FPS | %d/%d {3377FF}:.", Player[i][Name], Player[i][FPS], Min_FPS);
+			        format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been kicked from the server .: {FFFFFF}Low FPS | %d/%d {E66000}:.", Player[i][Name], Player[i][FPS], Min_FPS);
 			        SendClientMessageToAll(-1, iString);
 					SetTimerEx("OnPlayerKicked", 500, false, "i", i);
 
@@ -19281,7 +19365,7 @@ public OnScriptUpdate()
 			    SendClientMessage(i, -1, iString);
 
 			    if(Player[i][PacketKick] == 15) {
-			        format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been kicked from the server .: {FFFFFF}High PacketLoss | %.2f/%.2f {3377FF}:.", Player[i][Name], pPacket, Max_Packetloss);
+			        format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been kicked from the server .: {FFFFFF}High PacketLoss | %.2f/%.2f {E66000}:.", Player[i][Name], pPacket, Max_Packetloss);
 			        SendClientMessageToAll(-1, iString);
 					SetTimerEx("OnPlayerKicked", 500, false, "i", i);
 
@@ -19298,7 +19382,7 @@ public OnScriptUpdate()
 			    SendClientMessage(i, -1, iString);
 
 			    if(Player[i][PingKick] == 10) {
-			        format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been kicked from the server .: {FFFFFF}High Ping | %d/%d {3377FF}:.", Player[i][Name], pPing, Max_Ping);
+			        format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been kicked from the server .: {FFFFFF}High Ping | %d/%d {E66000}:.", Player[i][Name], pPing, Max_Ping);
 			        SendClientMessageToAll(-1, iString);
 					SetTimerEx("OnPlayerKicked", 500, false, "i", i);
 
@@ -19329,7 +19413,7 @@ public OnScriptUpdate()
 							new Float: hp, Float: arm;
 							GetPlayerHealth( i, hp );
 							GetPlayerArmour( i, arm );
-						    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been removed for not staying in Arena. {FFFFFF}.: (%0.1f | %0.1f) :.", Player[i][Name], hp, arm);
+						    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been removed for not staying in Arena. {FFFFFF}.: (%0.1f | %0.1f) :.", Player[i][Name], hp, arm);
 						    SendClientMessageToAll(-1, iString);
 
 							Player[i][OutOfArena] = 5;
@@ -19356,7 +19440,7 @@ public OnScriptUpdate()
 						if(Player[i][OutOfArena] <= 0) {
 		                    RemovePlayerFromRound(i);
 
-						    format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been removed for not staying in the duel area.", Player[i][Name]);
+						    format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been removed for not staying in the duel area.", Player[i][Name]);
 						    SendClientMessageToAll(-1, iString);
 
 							Player[i][OutOfArena] = 5;
@@ -19395,7 +19479,7 @@ public OnScriptUpdate()
 			    	SendClientMessage(i, -1, iString);
 
 					if (Player[i][FPSKick] == 7) {
-				        format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been kicked from the server .: {FFFFFF}Low FPS | %d/%d {3377FF}:.", Player[i][Name], Player[i][FPS], Min_FPS);
+				        format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been kicked from the server .: {FFFFFF}Low FPS | %d/%d {E66000}:.", Player[i][Name], Player[i][FPS], Min_FPS);
 				        SendClientMessageToAll(-1, iString);
 						SetTimerEx("OnPlayerKicked", 500, false, "i", i);
 				    } else if (Player[i][FPSKick] > 7) {
@@ -19413,7 +19497,7 @@ public OnScriptUpdate()
 			    	SendClientMessage(i, -1, iString);
 
 				    if(Player[i][PacketKick] == 15) {
-				        format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been kicked from the server .: {FFFFFF}High PacketLoss | %.2f/%.2f {3377FF}:.", Player[i][Name], pPacket, Max_Packetloss);
+				        format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been kicked from the server .: {FFFFFF}High PacketLoss | %.2f/%.2f {E66000}:.", Player[i][Name], pPacket, Max_Packetloss);
 				        SendClientMessageToAll(-1, iString);
 						SetTimerEx("OnPlayerKicked", 500, false, "i", i);
 				    } else if(Player[i][PacketKick] > 30) {
@@ -19429,7 +19513,7 @@ public OnScriptUpdate()
 			    	SendClientMessage(i, -1, iString);
 
 				    if(Player[i][PingKick] == 10) {
-				        format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been kicked from the server .: {FFFFFF}High Ping | %d/%d {3377FF}:.", Player[i][Name], pPing, Max_Ping);
+				        format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been kicked from the server .: {FFFFFF}High Ping | %d/%d {E66000}:.", Player[i][Name], pPing, Max_Ping);
 				        SendClientMessageToAll(-1, iString);
 						SetTimerEx("OnPlayerKicked", 500, false, "i", i);
 				    } else if(Player[i][PingKick] > 10) {
@@ -19885,7 +19969,7 @@ forward VotekickExpire();
 public VotekickExpire() {
 
 	new str[128];
-	format(str, sizeof(str), "{FFFFFF}The votekick on {3377FF}%s{FFFFFF} has expired.", Player[VoteKickedPlayer][Name]);
+	format(str, sizeof(str), "{FFFFFF}The votekick on {E66000}%s{FFFFFF} has expired.", Player[VoteKickedPlayer][Name]);
 	SendClientMessageToAll(-1, str);
 	VoteKickedPlayer = -1;
 	VotesForVotekick = 0;
@@ -20081,7 +20165,7 @@ public OnPlayerReplace(ToAddID, ToReplaceID, playerid) {
 		TextDrawShowForAll(PauseTD);    //pausetxt
 	}
 
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has replaced {FFFFFF}%s {3377FF}by {FFFFFF}%s", Player[playerid][Name], Player[ToReplaceID][Name], Player[ToAddID][Name]);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has replaced {FFFFFF}%s {E66000}by {FFFFFF}%s", Player[playerid][Name], Player[ToReplaceID][Name], Player[ToAddID][Name]);
 	SendClientMessageToAll(-1, iString);
 
 	//format(iString, sizeof(iString), "~n~~n~~l~Kills ~r~%d~n~~l~Damage ~r~%.0f~n~~l~Total Dmg ~r~%.0f", Player[ToAddID][RoundKills], Player[ToAddID][RoundDamage], Player[ToAddID][TotalDamage]);
@@ -20165,7 +20249,7 @@ public OnPlayerInGameReplace(ToAddID, i, playerid) {
 	}
 
 
-    format(iString,sizeof(iString),"{FFFFFF}%s {3377FF}has replaced {FFFFFF}%s {3377FF}by {FFFFFF}%s", Player[playerid][Name], SaveVariables[i][pName], Player[ToAddID][Name]);
+    format(iString,sizeof(iString),"{FFFFFF}%s {E66000}has replaced {FFFFFF}%s {E66000}by {FFFFFF}%s", Player[playerid][Name], SaveVariables[i][pName], Player[ToAddID][Name]);
 	SendClientMessageToAll(-1, iString);
 
 	if(Player[ToAddID][TextPos] == false) format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDamage ~r~%.0f~n~%sTotal Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[ToAddID][RoundKills], MAIN_TEXT_COLOUR, Player[ToAddID][RoundDamage], MAIN_TEXT_COLOUR, Player[ToAddID][TotalDamage]);
@@ -21684,15 +21768,15 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 	    if((TeamScore[ATTACKER] == 3 || TeamScore[DEFENDER] == 3) && CurrentRound != TotalRounds) {
 	        PreMatchResultsShowing = true;
 			SetTimer("PreMatchResults", 5000, 0);
-			SendClientMessageToAll(-1, "{3377FF}Preparing Pre-Match Results..");
-			SendClientMessageToAll(-1, "{3377FF}If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
+			SendClientMessageToAll(-1, "{E66000}Preparing Pre-Match Results..");
+			SendClientMessageToAll(-1, "{E66000}If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
 		}
 	} else if(ESLMode == true && OneOnOne == true) {
 	    if((TeamScore[ATTACKER] == 10 || TeamScore[DEFENDER] == 10) && CurrentRound != TotalRounds) {
 	        PreMatchResultsShowing = true;
 			SetTimer("PreMatchResults", 5000, 0);
-			SendClientMessageToAll(-1, "{3377FF}Preparing Pre-Match Results..");
-			SendClientMessageToAll(-1, "{3377FF}If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
+			SendClientMessageToAll(-1, "{E66000}Preparing Pre-Match Results..");
+			SendClientMessageToAll(-1, "{E66000}If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
 		}
 	}
 
@@ -21715,8 +21799,8 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 
 	if(CurrentRound >= TotalRounds && CurrentRound != 0) {
 		SetTimer("WarEnded", 5000, 0);
-		SendClientMessageToAll(-1, "{3377FF}Preparing End Match Results..");
-		SendClientMessageToAll(-1, "{3377FF}If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
+		SendClientMessageToAll(-1, "{E66000}Preparing End Match Results..");
+		SendClientMessageToAll(-1, "{E66000}If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
 	}
 
 
@@ -22777,7 +22861,7 @@ public OnUsingAnotherPC(playerid)
 {
     new str2[128], name[MAX_PLAYER_NAME];
 	GetPlayerName(playerid, name, sizeof(name));
-    format(str2, sizeof(str2), "{3377FF}** Whitetiger's AC: {FFFFFF}%s{3377FF} might be using the 2 PC trick.", name);
+    format(str2, sizeof(str2), "{E66000}** Whitetiger's AC: {FFFFFF}%s{E66000} might be using the 2 PC trick.", name);
     SendClientMessageToAll(-1, str2);
 
     return 1;
@@ -22795,18 +22879,18 @@ public OnACUpdated(playerid) {
 
 	if(!AC_Running(playerid)) {
 	    if(Player[playerid][ACKick] >= 1) {
-			format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been kicked for not running the Anti-Cheat.", Player[playerid][Name]);
+			format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been kicked for not running the Anti-Cheat.", Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 
 			SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-		    SendClientMessage(playerid, -1, "{3377FF}You can get the Anti-Cheat from: {FFFFFF}https://sixtytiger.com/tiger/ac_files/");
+		    SendClientMessage(playerid, -1, "{E66000}You can get the Anti-Cheat from: {FFFFFF}https://sixtytiger.com/tiger/ac_files/");
 	        SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 	        Player[playerid][IsGettingKicked] = true;
 			SetTimerEx("KickForAC", 1000, false, "i", playerid);
 
 			iString = "";
-			strcat(iString, "{FFFFFF}>>{FF3333}Anti-Cheat{FFFFFF}<<\n\nYou were kicked for not running the Whitetiger's Anti-Cheat.\n\nDownload Link: {3377FF}https://sixtytiger.com/tiger/ac_files/");
+			strcat(iString, "{FFFFFF}>>{FF3333}Anti-Cheat{FFFFFF}<<\n\nYou were kicked for not running the Whitetiger's Anti-Cheat.\n\nDownload Link: {E66000}https://sixtytiger.com/tiger/ac_files/");
 			strcat(iString, "{FFFFFF}\n\nInstall and run the AC, wait for it to say \"You are ready to play now.\"\nMake sure it is up to date (Latest Version).");
 
 			ShowPlayerDialog(playerid,DIALOG_ANTICHEAT,DIALOG_STYLE_MSGBOX,"{FF0000}Anti-Cheat", iString,"OK","");
@@ -22820,19 +22904,19 @@ public OnACUpdated(playerid) {
 			format(iString,sizeof(iString),"{CCCCCC}AC is off %d/2", Player[playerid][ACKick]);
    			SendClientMessage(playerid, -1, iString);
 
-   			format(iString, sizeof(iString), "{3377FF}Warning: {FFFFFF}%s's{3377FF} AC is off.", Player[playerid][Name]);
+   			format(iString, sizeof(iString), "{E66000}Warning: {FFFFFF}%s's{E66000} AC is off.", Player[playerid][Name]);
    			SendClientMessageToAll(-1, iString);
 		}
 
 		return 1;
 
 	} else if(AC_HasTrainer(playerid)) {
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been kicked for running trainers.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been kicked for running trainers.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 
         SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-		SendClientMessage(playerid, -1, "{3377FF}If you are using {FFFFFF}AutoHotkey {3377FF}please remove it.");
-        SendClientMessage(playerid, -1, "{3377FF}Once you're sure that you are using the original files, please {FFFFFF}RESTART {3377FF}the Anti-Cheat.");
+		SendClientMessage(playerid, -1, "{E66000}If you are using {FFFFFF}AutoHotkey {E66000}please remove it.");
+        SendClientMessage(playerid, -1, "{E66000}Once you're sure that you are using the original files, please {FFFFFF}RESTART {E66000}the Anti-Cheat.");
         SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
         Player[playerid][IsGettingKicked] = true;
@@ -22843,11 +22927,11 @@ public OnACUpdated(playerid) {
 		return 1;
 
 	} else if(AC_ASI(playerid)) {
-		format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been kicked for using .ASI scripts.", Player[playerid][Name]);
+		format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been kicked for using .ASI scripts.", Player[playerid][Name]);
 		SendClientMessageToAll(-1, iString);
 
         SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        SendClientMessage(playerid, -1, "{3377FF}Once you're sure that you are using the original files, please {FFFFFF}RESTART {3377FF}the Anti-Cheat.");
+        SendClientMessage(playerid, -1, "{E66000}Once you're sure that you are using the original files, please {FFFFFF}RESTART {E66000}the Anti-Cheat.");
         SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
         Player[playerid][IsGettingKicked] = true;
@@ -22869,13 +22953,13 @@ public OnACFileModified(playerid, file[]) {
     if(AllowStartBase == false) return 1;
 
 	new iString[400];
-	format(iString, sizeof(iString), "{FFFFFF}%s {3377FF}has been kicked for using modified: {FFFFFF}%s", Player[playerid][Name], file);
+	format(iString, sizeof(iString), "{FFFFFF}%s {E66000}has been kicked for using modified: {FFFFFF}%s", Player[playerid][Name], file);
 	SendClientMessageToAll(-1, iString);
 
 	SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-	format(iString, sizeof(iString), "{3377FF}Once you replaced your modified {FFFFFF}%s {3377FF}by the original one, please {FFFFFF}RESTART {3377FF}the Anti-Cheat.", file);
+	format(iString, sizeof(iString), "{E66000}Once you replaced your modified {FFFFFF}%s {E66000}by the original one, please {FFFFFF}RESTART {E66000}the Anti-Cheat.", file);
 	SendClientMessage(playerid, -1, iString);
-    SendClientMessage(playerid, -1, "{3377FF}You can get original files from: {FFFFFF}https://sixtytiger.com/tiger/ac_files/unmodded_files/");
+    SendClientMessage(playerid, -1, "{E66000}You can get original files from: {FFFFFF}https://sixtytiger.com/tiger/ac_files/unmodded_files/");
     SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 	iString = "";
@@ -22911,6 +22995,7 @@ public OnACStart() {
 	TextDrawSetString(ACText, sprintf("%sAC: ~g~      ON", MAIN_TEXT_COLOUR));
 	//printf("AC is on.");
 }
+
 
 forward KickForAC(playerid);
 public KickForAC(playerid) {
@@ -22983,7 +23068,7 @@ forward OnPlayerRegistered(Result:result, playerid, pw[]);
 public OnPlayerRegistered(Result:result, playerid, pw[]) {
 
 	new iString[128];
-    format(iString, sizeof(iString), "{3377FF}You have been successfully registered. Password: {FFFFFF}%s", pw);
+    format(iString, sizeof(iString), "{E66000}You have been successfully registered. Password: {FFFFFF}%s", pw);
 	SendClientMessage(playerid, -1, iString);
 //	SendClientMessage(playerid, -1, "Level: 0 | Weather: 0 | Time: 12 | Chat Channel: -1 | Net Check: 1 | HitSound: 17802 | Get HitSound: 1131");
 }
@@ -29509,7 +29594,7 @@ LoadObjects()
 stock SendErrorMessage(playerid, text[])
 {
 	new str[160];
-	format(str,sizeof(str),"{FFFFFF}ERROR:{3377FF} %s",text);
+	format(str,sizeof(str),"{FFFFFF}ERROR:{E66000} %s",text);
     SendClientMessage(playerid,-1,str);
 	return 1;
 }
@@ -29517,7 +29602,7 @@ stock SendErrorMessage(playerid, text[])
 stock SendUsageMessage(playerid, text[])
 {
 	new str[160];
-    format(str,sizeof(str),"{FFFFFF}USAGE:{3377FF} %s",text);
+    format(str,sizeof(str),"{FFFFFF}USAGE:{E66000} %s",text);
     SendClientMessage(playerid,-1,str);
 	return 1;
 }
@@ -29538,7 +29623,7 @@ public OnAimbotResponse(index, response_code, data[]) {
 	BanEx(i, "Aimbot");
 
 	new iString[256];
-	format(iString, sizeof(iString), "{FFFFFF}** System ** {3377FF}has banned {FFFFFF}%s {3377FF}| Reason: {FFFFFF}Aimbot", Player[i][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}** System ** {E66000}has banned {FFFFFF}%s {E66000}| Reason: {FFFFFF}Aimbot", Player[i][Name]);
 	SendClientMessageToAll(-1, iString);
 }
 
