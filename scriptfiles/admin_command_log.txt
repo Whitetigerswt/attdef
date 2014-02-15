@@ -34,3 +34,7 @@
 [15/02/2014][20:05:04] Niko_boy [0] has used the command (/eslmode). 
 [15/02/2014][20:28:11] Niko_boy [0] has used the command (/maxping). 
 [15/02/2014][20:48:49] Niko_boy [0] has used the command (/unfreeze) at Niko_boy [0]. 
+[15/02/2014][23:48:35] [KHK]Khalid [0] has used the command (/acar). 
+[15/02/2014][23:50:20] [KHK]Khalid [0] has used the command (/acar). 
+[15/02/2014][23:50:26] [KHK]Khalid [0] has used the command (/acar). 
+[15/02/2014][23:50:33] [KHK]Khalid [0] has used the command (/acar). 
