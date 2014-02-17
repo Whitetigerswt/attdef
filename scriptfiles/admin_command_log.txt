@@ -38,3 +38,7 @@
 [15/02/2014][23:50:20] [KHK]Khalid [0] has used the command (/acar). 
 [15/02/2014][23:50:26] [KHK]Khalid [0] has used the command (/acar). 
 [15/02/2014][23:50:33] [KHK]Khalid [0] has used the command (/acar). 
+[16/02/2014][00:46:38] [KHK]Khalid [0] has used the command (/config). 
+[16/02/2014][00:46:56] [KHK]Khalid [0] has used the command (/freecam). 
+[17/02/2014][18:34:41] [KHK]Khalid [0] has used the command (/eslmode). 
+[17/02/2014][18:42:06] [KHK]Khalid [0] has used the command (/eslmode). 

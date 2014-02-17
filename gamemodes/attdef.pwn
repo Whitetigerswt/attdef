@@ -1,22 +1,14 @@
 /*
 
-	v2.3
+	v2.3.1
 
-	- The gamemode has been updated to function properly with the new SA:MP version (0.3z).
-	- Headshots now should be more accurate than before.
-	- Re-enabled anti-joypad
-	- Added: new commands to permanently lock a server or enable AC.
-	- Fixed: you would see Arena instead of TDM while it's a TDM running.
-	- Fixed: /accheck was mentioned in /acmds by mistake.
-	- Most of admin commands are now logged with exact time and date in 'admin_command_log.txt' in your scriptfiles directory.
-	- ESL system is back in Attdef again.
-	- Changed: chat text colour.
-	- Added: /changepass for non-plugin version.
+	- Fixed: players from the same team could headshot each other.
+	- Fixed: ESL help dialog was shown to re-added players while playing which caused conflicts.
 
 */
 
 
-#define GM_NAME 		"Attack-Defend v2.3"
+#define GM_NAME 		"Attack-Defend v2.3.1"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -3715,23 +3707,29 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 				return 1;
 			}
 		}
-		new wepName[32], bool: nan_weapon = false;
-		switch(weaponid)
+		else
 		{
-		    case WEAPON_SNIPER:
-		    {format(wepName, sizeof wepName, "Sniper");}
-		    case WEAPON_RIFLE:
-		    {format(wepName, sizeof wepName, "Rifle");}
-		    case WEAPON_DEAGLE:
-		    {format(wepName, sizeof wepName, "Deagle");}
-		    default: nan_weapon = true;
-		}
-		if( nan_weapon == false )
-		{
-			new shootername[MAX_PLAYER_NAME], shotname[MAX_PLAYER_NAME];
-			GetPlayerName(playerid, shotname, sizeof shotname);
-			GetPlayerName(issuerid, shootername, sizeof shootername);
-			SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has just head-shot {FFFFFF}%s "COL_PRIM"({FFFFFF}%s"COL_PRIM")", shootername, shotname, wepName));
+		    if(GetPlayerTeam(playerid) != NO_TEAM && GetPlayerTeam(playerid) == GetPlayerTeam(issuerid))
+				goto skipped;
+			new wepName[32], bool: nan_weapon = false;
+			switch(weaponid)
+			{
+			    case WEAPON_SNIPER:
+			    {format(wepName, sizeof wepName, "Sniper");}
+			    case WEAPON_RIFLE:
+			    {format(wepName, sizeof wepName, "Rifle");}
+			    case WEAPON_DEAGLE:
+			    {format(wepName, sizeof wepName, "Deagle");}
+			    default: nan_weapon = true;
+			}
+			if( nan_weapon == false )
+			{
+				new shootername[MAX_PLAYER_NAME], shotname[MAX_PLAYER_NAME];
+				GetPlayerName(playerid, shotname, sizeof shotname);
+				GetPlayerName(issuerid, shootername, sizeof shootername);
+				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has just head-shot {FFFFFF}%s "COL_PRIM"({FFFFFF}%s"COL_PRIM")", shootername, shotname, wepName));
+			}
+			skipped:
 		}
 	}
 
@@ -4339,11 +4337,13 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 
 			#if INTROTEXT == 0
-				if(ESLMode == false) SpawnConnectedPlayer(playerid, 0);
-				else {
-					ESLHelpDialog(playerid);
+				if(ESLMode == false)
+					SpawnConnectedPlayer(playerid, 0);
+				else
+				{
+					SetTimerEx("ShowESLHelpDiag", 2000, false, "i", playerid);
 				}
-				SpawnConnectedPlayer(playerid, 0);
+				//SpawnConnectedPlayer(playerid, 0);
 			#else
 			    OnPlayerRequestClass(playerid, 0);
 			#endif
@@ -4395,13 +4395,16 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 //			        SendClientMessage(playerid, -1, Query);
 //
 //					#if INTROTEXT == 0
-//						if(ESLMode == false) SpawnConnectedPlayer(playerid, 0);
-//						else {
-//							ESLHelpDialog(playerid);
-//						}
+//					if(ESLMode == false)
+//						SpawnConnectedPlayer(playerid, 0);
+//					else
+//					{
+//						SetTimerEx("ShowESLHelpDiag", 2000, false, "i", playerid);
+//					}
+//					//SpawnConnectedPlayer(playerid, 0);
 //					#else
-//					    OnPlayerRequestClass(playerid, 0);
-//					#endif
+  //  				OnPlayerRequestClass(playerid, 0);
+	//				#endif
 //
 //				} else {
 //			 		SendErrorMessage(playerid,"Wrong Password. Please try again.");
@@ -4465,13 +4468,15 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 		        //radio duel
 
 				#if INTROTEXT == 0
-					if(ESLMode == false) SpawnConnectedPlayer(playerid, 0);
-					else {
-						ESLHelpDialog(playerid);
-					}
+				if(ESLMode == false)
 					SpawnConnectedPlayer(playerid, 0);
+				else
+				{
+					SetTimerEx("ShowESLHelpDiag", 2000, false, "i", playerid);
+				}
+				//SpawnConnectedPlayer(playerid, 0);
 				#else
-				    OnPlayerRequestClass(playerid, 0);
+			    OnPlayerRequestClass(playerid, 0);
 				#endif
 
 			} else {
@@ -5984,11 +5989,13 @@ public OnHashUpdate(const iIdx, szHash[]) {
 			//radio //duel
 
 			#if INTROTEXT == 0
-				if(ESLMode == false) SpawnConnectedPlayer(playerid, 0);
-				else {
-					ESLHelpDialog(playerid);
+				if(ESLMode == false)
+					SpawnConnectedPlayer(playerid, 0);
+				else
+				{
+					SetTimerEx("ShowESLHelpDiag", 2000, false, "i", playerid);
 				}
-				SpawnConnectedPlayer(playerid, 0);
+				//SpawnConnectedPlayer(playerid, 0);
 			#else
 			    OnPlayerRequestClass(playerid, 0);
 			#endif
@@ -6089,6 +6096,12 @@ CMD:updates(playerid, params[])
 	new string[2048];
 
 	string = "";
+
+    strcat(string, "{00FF00}Attack-Defend v2.3.1 updates:\n");
+
+	strcat(string, "\n{FFFFFF}- Fixed: players from the same team could headshot each other.");
+	strcat(string, "\n{FFFFFF}- Fixed: ESL help dialog was shown to re-added players while playing which caused conflicts.");
+
 
 	strcat(string, "{00FF00}Attack-Defend v2.3 updates:\n");
 
@@ -16749,6 +16762,14 @@ stock ESLRules() {
 }
 
 
+forward ShowESLHelpDiag(playerid);
+public ShowESLHelpDiag(playerid)
+{
+	if(!Player[playerid][Playing])
+		ESLHelpDialog(playerid);
+	return 1;
+}
+
 stock ESLHelpDialog(playerid) {
 
     EslString = "";
@@ -23049,13 +23070,15 @@ public OnPlayerLogin(Result:result, playerid) {
     SendClientMessage(playerid, -1, iString);
 */
 	#if INTROTEXT == 0
-	if(ESLMode == false) SpawnConnectedPlayer(playerid, 0);
-	else {
-
-		ESLHelpDialog(playerid);
+	if(ESLMode == false)
+		SpawnConnectedPlayer(playerid, 0);
+	else
+	{
+		SetTimerEx("ShowESLHelpDiag", 2000, false, "i", playerid);
 	}
+	//SpawnConnectedPlayer(playerid, 0);
 	#else
-	OnPlayerRequestClass(playerid, 0);
+    OnPlayerRequestClass(playerid, 0);
 	#endif
 	return 1;
 

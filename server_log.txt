@@ -1,0 +1,400 @@
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z, (C)2005-2014 SA-MP Team
+
+[00:45:47] filterscripts = ""  (string)
+[00:45:47] 
+[00:45:47] Server Plugins
+[00:45:47] --------------
+[00:45:47]  Loading plugin: sscanf
+[00:45:47] 
+
+[00:45:47]  ===============================
+
+[00:45:47]       sscanf plugin loaded.     
+
+[00:45:47]          Version:  2.8.1        
+
+[00:45:47]    (c) 2012 Alex "Y_Less" Cole  
+
+[00:45:47]  ===============================
+
+[00:45:47]   Loaded.
+[00:45:47]  Loading plugin: crashdetect
+[00:45:47]   CrashDetect v4.13 is OK.
+[00:45:47]   Loaded.
+[00:45:47]  Loaded 2 plugins.
+
+[00:45:47] 
+[00:45:47] Filterscripts
+[00:45:47] ---------------
+[00:45:47]   Loaded 0 filterscripts.
+
+[00:45:47]  
+[00:45:47]  
+[00:45:47]  
+[00:45:47]  ======================================= 
+[00:45:47]  |                                     | 
+[00:45:47]  |        YSI version 3.09.0684        | 
+[00:45:47]  |        By Alex "Y_Less" Cole        | 
+[00:45:47]  |                                     | 
+[00:45:47]  ======================================= 
+[00:45:47]  
+[00:45:47]  
+[00:45:47]  
+[00:45:47] Hostname: Attdef Test Server
+[00:45:47] Server Config Loaded.
+[00:45:47] Bases Loaded: 86
+[00:45:47] Arenas Loaded: 79
+[00:45:47] DMs Loaded: 13
+[00:45:47] Duels Loaded: 1
+[00:45:47] Number of vehicle models: 0
+[00:45:47] __________________________________________________
+[00:45:47] 
+[00:45:47] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[00:45:47] 
+[00:45:47] __________________________________________________
+[00:46:17] Incoming connection: 127.0.0.1:63576
+[00:46:17] [join] [KHK]Khalid has joined the server (0:127.0.0.1)
+[00:48:20] Server password has been removed.
+[00:48:20] [part] [KHK]Khalid has left the server (0:1)
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z, (C)2005-2014 SA-MP Team
+
+[13:25:22] filterscripts = ""  (string)
+[13:25:22] 
+[13:25:22] Server Plugins
+[13:25:22] --------------
+[13:25:22]  Loading plugin: sscanf
+[13:25:22] 
+
+[13:25:22]  ===============================
+
+[13:25:22]       sscanf plugin loaded.     
+
+[13:25:22]          Version:  2.8.1        
+
+[13:25:22]    (c) 2012 Alex "Y_Less" Cole  
+
+[13:25:22]  ===============================
+
+[13:25:22]   Loaded.
+[13:25:22]  Loading plugin: crashdetect
+[13:25:22]   CrashDetect v4.13 is OK.
+[13:25:22]   Loaded.
+[13:25:22]  Loaded 2 plugins.
+
+[13:25:22] 
+[13:25:22] Filterscripts
+[13:25:22] ---------------
+[13:25:22]   Loaded 0 filterscripts.
+
+[13:25:22]  
+[13:25:22]  
+[13:25:22]  
+[13:25:22]  ======================================= 
+[13:25:22]  |                                     | 
+[13:25:22]  |        YSI version 3.09.0684        | 
+[13:25:22]  |        By Alex "Y_Less" Cole        | 
+[13:25:22]  |                                     | 
+[13:25:22]  ======================================= 
+[13:25:22]  
+[13:25:22]  
+[13:25:22]  
+[13:25:22] Hostname: Attdef Test Server
+[13:25:22] Server Config Loaded.
+[13:25:22] Bases Loaded: 86
+[13:25:22] Arenas Loaded: 79
+[13:25:22] DMs Loaded: 13
+[13:25:22] Duels Loaded: 1
+[13:25:22] Number of vehicle models: 0
+[13:25:23] __________________________________________________
+[13:25:23] 
+[13:25:23] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[13:25:23] 
+[13:25:23] __________________________________________________
+[13:26:00] Incoming connection: 127.0.0.1:62474
+[13:26:00] [join] [KHK]Khalid has joined the server (0:127.0.0.1)
+[13:26:50] Server password has been removed.
+[13:26:50] [part] [KHK]Khalid has left the server (0:1)
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z, (C)2005-2014 SA-MP Team
+
+[13:27:51] filterscripts = ""  (string)
+[13:27:51] 
+[13:27:51] Server Plugins
+[13:27:51] --------------
+[13:27:51]  Loading plugin: sscanf
+[13:27:51] 
+
+[13:27:51]  ===============================
+
+[13:27:51]       sscanf plugin loaded.     
+
+[13:27:51]          Version:  2.8.1        
+
+[13:27:51]    (c) 2012 Alex "Y_Less" Cole  
+
+[13:27:51]  ===============================
+
+[13:27:51]   Loaded.
+[13:27:51]  Loading plugin: crashdetect
+[13:27:51]   CrashDetect v4.13 is OK.
+[13:27:51]   Loaded.
+[13:27:51]  Loaded 2 plugins.
+
+[13:27:51] 
+[13:27:51] Filterscripts
+[13:27:51] ---------------
+[13:27:51]   Loaded 0 filterscripts.
+
+[13:27:51]  
+[13:27:51]  
+[13:27:51]  
+[13:27:51]  ======================================= 
+[13:27:51]  |                                     | 
+[13:27:51]  |        YSI version 3.09.0684        | 
+[13:27:51]  |        By Alex "Y_Less" Cole        | 
+[13:27:51]  |                                     | 
+[13:27:51]  ======================================= 
+[13:27:51]  
+[13:27:51]  
+[13:27:51]  
+[13:27:51] Hostname: Attdef Test Server
+[13:27:51] Server Config Loaded.
+[13:27:51] Bases Loaded: 86
+[13:27:51] Arenas Loaded: 79
+[13:27:51] DMs Loaded: 13
+[13:27:51] Duels Loaded: 1
+[13:27:51] Number of vehicle models: 0
+[13:27:52] __________________________________________________
+[13:27:52] 
+[13:27:52] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[13:27:52] 
+[13:27:52] __________________________________________________
+[13:28:11] Incoming connection: 127.0.0.1:52878
+[13:28:11] [join] [KHK]Khalid has joined the server (0:127.0.0.1)
+[13:29:47] Server password has been removed.
+[13:29:47] [part] [KHK]Khalid has left the server (0:1)
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z, (C)2005-2014 SA-MP Team
+
+[18:32:41] filterscripts = ""  (string)
+[18:32:41] 
+[18:32:41] Server Plugins
+[18:32:41] --------------
+[18:32:41]  Loading plugin: sscanf
+[18:32:41] 
+
+[18:32:41]  ===============================
+
+[18:32:41]       sscanf plugin loaded.     
+
+[18:32:41]          Version:  2.8.1        
+
+[18:32:41]    (c) 2012 Alex "Y_Less" Cole  
+
+[18:32:41]  ===============================
+
+[18:32:41]   Loaded.
+[18:32:41]  Loading plugin: crashdetect
+[18:32:41]   CrashDetect v4.13 is OK.
+[18:32:41]   Loaded.
+[18:32:41]  Loaded 2 plugins.
+
+[18:32:41] 
+[18:32:41] Filterscripts
+[18:32:41] ---------------
+[18:32:41]   Loaded 0 filterscripts.
+
+[18:32:41]  
+[18:32:41]  
+[18:32:41]  
+[18:32:41]  ======================================= 
+[18:32:41]  |                                     | 
+[18:32:41]  |        YSI version 3.09.0684        | 
+[18:32:41]  |        By Alex "Y_Less" Cole        | 
+[18:32:41]  |                                     | 
+[18:32:41]  ======================================= 
+[18:32:41]  
+[18:32:41]  
+[18:32:41]  
+[18:32:41] Hostname: Attdef Test Server
+[18:32:41] Server Config Loaded.
+[18:32:41] Bases Loaded: 86
+[18:32:41] Arenas Loaded: 79
+[18:32:41] DMs Loaded: 13
+[18:32:41] Duels Loaded: 1
+[18:32:41] Number of vehicle models: 0
+[18:32:41] __________________________________________________
+[18:32:41] 
+[18:32:41] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[18:32:41] 
+[18:32:41] __________________________________________________
+[18:33:11] --- Server Shutting Down.
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z, (C)2005-2014 SA-MP Team
+
+[18:33:16] filterscripts = ""  (string)
+[18:33:16] 
+[18:33:16] Server Plugins
+[18:33:16] --------------
+[18:33:16]  Loading plugin: sscanf
+[18:33:16] 
+
+[18:33:16]  ===============================
+
+[18:33:16]       sscanf plugin loaded.     
+
+[18:33:16]          Version:  2.8.1        
+
+[18:33:16]    (c) 2012 Alex "Y_Less" Cole  
+
+[18:33:16]  ===============================
+
+[18:33:16]   Loaded.
+[18:33:16]  Loading plugin: crashdetect
+[18:33:16]   CrashDetect v4.13 is OK.
+[18:33:16]   Loaded.
+[18:33:16]  Loaded 2 plugins.
+
+[18:33:16] 
+[18:33:16] Filterscripts
+[18:33:16] ---------------
+[18:33:16]   Loaded 0 filterscripts.
+
+[18:33:16]  
+[18:33:16]  
+[18:33:16]  
+[18:33:16]  ======================================= 
+[18:33:16]  |                                     | 
+[18:33:16]  |        YSI version 3.09.0684        | 
+[18:33:16]  |        By Alex "Y_Less" Cole        | 
+[18:33:16]  |                                     | 
+[18:33:16]  ======================================= 
+[18:33:16]  
+[18:33:16]  
+[18:33:16]  
+[18:33:16] Hostname: Attdef Test Server
+[18:33:16] Server Config Loaded.
+[18:33:16] Bases Loaded: 86
+[18:33:16] Arenas Loaded: 79
+[18:33:16] DMs Loaded: 13
+[18:33:16] Duels Loaded: 1
+[18:33:16] Number of vehicle models: 0
+[18:33:16] __________________________________________________
+[18:33:16] 
+[18:33:16] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[18:33:16] 
+[18:33:16] __________________________________________________
+[18:33:48] Incoming connection: 127.0.0.1:60001
+[18:33:49] [join] godfather has joined the server (0:127.0.0.1)
+[18:33:51] Server password has been removed.
+[18:33:51] [part] godfather has left the server (0:2)
+[18:34:18] Incoming connection: 127.0.0.1:60002
+[18:34:19] [join] [KHK]Khalid has joined the server (0:127.0.0.1)
+[18:34:43] [part] [KHK]Khalid has left the server (0:1)
+[18:35:04] Incoming connection: 127.0.0.1:60003
+[18:35:04] [join] [KHK]Khalid has joined the server (0:127.0.0.1)
+[18:35:22] [part] [KHK]Khalid has left the server (0:1)
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z, (C)2005-2014 SA-MP Team
+
+[18:39:39] filterscripts = ""  (string)
+[18:39:39] 
+[18:39:39] Server Plugins
+[18:39:39] --------------
+[18:39:39]  Loading plugin: sscanf
+[18:39:39] 
+
+[18:39:39]  ===============================
+
+[18:39:39]       sscanf plugin loaded.     
+
+[18:39:39]          Version:  2.8.1        
+
+[18:39:39]    (c) 2012 Alex "Y_Less" Cole  
+
+[18:39:39]  ===============================
+
+[18:39:39]   Loaded.
+[18:39:39]  Loading plugin: crashdetect
+[18:39:39]   CrashDetect v4.13 is OK.
+[18:39:39]   Loaded.
+[18:39:39]  Loaded 2 plugins.
+
+[18:39:39] 
+[18:39:39] Filterscripts
+[18:39:39] ---------------
+[18:39:39]   Loaded 0 filterscripts.
+
+[18:39:39]  
+[18:39:39]  
+[18:39:39]  
+[18:39:39]  ======================================= 
+[18:39:39]  |                                     | 
+[18:39:39]  |        YSI version 3.09.0684        | 
+[18:39:39]  |        By Alex "Y_Less" Cole        | 
+[18:39:39]  |                                     | 
+[18:39:39]  ======================================= 
+[18:39:39]  
+[18:39:39]  
+[18:39:39]  
+[18:39:39] Hostname: Attdef Test Server
+[18:39:39] Server Config Loaded.
+[18:39:39] Bases Loaded: 86
+[18:39:39] Arenas Loaded: 79
+[18:39:39] DMs Loaded: 13
+[18:39:39] Duels Loaded: 1
+[18:39:39] Number of vehicle models: 0
+[18:39:39] __________________________________________________
+[18:39:39] 
+[18:39:39] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[18:39:39] 
+[18:39:39] __________________________________________________
+[18:40:03] Incoming connection: 127.0.0.1:58585
+[18:40:03] [join] [KHK]Khalid has joined the server (0:127.0.0.1)
+[18:40:29] [part] [KHK]Khalid has left the server (0:1)
+[18:40:50] Incoming connection: 127.0.0.1:58586
+[18:40:51] [join] [KHK]Khalid has joined the server (0:127.0.0.1)
+[18:42:08] Server password has been removed.
+[18:42:08] [part] [KHK]Khalid has left the server (0:1)
+[18:42:30] Incoming connection: 127.0.0.1:58587
+[18:42:30] [join] [KHK]Khalid has joined the server (0:127.0.0.1)
+[18:42:43] Server password has been removed.
+[18:42:43] [part] [KHK]Khalid has left the server (0:1)
