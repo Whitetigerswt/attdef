@@ -42,3 +42,9 @@
 [16/02/2014][00:46:56] [KHK]Khalid [0] has used the command (/freecam). 
 [17/02/2014][18:34:41] [KHK]Khalid [0] has used the command (/eslmode). 
 [17/02/2014][18:42:06] [KHK]Khalid [0] has used the command (/eslmode). 
+[21/02/2014][14:16:30] [KHK]Khalid [0] has used the command (/lock). 
+[21/02/2014][14:17:10] [KHK]Khalid [0] has used the command (/lock). 
+[21/02/2014][14:17:13] [KHK]Khalid [0] has used the command (/permlock). 
+[21/02/2014][14:17:47] [KHK]Khalid [0] has used the command (/permlock). 
+[21/02/2014][14:18:28] [KHK]Khalid [0] has used the command (/ac). 
+[21/02/2014][14:18:32] [KHK]Khalid [0] has used the command (/permac). 

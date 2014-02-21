@@ -1,14 +1,16 @@
 /*
 
-	v2.3.1
+	v2.4
 
-	- Fixed: players from the same team could headshot each other.
-	- Fixed: ESL help dialog was shown to re-added players while playing which caused conflicts.
+	- Fixed a few minor bugs which appeared in the previous version.
+	- Feature: you can now lead your team by pressing the key 'H' while being in round.
+
 
 */
 
 
-#define GM_NAME 		"Attack-Defend v2.3.1"
+#define GM_VERSION         "2.4"
+#define GM_NAME 		"Attack-Defend v2.4"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -208,6 +210,7 @@ stock _HOOKED_PlayerTextDrawSetString(playerid, PlayerText:text, string[])
 #define REFEREE_COLOR 			0xFFFF0055 	// Bright Yellow color
 #define ATTACKER_ASKING_HELP    0xFF777788 	// Orange red color
 #define DEFENDER_ASKING_HELP    0x7777FF88 	// Light blue color
+#define TEAM_LEADER_COLOUR 		0xB7FFAEFF  // Light green colour
 
 
 #define COL_PRIM    "{F36164}" // niko's orange >> {E66000}
@@ -539,6 +542,7 @@ enum PlayerVariables {
 	//bool:IsFreezed,		//antisob
 	bool:IsGettingKicked,
 	bool:AskingForHelp,
+	AskingForHelpTimer,
 	bool:Mute,
 	bool:ToAddInRound,
 	bool:DontPause,
@@ -808,6 +812,9 @@ new Float:RoundHP = 100.0, Float:RoundAR = 100.0;
 new Skin[MAX_TEAMS];
 new TextColor[MAX_TEAMS][10];
 new TDC[MAX_TEAMS][7];
+new bool:TeamHasLeader[2];
+new TeamLeader[2];
+
 
 new GunMenuWeapons[10][2];
 
@@ -2133,7 +2140,7 @@ public OnPlayerConnect(playerid)
 	Player[playerid][IsFrozen] = false;
 //	Player[playerid][IsFreezed] = false;    //antisob
 	Player[playerid][IsGettingKicked] = false;
-//	Player[playerid][AskingForHelp] = false;
+	Player[playerid][AskingForHelp] = false;
 	Player[playerid][Mute] = false;
 	Player[playerid][ToAddInRound] = false;
 	Player[playerid][DontPause] = false;
@@ -2564,7 +2571,9 @@ public OnPlayerDisconnect(playerid, reason)
     GetPlayerArmour(playerid, HP[1]);
 
     if(WarMode == true) {
-		if(Player[playerid][Playing] == true || Player[playerid][ToAddInRound] == true) {
+		if(Player[playerid][Playing] == true || Player[playerid][ToAddInRound] == true)
+		{
+		    PlayerNoLeadTeam(playerid);
 		    StorePlayerVariables(playerid);
 			if(Player[playerid][DontPause] == false && AutoPause == true) {	//autopause
 
@@ -2855,6 +2864,8 @@ public OnPlayerDeath(playerid, killerid, reason)
 	if(Player[playerid][Playing] == true) TempPlaying = true;
 	else TempPlaying = false;
 
+    if(Player[playerid][Playing] == true)
+    	PlayerNoLeadTeam(playerid);
 
 	if(killerid == INVALID_PLAYER_ID) {
 	    if(Current == -1) SendDeathMessage(INVALID_PLAYER_ID, playerid, reason);
@@ -6241,6 +6252,8 @@ CMD:cmds(playerid, params[])
 	string = "";
 	strcat(string, "\n{FFFFFF}Use {FFFF00}! {FFFFFF}for team chat");
 	strcat(string, "\n{FFFFFF}Press {FFFF00}N {FFFFFF}to request for backup in a round");
+    strcat(string, "\n{FFFFFF}Press {FFFF00}H {FFFFFF}to lead your team");
+
 
 	strcat(string, "\n\n"COL_PRIM"Basic commands:");
 	strcat(string, "\n{FFFFFF}/help   /updates   /s(ync)   /v   /car   /spec   /specoff   /kill   /severstats   /sstats");
@@ -7450,13 +7463,13 @@ CMD:permlock(playerid, params[])
 	    if(PermLocked == true)
 		{
 			PermLocked = false;
-			format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has made the server lock permanent!",Player[playerid][Name]);
+			format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has disabled the server permanent lock!",Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 		}
 		else
 		{
 		    PermLocked = true;
-			format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has disabled the server permanent lock!",Player[playerid][Name]);
+			format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has made the server lock permanent!",Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 		}
 	}
@@ -10993,6 +11006,9 @@ CMD:end(playerid, params[])
 
     GangZoneDestroy(CPZone);
 	GangZoneDestroy(ArenaZone);
+	
+	ResetTeamLeaders();
+	
     LogAdminCommand("end", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
@@ -15701,6 +15717,90 @@ stock ShowDeathMessage(playerid, killerid)
 	return 1;
 }*/
 
+stock PlayerLeadTeam(playerid, bool:force, bool:message = true)
+{
+    new team = Player[playerid][Team];
+
+    if(!force && TeamHasLeader[team] == true)
+        return 0;
+
+    KillTimer(Player[playerid][AskingForHelpTimer]);
+    TeamLeader[team] = playerid;
+	TeamHasLeader[team] = true;
+	if(message)
+	{
+	 	foreach(new i : Player)
+		{
+		    if(GetPlayerTeam(i) == GetPlayerTeam(playerid))
+		    {
+				SendClientMessage(i, -1, sprintf("%s%s {FFFFFF}is now leading the team.", TextColor[team], Player[playerid][Name]));
+		    }
+		}
+	}
+	SetPlayerColor(playerid, TEAM_LEADER_COLOUR);
+    RadarFix();
+	return 1;
+}
+
+stock PlayerNoLeadTeam(playerid)
+{
+    new team = Player[playerid][Team];
+
+	if(TeamHasLeader[team] == true && TeamLeader[team] == playerid)
+	{
+	    TeamLeader[team] = INVALID_PLAYER_ID;
+		TeamHasLeader[team] = false;
+		foreach(new i : Player)
+		{
+			if(GetPlayerTeam(i) == GetPlayerTeam(playerid))
+		    {
+				SendClientMessage(i, -1, sprintf("%s%s {FFFFFF}is no longer leading the team.", TextColor[team], Player[playerid][Name]));
+		    }
+		}
+	    switch(team)
+	    {
+	        case 0:
+	        {
+	            AttackerAskingHelp(playerid);
+			}
+	        case 1:
+	        {
+	            DefenderAskingHelp(playerid);
+			}
+	    }
+	}
+	return 1;
+}
+
+stock ResetTeamLeaders()
+{
+	new team;
+
+	team = 0;
+	if(TeamHasLeader[team] == true)
+	{
+	    if(IsPlayerConnected(TeamLeader[team]))
+	    {
+			ColorFix(TeamLeader[team]);
+	    }
+	    TeamLeader[team] = INVALID_PLAYER_ID;
+		TeamHasLeader[team] = false;
+	}
+	
+	team = 1;
+	if(TeamHasLeader[team] == true)
+	{
+	    if(IsPlayerConnected(TeamLeader[team]))
+	    {
+			ColorFix(TeamLeader[team]);
+	    }
+	    TeamLeader[team] = INVALID_PLAYER_ID;
+		TeamHasLeader[team] = false;
+	}
+	return 1;
+}
+
+
 /*
 Function: LogAdminCommand
 cmd[]: the entered command
@@ -18497,11 +18597,16 @@ stock RemoveClanTagFromName(playerid) {
 
 stock ColorFix(playerid) {
 	if(Player[playerid][Playing] == true) {
+	
 	    switch(Player[playerid][Team]) {
 	        case ATTACKER: SetPlayerColor(playerid, ATTACKER_PLAYING);
 	        case DEFENDER: SetPlayerColor(playerid, DEFENDER_PLAYING);
 	        case REFEREE: SetPlayerColor(playerid, REFEREE_COLOR);
 		}
+		
+		new team = Player[playerid][Team];
+		if(TeamHasLeader[team] == true && TeamLeader[team] == playerid)
+		    PlayerLeadTeam(playerid, true, false);
 	} else {
 	    switch(Player[playerid][Team]) {
 	        case ATTACKER: SetPlayerColor(playerid, ATTACKER_NOT_PLAYING);
@@ -18511,6 +18616,7 @@ stock ColorFix(playerid) {
 	        case DEFENDER_SUB: SetPlayerColor(playerid, DEFENDER_SUB_COLOR);
 		}
 	}
+	return 1;
 }
 
 stock RadarFix() {
@@ -19033,10 +19139,10 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 		    ShowEndRoundTextDraw(playerid);
 		    return 1;
 		}
-	} else if(Current != -1 && PRESSED(262144) && Player[playerid][Level] > 1) {
+	} /*else if(Current != -1 && PRESSED(262144) && Player[playerid][Level] > 1) {
 		EnableInterface(playerid);
 		return 1;
-	}
+	}*/
 
 
 	if(Current != -1 && Player[playerid][Playing] == true)
@@ -19099,8 +19205,27 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 			}
 		}
 
-		if(PRESSED(131072) && AllowStartBase == true && Player[playerid][Playing] == true) {
-            if(Player[playerid][Team] == ATTACKER && TeamHelp[ATTACKER] == false) {
+        if(PRESSED(262144) && AllowStartBase == true && Player[playerid][Playing] == true)
+        {
+            new team = Player[playerid][Team];
+			if(TeamHasLeader[team] != true)
+            {
+                PlayerLeadTeam(playerid, false, true);
+           	}
+           	else
+           	{
+           	    if(TeamLeader[team] == playerid) // off
+      	    	{
+                    PlayerNoLeadTeam(playerid);
+           	    }
+           	    else
+           	    	SendErrorMessage(playerid, "Your team already has a leader!");
+           	}
+        }
+
+		if(PRESSED(131072) && AllowStartBase == true && Player[playerid][Playing] == true)
+		{
+		    if(Player[playerid][Team] == ATTACKER && TeamHelp[ATTACKER] == false) {
                 new iString[160];
 				foreach(new i : Player) {
 				    if((Player[i][Playing] == true || GetPlayerState(i) == PLAYER_STATE_SPECTATING) && i != playerid && Player[i][Team] == ATTACKER) {
@@ -19110,11 +19235,11 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					}
 				}
 				TeamHelp[ATTACKER] = true;
-//				Player[playerid][AskingForHelp] = true;
+				Player[playerid][AskingForHelp] = true;
 				SetPlayerColor(playerid, ATTACKER_ASKING_HELP);
 
 				SendClientMessage(playerid, -1, "{FF8800}[HELP] {FFFFFF}You have requested for backup.");
-				SetTimerEx("AttackerAskingHelp", 7000, 0, "i", playerid);
+				Player[playerid][AskingForHelpTimer] = SetTimerEx("AttackerAskingHelp", 7000, 0, "i", playerid);
 
 			} else if(Player[playerid][Team] == DEFENDER && TeamHelp[DEFENDER] == false) {
                 new iString[160];
@@ -19126,11 +19251,11 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					}
 				}
 				TeamHelp[DEFENDER] = true;
-//				Player[playerid][AskingForHelp] = true;
+				Player[playerid][AskingForHelp] = true;
 				SetPlayerColor(playerid, DEFENDER_ASKING_HELP);
 
 				SendClientMessage(playerid, -1, "{FF8800}[HELP] {FFFFFF}You have requested for backup.");
-				SetTimerEx("DefenderAskingHelp", 7000, 0, "i", playerid);
+				Player[playerid][AskingForHelpTimer] = SetTimerEx("DefenderAskingHelp", 7000, 0, "i", playerid);
 
 			}
 
@@ -19964,17 +20089,31 @@ public UnpauseRound()
 forward AttackerAskingHelp(playerid);
 public AttackerAskingHelp(playerid) {
 	TeamHelp[ATTACKER] = false;
-//    Player[playerid][AskingForHelp] = false;
-	ColorFix(playerid);
-	RadarFix();
+    Player[playerid][AskingForHelp] = false;
+    new team = Player[playerid][Team];
+	if(TeamHasLeader[team] == true && TeamLeader[team] == playerid)
+	    PlayerLeadTeam(playerid, true, false);
+	else
+	{
+		ColorFix(playerid);
+		RadarFix();
+	}
+	return 1;
 }
 
 forward DefenderAskingHelp(playerid);
 public DefenderAskingHelp(playerid) {
 	TeamHelp[DEFENDER] = false;
-//	Player[playerid][AskingForHelp] = false;
-	ColorFix(playerid);
-	RadarFix();
+	Player[playerid][AskingForHelp] = false;
+	new team = Player[playerid][Team];
+	if(TeamHasLeader[team] == true && TeamLeader[team] == playerid)
+	    PlayerLeadTeam(playerid, true, false);
+	else
+	{
+		ColorFix(playerid);
+		RadarFix();
+	}
+	return 1;
 }
 
 forward OnPlayerKicked(playerid);
@@ -20018,6 +20157,7 @@ public HideHpTextForAtt() {
 	TextDrawSetString(TeamHpLose[0], " ");
 	TextDrawSetString(AttHpLose, " ");
 	TempDamage[ATTACKER] = 0;
+	return 1;
 }
 
 forward HideHpTextForDef();
@@ -20025,18 +20165,21 @@ public HideHpTextForDef() {
 	TextDrawSetString(TeamHpLose[1], " ");
 	TextDrawSetString(DefHpLose, " ");
 	TempDamage[DEFENDER] = 0;
+	return 1;
 }
 
 forward DeathMessage(killerid, playerid);
 public DeathMessage(killerid, playerid) {
 	PlayerTextDrawHide(killerid, DeathText[0]);
 	PlayerTextDrawHide(playerid, DeathText[1]);
+	return 1;
 }
 
 forward SwapBothTeams();
 public SwapBothTeams() {
     SwapTeams();
 	if(PreMatchResultsShowing == false) AllowStartBase = true;
+	return 1;
 }
 
 stock GetPlayerAKA(playerid) {
@@ -20195,6 +20338,7 @@ public OnPlayerReplace(ToAddID, ToReplaceID, playerid) {
 	PlayerTextDrawSetString(ToAddID, RoundKillDmgTDmg, iString);
 
     RadarFix();
+    return 1;
 }
 
 forward OnPlayerInGameReplace(ToAddID, i, playerid);
@@ -20284,6 +20428,7 @@ public OnPlayerInGameReplace(ToAddID, i, playerid) {
 	}
 	//skinicons
 #endif
+    return 1;
 }
 
 
@@ -20296,6 +20441,7 @@ public OnPlayerInGameReplace(ToAddID, i, playerid) {
 forward OnArenaStart(ArenaID);
 public OnArenaStart(ArenaID)
 {
+    ResetTeamLeaders();
     ClearKillList(); // Clears the kill-list.
     DestroyAllVehicles(); // Destroys (removes) all the spawned vehicles
 	Current = ArenaID; // Current will be the ID of the base that we just started. We do this so that we can use this ID later on (e.g. check /car command for the use).
@@ -20428,7 +20574,7 @@ public OnArenaStart(ArenaID)
 		MatchRoundsRecord[ MatchRoundsStarted - 1 ][ round__ID ] = ArenaID;
 		MatchRoundsRecord[ MatchRoundsStarted - 1 ][ round__completed ] = false;
 	}
-
+    return 1;
 }
 
 forward ViewArenaForPlayers();
@@ -20830,6 +20976,7 @@ GivePlayerArenaWeapons(playerid)
 	    SetPlayerArmedWeapon( playerid, 0 );
 	}
 	#endif
+	return 1;
 }
 
 //------------------------------------------------------------------------------
@@ -20839,6 +20986,7 @@ GivePlayerArenaWeapons(playerid)
 forward OnBaseStart(BaseID);
 public OnBaseStart(BaseID)
 {
+    ResetTeamLeaders();
     ClearKillList(); // Clears the kill-list.
     DestroyAllVehicles(); // Destroys (removes) all the spawned vehicles
 	Current = BaseID; // Current will be the ID of the base that we just started. We do this so that we can use this ID later on (e.g. check /car command for the use).
@@ -20954,7 +21102,7 @@ public OnBaseStart(BaseID)
 		MatchRoundsRecord[ MatchRoundsStarted - 1 ][ round__ID ] = BaseID;
 		MatchRoundsRecord[ MatchRoundsStarted - 1 ][ round__completed ] = false;
 	}
-
+    return 1;
 }
 
 
@@ -21199,7 +21347,7 @@ SpawnPlayersInBase()
     FallProtection = true;
 	RadarFix();
     FixVsTextDraw();
-
+    return 1;
 }
 
 forward AddPlayerToBase(playerid);
@@ -21845,7 +21993,7 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 	DefAcc = "";
 
 	FixVsTextDraw();    //fixbyxk
-
+    ResetTeamLeaders();
 	return 1;
 }
 
