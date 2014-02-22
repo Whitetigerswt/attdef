@@ -1,0 +1,232 @@
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z, (C)2005-2014 SA-MP Team
+
+[15:41:14] filterscripts = ""  (string)
+[15:41:14] 
+[15:41:14] Server Plugins
+[15:41:14] --------------
+[15:41:14]  Loading plugin: sscanf
+[15:41:14] 
+
+[15:41:14]  ===============================
+
+[15:41:14]       sscanf plugin loaded.     
+
+[15:41:14]          Version:  2.8.1        
+
+[15:41:14]    (c) 2012 Alex "Y_Less" Cole  
+
+[15:41:14]  ===============================
+
+[15:41:14]   Loaded.
+[15:41:14]  Loading plugin: crashdetect
+[15:41:14]   CrashDetect v4.13 is OK.
+[15:41:14]   Loaded.
+[15:41:14]  Loaded 2 plugins.
+
+[15:41:14] 
+[15:41:14] Filterscripts
+[15:41:14] ---------------
+[15:41:14]   Loaded 0 filterscripts.
+
+[15:41:14]  
+[15:41:14]  
+[15:41:14]  
+[15:41:14]  ======================================= 
+[15:41:14]  |                                     | 
+[15:41:14]  |        YSI version 3.09.0684        | 
+[15:41:14]  |        By Alex "Y_Less" Cole        | 
+[15:41:14]  |                                     | 
+[15:41:14]  ======================================= 
+[15:41:14]  
+[15:41:14]  
+[15:41:14]  
+[15:41:14] Hostname: Attdef Test Server
+[15:41:14] Server Config Loaded.
+[15:41:14] Bases Loaded: 86
+[15:41:14] Arenas Loaded: 79
+[15:41:14] DMs Loaded: 13
+[15:41:14] Duels Loaded: 1
+[15:41:14] Number of vehicle models: 0
+[15:41:14] __________________________________________________
+[15:41:14] 
+[15:41:14] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[15:41:14] 
+[15:41:14] __________________________________________________
+[15:41:15]  
+[15:41:15]  ========================================== 
+[15:41:15]  |                                        | 
+[15:41:15]  |  A new version (v<html>
+  ) of YSI is  | 
+[15:41:15]  |            available from:             | 
+[15:41:15]  |                                        | 
+[15:41:15]  |     www.y-less.com/YSI/YSI_1.0.zip     | 
+[15:41:15]  |                                        | 
+[15:41:15]  ========================================== 
+[15:41:15]  
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z, (C)2005-2014 SA-MP Team
+
+[15:41:58] filterscripts = ""  (string)
+[15:41:58] 
+[15:41:58] Server Plugins
+[15:41:58] --------------
+[15:41:58]  Loading plugin: sscanf
+[15:41:58] 
+
+[15:41:58]  ===============================
+
+[15:41:58]       sscanf plugin loaded.     
+
+[15:41:58]          Version:  2.8.1        
+
+[15:41:58]    (c) 2012 Alex "Y_Less" Cole  
+
+[15:41:58]  ===============================
+
+[15:41:58]   Loaded.
+[15:41:58]  Loading plugin: crashdetect
+[15:41:58]   CrashDetect v4.13 is OK.
+[15:41:58]   Loaded.
+[15:41:58]  Loaded 2 plugins.
+
+[15:41:58] 
+[15:41:58] Filterscripts
+[15:41:58] ---------------
+[15:41:58]   Loaded 0 filterscripts.
+
+[15:41:58]  
+[15:41:58]  
+[15:41:58]  
+[15:41:58]  ======================================= 
+[15:41:58]  |                                     | 
+[15:41:58]  |        YSI version 3.09.0684        | 
+[15:41:58]  |        By Alex "Y_Less" Cole        | 
+[15:41:58]  |                                     | 
+[15:41:58]  ======================================= 
+[15:41:58]  
+[15:41:58]  
+[15:41:58]  
+[15:41:58] Hostname: Attdef Test Server
+[15:41:58] Server Config Loaded.
+[15:41:58] Bases Loaded: 86
+[15:41:58] Arenas Loaded: 79
+[15:41:58] DMs Loaded: 13
+[15:41:58] Duels Loaded: 1
+[15:41:58] Number of vehicle models: 0
+[15:41:59] __________________________________________________
+[15:41:59] 
+[15:41:59] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[15:41:59] 
+[15:41:59] __________________________________________________
+[15:41:59]  
+[15:41:59]  ========================================== 
+[15:41:59]  |                                        | 
+[15:41:59]  |  A new version (v<html>
+  ) of YSI is  | 
+[15:41:59]  |            available from:             | 
+[15:41:59]  |                                        | 
+[15:41:59]  |     www.y-less.com/YSI/YSI_1.0.zip     | 
+[15:41:59]  |                                        | 
+[15:41:59]  ========================================== 
+[15:41:59]  
+[15:45:48] Incoming connection: 192.168.1.105:64473
+[15:45:48] [join] Niko_boy has joined the server (0:192.168.1.105)
+[15:46:51] Incoming connection: 59.94.164.146:3365
+[15:46:53] [join] [SNL]king has joined the server (1:59.94.164.146)
+[15:50:56] [part] [SNL]king has left the server (1:0)
+[15:51:38] Server password has been removed.
+[15:51:38] [part] Niko_boy has left the server (0:2)
+
+----------
+Loaded log file: "server_log.txt".
+----------
+
+SA-MP Dedicated Server
+----------------------
+v0.3z, (C)2005-2014 SA-MP Team
+
+[16:35:07] filterscripts = ""  (string)
+[16:35:07] 
+[16:35:07] Server Plugins
+[16:35:07] --------------
+[16:35:07]  Loading plugin: sscanf
+[16:35:07] 
+
+[16:35:07]  ===============================
+
+[16:35:07]       sscanf plugin loaded.     
+
+[16:35:07]          Version:  2.8.1        
+
+[16:35:07]    (c) 2012 Alex "Y_Less" Cole  
+
+[16:35:07]  ===============================
+
+[16:35:07]   Loaded.
+[16:35:07]  Loading plugin: crashdetect
+[16:35:07]   CrashDetect v4.13 is OK.
+[16:35:07]   Loaded.
+[16:35:07]  Loaded 2 plugins.
+
+[16:35:07] 
+[16:35:07] Filterscripts
+[16:35:07] ---------------
+[16:35:07]   Loaded 0 filterscripts.
+
+[16:35:07]  
+[16:35:07]  
+[16:35:07]  
+[16:35:07]  ======================================= 
+[16:35:07]  |                                     | 
+[16:35:07]  |        YSI version 3.09.0684        | 
+[16:35:07]  |        By Alex "Y_Less" Cole        | 
+[16:35:07]  |                                     | 
+[16:35:07]  ======================================= 
+[16:35:07]  
+[16:35:07]  
+[16:35:07]  
+[16:35:07] Hostname: Attdef Test Server
+[16:35:07] Server Config Loaded.
+[16:35:07] Bases Loaded: 86
+[16:35:07] Arenas Loaded: 79
+[16:35:07] DMs Loaded: 13
+[16:35:07] Duels Loaded: 1
+[16:35:07] Number of vehicle models: 0
+[16:35:08]  
+[16:35:08]  ========================================== 
+[16:35:08]  |                                        | 
+[16:35:08]  |  A new version (v<html>
+  ) of YSI is  | 
+[16:35:08]  |            available from:             | 
+[16:35:08]  |                                        | 
+[16:35:08]  |     www.y-less.com/YSI/YSI_1.0.zip     | 
+[16:35:08]  |                                        | 
+[16:35:08]  ========================================== 
+[16:35:08]  
+[16:35:09] __________________________________________________
+[16:35:09] 
+[16:35:09] ** Whitetiger's Anti-Cheat is on the most up-to-date version!
+[16:35:09] 
+[16:35:09] __________________________________________________
+[16:35:57] Incoming connection: 192.168.1.105:50379
+[16:35:57] [join] Niko_boy has joined the server (0:192.168.1.105)
+[16:36:08] [nick] Niko_boy nick changed to 22
+[16:36:15] [nick] 22 nick changed to Niko_boy
+[16:36:16] [nick] Niko_boy nick changed to Niko_boy1
+[16:36:16] [nick] Niko_boy1 nick changed to Niko_boy
+[16:36:50] [nick] Niko_boy nick changed to Niko_
+[16:37:00] [nick] Niko_ nick changed to Niko
+[16:37:03] [nick] Niko nick changed to Niko_boy

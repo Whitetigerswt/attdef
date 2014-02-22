@@ -5,6 +5,10 @@
 	- Fixed a few minor bugs which appeared in the previous version.
 	- Feature: you can now lead your team by pressing the key 'H' while being in round.
 
+	- i Believe /Netcheck should be proper for players in duel maybe!
+	    @Khalid give it a test , i did a bit and it seem fine.
+	- added /ChangeName
+
 
 */
 
@@ -10439,6 +10443,63 @@ CMD:changepass(playerid, params[])
 
 	return 1;
 }
+
+CMD:changename(playerid,params[])
+{
+	if(Player[playerid][Logged] == false) return SendErrorMessage(playerid,"You must be logged in.");
+	if(isnull(params)) return SendUsageMessage(playerid,"/changename [New Name]");
+	if(strlen(params) <= 1) return SendErrorMessage(playerid,"Name cannot be that short idiot!!");
+
+	switch( SetPlayerName(playerid,params) )
+	{
+	    case 1:
+	    {
+	        //success
+	        new iString[256],
+				DBResult: result
+			;
+			
+			format( iString, sizeof(iString), "SELECT * FROM `Players` WHERE `Name` = '%s'", DB_Escape(params) );
+			result = db_query(sqliteconnection, iString);
+			
+			if( db_num_rows(result) > 0 )
+			{
+			    db_free_result(result);
+			    //name in Use in DB.
+			    SetPlayerName( playerid, Player[playerid][Name] );
+			    return SendErrorMessage(playerid,"Name already registered!");
+			}
+			else
+			{
+			    db_free_result(result);
+			    //name changed successfully!!
+
+				format(iString, sizeof(iString),">> {FFFFFF}%s "COL_PRIM"has changed name to {FFFFFF}%s",Player[playerid][Name],params);
+				SendClientMessageToAll(-1,iString);
+				
+				format(iString, sizeof(iString), "UPDATE `Players` SET `Name` = '%s' WHERE `Name` = '%s'", DB_Escape(params), DB_Escape(Player[playerid][Name]) );
+				db_free_result(db_query(sqliteconnection, iString));
+				
+				format( Player[playerid][Name], MAX_PLAYER_NAME, "%s", params );
+
+			    new NewName[MAX_PLAYER_NAME];
+				NewName = RemoveClanTagFromName(playerid);
+
+				if(strlen(NewName) != 0)
+					Player[playerid][NameWithoutTag] = NewName;
+				else
+					Player[playerid][NameWithoutTag] = Player[playerid][Name];
+
+			    return 1;
+			}
+	    }
+		case 0: return SendErrorMessage(playerid,"You already using that name.");
+		case -1: return SendErrorMessage(playerid,"Either Name too long ,already is use or have invalid characters.");
+	}
+
+	return 1;
+}
+
 #endif
 
 CMD:heal(playerid, params[])
@@ -19483,7 +19544,7 @@ public OnScriptUpdate()
 		}
 
 		//duel
-		if(Player[i][InDuel] == true) {
+		if(Player[i][InDuel] == true && Player[i][NetCheck] == 1) {
 			if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5) {
 			    Player[i][FPSKick]++;
 			    format(iString,sizeof(iString),"{CCCCCC}Low FPS! Warning %d/7", Player[i][FPSKick]);
@@ -19616,7 +19677,7 @@ public OnScriptUpdate()
 
 
 
-			if(Player[i][NetCheck] == 1) {
+	   		if(Player[i][NetCheck] == 1) {
 				if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5) {
 				    Player[i][FPSKick]++;
 			    	format(iString,sizeof(iString),"{CCCCCC}Low FPS! Warning %d/7", Player[i][FPSKick]); //will help to know when you cross limit
