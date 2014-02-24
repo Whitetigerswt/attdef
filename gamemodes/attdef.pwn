@@ -4,17 +4,17 @@
 
 	- Fixed a few minor bugs which appeared in the previous version.
 	- Feature: you can now lead your team by pressing the key 'H' while being in round.
-
-	- i Believe /Netcheck should be proper for players in duel maybe!
-	    @Khalid give it a test , i did a bit and it seem fine.
-	- added /ChangeName
+	- Fixed: players' net stats were checked in duels even if they got netcheck status disabled.
+	- Added /changename command to change your in-game name.
+	- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it
+	- Added a version checker to tell whether your gamemode version is up-to-date or not.
 
 
 */
 
 
-#define GM_VERSION         "2.4"
-#define GM_NAME 		"Attack-Defend v2.4"
+new 	GM_VERSION[6] =		"2.4.0"; // Don't forget to change the length
+#define GM_NAME				"Attack-Defend v2.4"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -330,6 +330,22 @@ new MAIN_TEXT_COLOUR[16] /*   =	("~l~")*/;
 #define DIALOG_ROUND_LIST               58 // dialog for showing list of rounds played in last match mode or current.
 #define DIALOG_THEME_CHANGE1            59
 #define DIALOG_THEME_CHANGE2            60
+#define GRAFFMainDialog      			61
+#define OModelDialog    				62
+#define TextDialog      				63
+#define SizesDialog     				64
+#define FontNDialog     				65
+#define FontSDialog     				66
+#define BoldDialog      				67
+#define ColorDialog     				68
+#define BackgDialog     				69
+#define BackgColorD     				70
+#define AlignDialog     				71
+#define GRAFFSaveDialog                 72
+#define ColorDialog2                    73
+#define ColorDialog3                    74
+#define ColorDialog4                    75
+#define ColorDialog5                    76
 
 new w0[MAX_PLAYERS];	//heartnarmor
 
@@ -1608,6 +1624,772 @@ new const Interiors[][intinfo] = {
 main(){} //---------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
+// version checker <start>
+#define VERSIONCHECKER_OFFSET   30
+#define VERSION_CHAR_LENGTH     4
+
+#define VERSION_IS_BEHIND       0
+#define VERSION_IS_UPTODATE     1
+
+new VersionReport = -1;
+new bool:VersionCheckerStatus = false;
+new LatestVersionStr[64];
+stock InitVersionChecker()
+{
+	SetTimer("ReportServerVersion", 20 * 60 * 1000, true);
+    HTTP(VERSIONCHECKER_OFFSET, HTTP_GET, "sixtytiger.com/khalid/AttDef_API/version.php", "", "SaveVersionInStr");
+	return 1;
+}
+
+forward ReportServerVersion();
+public ReportServerVersion()
+{
+    printf("VersionReport: %d", VersionReport);
+	if(VersionReport == VERSION_IS_BEHIND)
+ 	{
+     	SendClientMessageToAll(-1, ""COL_PRIM"Version checker: {FFFFFF}the version used in this server is out-dated. You can visit "COL_PRIM"www.sixtytiger.com {FFFFFF}to get the latest version");
+        SendClientMessageToAll(-1, sprintf(""COL_PRIM"Your version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
+	}
+	else
+ 	{
+     	SendClientMessageToAll(-1, sprintf(""COL_PRIM"Your version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
+	}
+	return 1;
+}
+
+forward SaveVersionInStr(index, response_code, data[]);
+public SaveVersionInStr(index, response_code, data[])
+{
+    if(response_code == 200)
+    {
+		format(LatestVersionStr, sizeof LatestVersionStr, "%s", data);
+		VersionCheckerStatus = true;
+		VersionReport = ReportVersion();
+    }
+    else
+        VersionCheckerStatus = false;
+    return 1;
+}
+
+stock ReportVersion()
+{
+	if(!VersionCheckerStatus)
+		return -1;
+		
+	// spliting the version str on the website
+	new first[VERSION_CHAR_LENGTH], second[VERSION_CHAR_LENGTH], third[VERSION_CHAR_LENGTH];
+	format(first, sizeof first, "");
+	format(second, sizeof second, "");
+	format(third, sizeof third, "");
+	new pos = 0;
+	for(new i = 0; i < strlen(LatestVersionStr); i ++)
+	{
+	    if(LatestVersionStr[i] == '.')
+	    {
+			pos ++;
+			continue;
+		}
+		switch(pos)
+		{
+		    case 0:
+		    {format(first, sizeof first, "%s%c", first, LatestVersionStr[i]);}
+		    case 1:
+		    {format(second, sizeof second, "%s%c", second, LatestVersionStr[i]);}
+		    case 2:
+		    {format(third, sizeof third, "%s%c", third, LatestVersionStr[i]);}
+		}
+	}
+	// spliting the version str on the server
+	new svfirst[VERSION_CHAR_LENGTH], svsecond[VERSION_CHAR_LENGTH], svthird[VERSION_CHAR_LENGTH];
+	format(svfirst, sizeof svfirst, "");
+	format(svsecond, sizeof svsecond, "");
+	format(svthird, sizeof svthird, "");
+	pos = 0;
+	for(new i = 0; i < strlen(GM_VERSION); i ++)
+	{
+	    if(GM_VERSION[i] == '.')
+	    {
+			pos ++;
+			continue;
+		}
+		switch(pos)
+		{
+		    case 0:
+		    {format(svfirst, sizeof svfirst, "%s%c", svfirst, GM_VERSION[i]);}
+		    case 1:
+		    {format(svsecond, sizeof svsecond, "%s%c", svsecond, GM_VERSION[i]);}
+		    case 2:
+		    {format(svthird, sizeof svthird, "%s%c", svthird, GM_VERSION[i]);}
+		}
+	}
+	// comparing them
+	
+	if(strval(first) > strval(svfirst))
+ 	{
+ 	    return VERSION_IS_BEHIND;
+	}
+
+    if(strval(first) == strval(svfirst))
+    {
+		if(strval(second) > strval(svsecond))
+     	{
+     	    return VERSION_IS_BEHIND;
+		}
+	}
+            
+    if(strval(first) == strval(svfirst))
+    {
+    	if(strval(second) == strval(svsecond))
+    	{
+    	    if(strval(third) > strval(svthird))
+        	{
+        	    return VERSION_IS_BEHIND;
+			}
+		}
+	}
+            	
+	return VERSION_IS_UPTODATE;
+}
+// version checker <end>
+
+// graffiti <start>
+new GRAFFObject[MAX_PLAYERS],
+	Text[MAX_PLAYERS][128],
+	Size[MAX_PLAYERS] = 50,
+	Index[MAX_PLAYERS] = 0,
+	UseBold[MAX_PLAYERS] = 0,
+	TextAlign[MAX_PLAYERS] = 1,
+	FontName[MAX_PLAYERS][128],
+	FontSize[MAX_PLAYERS] = 24,
+	GRAFFTextColor[MAX_PLAYERS],
+	BackgColor[MAX_PLAYERS],
+	OName[MAX_PLAYERS][30],
+	ObjectID[MAX_PLAYERS] = 19353,
+	Float:GRAFFPos[4], Float:GRAFFRot[3];
+
+new bool:IsGraffBeingCreated = false,
+	bool:CreatingTextO[MAX_PLAYERS] = false;
+
+#define GRAFF_Grey              "{C4C4C4}"
+
+#define MAX_GRAFFS 150
+
+enum GRAFFITI_DATA
+{
+	G_id,
+ 	G_sprayedtext[128],
+ 	G_materialsize,
+	G_fontsize,
+	G_bold,
+	G_textalignment,
+	G_fontface[32],
+	G_textcolor,
+	G_backcolor,
+	G_objectmodel,
+	Float:G_pos[6],
+	Text3D:G_label
+};
+
+new TotalGraffs = 0, GraffData[MAX_GRAFFS][GRAFFITI_DATA], bool:GraffExists[MAX_GRAFFS], bool:IsGraff[MAX_OBJECTS];
+
+stock LoadGraffs()
+{
+    DeleteAllGraffs();
+	#if MYSQL == 0
+		new iString[160];
+		TotalGraffs = 0;
+
+        new DBResult:res = db_query(sqliteconnection, "SELECT * FROM Graffs ORDER BY ID ASC");
+	    for(new i = 0; i < MAX_GRAFFS; i++) GraffExists[i] = false;
+	    new i;
+	    if(db_num_rows(res) <= 0)
+	        goto skipped;
+		do {
+			db_get_field_assoc(res, "ID", iString, sizeof(iString));
+			i = strval(iString);
+			GraffData[i][G_id] = i;
+
+			db_get_field_assoc(res, "Text", GraffData[i][G_sprayedtext], 128);
+
+			db_get_field_assoc(res, "MaterialSize", iString, sizeof(iString));
+		    GraffData[i][G_materialsize] = strval(iString);
+
+			db_get_field_assoc(res, "FontSize", iString, sizeof(iString));
+		    GraffData[i][G_fontsize] = strval(iString);
+
+		    db_get_field_assoc(res, "Bold", iString, sizeof(iString));
+		    GraffData[i][G_bold] = strval(iString);
+
+		    db_get_field_assoc(res, "TextAlignment", iString, sizeof(iString));
+		    GraffData[i][G_textalignment] = strval(iString);
+
+		    db_get_field_assoc(res, "FontFace", GraffData[i][G_fontface], 32);
+
+		    db_get_field_assoc(res, "TextColor", iString, sizeof(iString));
+		    GraffData[i][G_textcolor] = strval(iString);
+
+		    db_get_field_assoc(res, "BackColor", iString, sizeof(iString));
+		    GraffData[i][G_backcolor] = strval(iString);
+
+		    db_get_field_assoc(res, "ObjectModel", iString, sizeof(iString));
+		    GraffData[i][G_objectmodel] = strval(iString);
+
+		    db_get_field_assoc(res, "X", iString, sizeof(iString));
+		    GraffData[i][G_pos][0] = floatstr(iString);
+
+		    db_get_field_assoc(res, "Y", iString, sizeof(iString));
+		    GraffData[i][G_pos][1] = floatstr(iString);
+
+		    db_get_field_assoc(res, "Z", iString, sizeof(iString));
+		    GraffData[i][G_pos][2] = floatstr(iString);
+
+		    db_get_field_assoc(res, "rX", iString, sizeof(iString));
+		    GraffData[i][G_pos][3] = floatstr(iString);
+
+		    db_get_field_assoc(res, "rY", iString, sizeof(iString));
+		    GraffData[i][G_pos][4] = floatstr(iString);
+
+		    db_get_field_assoc(res, "rZ", iString, sizeof(iString));
+		    GraffData[i][G_pos][5] = floatstr(iString);
+
+			GraffExists[i] = true;
+
+            new obj = CreateObject(GraffData[i][G_objectmodel], GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], GraffData[i][G_pos][3], GraffData[i][G_pos][4], GraffData[i][G_pos][5]);
+        	SetObjectMaterialText(obj, GraffData[i][G_sprayedtext], 0, GraffData[i][G_materialsize], GraffData[i][G_fontface],
+			GraffData[i][G_fontsize], GraffData[i][G_bold], GraffData[i][G_textcolor], GraffData[i][G_backcolor], GraffData[i][G_textalignment]);
+			GraffData[i][G_label] = Create3DTextLabel(sprintf("Graffiti ID: %d", i), 0x47B0FEFF, GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], 25.0, 0, 0);
+			IsGraff[obj] = true;
+			TotalGraffs ++;
+		} while(db_next_row(res));
+		skipped:
+		printf("Graffs Loaded: %d", TotalGraffs);
+	#else
+	print("Graffiti system is currently not availble on MySQL version!");
+	#endif
+}
+
+stock PlayerSaveNewGraff(playerid)
+{
+    new iString[400];
+    format(iString, sizeof(iString), "SELECT ID FROM Graffs ORDER BY `ID` DESC LIMIT 1");
+	new DBResult:res = db_query(sqliteconnection, iString);
+
+	new GraffID;
+	if(db_num_rows(res)) {
+		db_get_field_assoc(res, "ID", iString, sizeof(iString));
+		GraffID = strval(iString)+1;
+    }
+    db_free_result(res);
+
+	format(iString, sizeof(iString), "INSERT INTO Graffs (ID, Text, MaterialSize, FontSize, Bold, TextAlignment, FontFace, TextColor, BackColor, ObjectModel, X, Y, Z, rX, rY, rZ) VALUES (%d, '%s', %d, %d, %d, %d, '%s', %d, %d, %d, %f, %f, %f, %f, %f, %f)",
+													GraffID, DB_Escape(Text[playerid]), Size[playerid], FontSize[playerid], UseBold[playerid], TextAlign[playerid], DB_Escape(FontName[playerid]), GRAFFTextColor[playerid], BackgColor[playerid], ObjectID[playerid], GRAFFPos[0], GRAFFPos[1], GRAFFPos[2], GRAFFRot[0], GRAFFRot[1], GRAFFRot[2]);
+
+	db_free_result(db_query(sqliteconnection, iString));
+
+	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has just finished spraying {FFFFFF}Graffiti ID: %d", Player[playerid][Name], GraffID);
+	SendClientMessageToAll(-1, iString);
+
+	LoadGraffs();
+	return 1;
+}
+
+stock DeleteGraff(GraffID)
+{
+    db_free_result(db_query(sqliteconnection, sprintf("DELETE FROM Graffs WHERE ID = %d", GraffID)));
+	LoadGraffs();
+	return 1;
+}
+
+stock DeleteAllGraffs()
+{
+	for(new i = 0; i < MAX_OBJECTS; i ++)
+	{
+	    if(IsGraff[i] == true)
+	    {
+	        DestroyObject(i);
+	        IsGraff[i] = false;
+	    }
+	}
+	for(new i = 0; i < MAX_GRAFFS; i ++)
+	{
+	    if(GraffExists[i] == true)
+	    {
+	        Delete3DTextLabel(GraffData[GraffData[i][G_id]][G_label]);
+	    }
+	}
+	return 1;
+}
+
+CMD:deletegraff(playerid, params[])
+{
+    if(Player[playerid][Level] < 4) return SendErrorMessage(playerid,"Your admin level isn't high enough for this.");
+
+    if(isnull(params)) return SendUsageMessage(playerid,"/deletegraff [Graffiti ID]");
+	new gid = strval(params);
+    DeleteGraff(gid);
+	return 1;
+}
+
+CMD:spray(playerid, params[])
+{
+    if(Player[playerid][Level] < 4) return SendErrorMessage(playerid,"Your admin level isn't high enough for this.");
+
+	if(IsGraffBeingCreated && !CreatingTextO[playerid])
+	{
+	    return SendErrorMessage(playerid, "Somebody is already spraying a graffito.");
+	}
+    if(CreatingTextO[playerid] == false)
+    {
+        if(Current != -1)
+						return SendErrorMessage(playerid, "You cannot spray a graffito while a round is in progress");
+        IsGraffBeingCreated = true;
+		TextAlign[playerid] = 1,
+		Index[playerid] = 0;
+        Text[playerid] = "Blank",
+		FontName[playerid] = "Arial",
+		GRAFFTextColor[playerid] = HexToInt("0xFFFF8200"),
+		BackgColor[playerid] = HexToInt("0xFF000000");
+
+    	CreatingTextO[playerid] = true, ShowGraffMainMenu(playerid);
+    	GetPlayerPos(playerid, GRAFFPos[0], GRAFFPos[1], GRAFFPos[2]), GetPlayerFacingAngle(playerid, GRAFFPos[3]);
+    	new Float:x = GRAFFPos[0] + (5.0 * floatsin(-GRAFFPos[3], degrees));
+		new Float:y = GRAFFPos[1] + (5.0 * floatcos(-GRAFFPos[3], degrees));
+
+    	GRAFFObject[playerid] = CreatePlayerObject(playerid, ObjectID[playerid], x, y, GRAFFPos[2]+0.5, 0.0, 0.0, GRAFFPos[3] - 90.0);
+
+    	SetPlayerObjectMaterialText(playerid, GRAFFObject[playerid], Text[playerid], Index[playerid], Size[playerid], FontName[playerid],
+		FontSize[playerid], UseBold[playerid], GRAFFTextColor[playerid], BackgColor[playerid], TextAlign[playerid]);
+
+		SendClientMessage(playerid,-1,"A blank graffito has been sprayed");
+	}
+	else
+		ShowGraffMainMenu(playerid);
+	return 1;
+}
+
+forward OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext[]);
+public OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext[])
+{
+	if(dialogid == GRAFFMainDialog){
+	    if(response){
+	        switch(listitem) {
+
+	            case 0:{
+	                new string[128];
+	                format(string, sizeof(string), ""COL_PRIM"Current Object Model ID: {FFFFFF}%d\
+					\n"GRAFF_Grey"Please, type below a Model ID for the object (example = 19353):",ObjectID[playerid]);
+					ShowPlayerDialog(playerid,OModelDialog,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Object Model ID",string,"Change","Back");
+	            }
+	        	case 1:{
+	        	    new string[300];
+	        	    format(string, sizeof(string),""COL_PRIM"Current Object Text: {FFFFFF}%s\
+					\n"GRAFF_Grey"Please, type below your text for the object:",Text[playerid]);
+	        	    ShowPlayerDialog(playerid,TextDialog,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Object Text",string,"Change","Back");
+	        	}
+				case 2: {
+				    new sizes[600];
+					strcat(sizes,"{FFFFFF}1. "COL_PRIM"32x32 "GRAFF_Grey"(10)\
+								\n{FFFFFF}2. "COL_PRIM"64x32 "GRAFF_Grey"(20)\
+								\n{FFFFFF}3. "COL_PRIM"64x64 "GRAFF_Grey"(30)\
+								\n{FFFFFF}4. "COL_PRIM"128x32 "GRAFF_Grey"(40)\
+								\n{FFFFFF}5. "COL_PRIM"128x64 "GRAFF_Grey"(50)\
+								\n{FFFFFF}6. "COL_PRIM"128x128 "GRAFF_Grey"(60)\
+								\n{FFFFFF}7. "COL_PRIM"256x32 "GRAFF_Grey"(70)");
+					strcat(sizes,"\n{FFFFFF}8. "COL_PRIM"256x64 "GRAFF_Grey"(80)\
+								\n{FFFFFF}9. "COL_PRIM"256x128 "GRAFF_Grey"(90)\
+								\n{FFFFFF}10. "COL_PRIM"256x256 "GRAFF_Grey"(100)\
+								\n{FFFFFF}11. "COL_PRIM"512x64 "GRAFF_Grey"(110)\
+								\n{FFFFFF}12. "COL_PRIM"512x128 "GRAFF_Grey"(120)\
+								\n{FFFFFF}13. "COL_PRIM"512x256 "GRAFF_Grey"(130)\
+								\n{FFFFFF}14. "COL_PRIM"512x512 "GRAFF_Grey"(140)");
+					new current[128];
+					format(current, sizeof(current),""GRAFF_Grey"Material Size "GRAFF_Grey"| "COL_PRIM"Current size: {FFFFFF}%d",Size[playerid]);
+					ShowPlayerDialog(playerid,SizesDialog,DIALOG_STYLE_LIST,current,sizes,"Change","Back");
+				}
+				case 3: {
+				    new string[128];
+				    format(string, sizeof(string), ""COL_PRIM"Current Text Font: {FFFFFF}%s\
+					\n"GRAFF_Grey"Please, type below the Text Font name which you want use:",FontName[playerid]);
+                    ShowPlayerDialog(playerid,FontNDialog,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Text Font",string,"Change","Back");
+				}
+				case 4: {
+				    new string[128];
+				    format(string, sizeof(string), ""COL_PRIM"Current Text Size: {FFFFFF}%d\
+					\n"GRAFF_Grey"Please, type below the Text Size which you want use:",FontSize[playerid]);
+                    ShowPlayerDialog(playerid,FontSDialog,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Text Size",string,"Change","Back");
+				}
+				case 5: {
+				    new title[100]; new yesorno[10];
+				    if(UseBold[playerid] == 0) yesorno = "No";
+				    else if(UseBold[playerid] == 1) yesorno = "Yes";
+				    format(title, sizeof(title), ""GRAFF_Grey"Bold Text "GRAFF_Grey"| "COL_PRIM"Using Bold Text: {FFFFFF}%s",yesorno);
+                    ShowPlayerDialog(playerid,BoldDialog,DIALOG_STYLE_LIST,title,"{FFFFFF}1. "COL_PRIM"No\n{FFFFFF}2. "COL_PRIM"Yes","Change","Back");
+				}
+				case 6: {
+				    new titulo[100];
+				    format(titulo, sizeof(titulo),""GRAFF_Grey"Text Color "GRAFF_Grey"| "COL_PRIM"Current Text Color: {FFFFFF}%i",GRAFFTextColor[playerid]);
+                    ShowPlayerDialog(playerid,ColorDialog,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Type a ARGB color code\
+					\n{FFFFFF}2. "COL_PRIM"Select a predefinded color","Next","Back");
+				}
+				case 7: {
+				    new titulo[100];
+				    format(titulo, sizeof(titulo),""GRAFF_Grey"Graffiti Background "GRAFF_Grey"| "COL_PRIM"Current Background Color: {FFFFFF}%i",BackgColor[playerid]);
+                    ShowPlayerDialog(playerid,BackgColorD,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Disable Background\n{FFFFFF}2. "COL_PRIM"Type a ARGB color code\
+					\n{FFFFFF}3. "COL_PRIM"Select a predefinded color","Next","Back");
+				}
+				case 8: {
+                    new title[100]; new position[30];
+				    if(TextAlign[playerid] == 0) position = "Left";
+				    else if(TextAlign[playerid] == 1) position = "Center";
+				    else if(TextAlign[playerid] == 2) position = "Right";
+				    format(title, sizeof(title), ""GRAFF_Grey"Text Alignment "GRAFF_Grey"| "COL_PRIM"Current Alignment: {FFFFFF}%s",position);
+                    ShowPlayerDialog(playerid,AlignDialog,DIALOG_STYLE_LIST,title,"{FFFFFF}1. "COL_PRIM"Left\n{FFFFFF}2. "COL_PRIM"Center\n{FFFFFF}3. "COL_PRIM"Right","Change","Back");
+				}
+				case 9: {
+				    EditPlayerObject(playerid, GRAFFObject[playerid]);
+					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"INFO: {FFFFFF}Use "COL_PRIM"ESC {FFFFFF}to cancel the object edition.");
+				}
+				case 10: {
+				    if(Current != -1)
+						return SendErrorMessage(playerid, "You cannot save a graffito while a round is in progress");
+				    ShowPlayerDialog(playerid,GRAFFSaveDialog,DIALOG_STYLE_MSGBOX,"    "GRAFF_Grey"Saving..",
+					"Are you sure you want to save this object into the database?","Confirm","Back");
+				}
+				case 11: {
+                    CreatingTextO[playerid] = false, DestroyPlayerObject(playerid, GRAFFObject[playerid]);
+					TextAlign[playerid] = 1, Text[playerid] = "Example", FontName[playerid] = "Arial",
+					GRAFFTextColor[playerid] = HexToInt("0xFFFF8200"), BackgColor[playerid] = HexToInt("0xFF000000"),
+					Size[playerid] = 50, Index[playerid] = 0, UseBold[playerid] = 0,
+					FontSize[playerid] = 24, OName[playerid] = "0", ObjectID[playerid] = 19353;
+					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"INFO: {FFFFFF}All settings have been reset.");
+					IsGraffBeingCreated = false;
+					ShowPlayerDialog(playerid, -1, 0, " ", " ", " ", " ");
+				}
+	        }
+	    }
+	    return 1;
+	}
+	if(dialogid == OModelDialog)
+	{
+	    if(response)
+	    {
+	        if(!IsNumeric(inputtext)) return SendClientMessage(playerid,-1,"{FFFFFF}* "GRAFF_Grey"ERROR: "GRAFF_Grey"Please, use a numeric value"GRAFF_Grey"!"), ShowGraffMainMenu(playerid);
+	        new string[128];
+	        ObjectID[playerid] = strval(inputtext);
+	        format(string, sizeof(string), ""GRAFF_Grey"* "COL_PRIM"Object Model ID: {FFFFFF}%d",ObjectID[playerid]);
+	        SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
+	    }
+		else { ShowGraffMainMenu(playerid); }
+	    return 1;
+	}
+	if(dialogid == TextDialog){
+	    if(response){
+	        new string[128];
+	        format(string, sizeof(string),"%s",inputtext);
+	        Text[playerid] = string; format(string, sizeof(string), ""GRAFF_Grey"* "COL_PRIM"Object Text: {FFFFFF}%s",Text[playerid]);
+	        SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
+	    }
+		else { ShowGraffMainMenu(playerid); }
+		return 1;
+	}
+	if(dialogid == SizesDialog){
+	    if(response)
+	    {
+	        switch(listitem) {
+	            case 0: Size[playerid] = 10;
+	            case 1:  Size[playerid] = 20;
+	            case 2:  Size[playerid] = 30;
+	            case 3:  Size[playerid] = 40;
+	            case 4:  Size[playerid] = 50;
+	            case 5:  Size[playerid] = 60;
+	            case 6:  Size[playerid] = 70;
+	            case 7:  Size[playerid] = 80;
+	            case 8:  Size[playerid] = 90;
+	            case 9:  Size[playerid] = 100;
+	            case 10:  Size[playerid] = 110;
+	            case 11:  Size[playerid] = 120;
+	            case 12:  Size[playerid] = 130;
+	            case 13:  Size[playerid] = 140;
+	            default: Size[playerid] = 70;
+			}
+			new string[128];
+			format(string, sizeof(string), ""GRAFF_Grey"* "COL_PRIM"Object Material Size: {FFFFFF}%d",Size[playerid]);
+			SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
+	    }
+		else { ShowGraffMainMenu(playerid); }
+	    return 1;
+	}
+	if(dialogid == FontNDialog)
+	{
+	    if(response) {
+	        new string[128]; format(string, sizeof(string),"%s",inputtext); FontName[playerid] = string;
+	        format(string, sizeof(string), ""GRAFF_Grey"* "COL_PRIM"Text Font: {FFFFFF}%s",FontName[playerid]); SendClientMessage(playerid,-1,string);
+			UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
+	    }
+		else { ShowGraffMainMenu(playerid); }
+	    return 1;
+	}
+	if(dialogid == FontSDialog)
+	{
+	    if(response) {
+	        if(!IsNumeric(inputtext)) return SendClientMessage(playerid,-1,"{FFFFFF}* "GRAFF_Grey"ERROR: "GRAFF_Grey"Please, use a numeric value"GRAFF_Grey"!"), ShowGraffMainMenu(playerid);
+	        new string[128]; FontSize[playerid] = strval(inputtext);
+			format(string, sizeof(string), ""GRAFF_Grey"* "COL_PRIM"Text Size: {FFFFFF}%d",FontSize[playerid]); SendClientMessage(playerid,-1,string);
+			UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
+	    }
+		else { ShowGraffMainMenu(playerid); }
+	    return 1;
+	}
+	if(dialogid == BoldDialog)
+	{
+	    if(response)
+	    {
+			switch(listitem)
+			{
+	        	case 0: {
+                    UseBold[playerid] = 0;
+	        		SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Bold Text: {FFFFFF}No");
+	        		UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
+				}
+				case 1: {
+				    UseBold[playerid] = 1;
+	        		SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Bold Text: {FFFFFF}Yes");
+	        		UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
+				}
+			}
+	    }
+		else { ShowGraffMainMenu(playerid); }
+	    return 1;
+	}
+	if(dialogid == ColorDialog)
+	{
+	    if(response)
+	    {
+			switch(listitem)
+			{
+			    case 0:
+				{
+			        ShowPlayerDialog(playerid,ColorDialog2,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Text Color",
+			        ""GRAFF_Grey"Please, type a ARGB color code below (example = 0xFFFF0000):","Change","Back");
+			    }
+			    case 1:
+				{
+			        ShowPlayerDialog(playerid,ColorDialog3,DIALOG_STYLE_LIST,""GRAFF_Grey"Color List",
+			        "{FF0000}Red\n{04B404}Green\n{00B5CD}Sky-Blue\n{FFFF00}Yellow\
+					\n{0000FF}Blue\n{848484}Grey\n{FF00FF}Pink\n{FFFFFF}White","Change","Back");
+			    }
+			}
+	    }
+		else { ShowGraffMainMenu(playerid); }
+	    return 1;
+	}
+	if(dialogid == ColorDialog2)
+	{
+	    if(response) {
+	    	new string[80]; GRAFFTextColor[playerid] = HexToInt(inputtext);
+			format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Text Color: {FFFFFF}%i", GRAFFTextColor[playerid]);
+			SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
+		}
+		else
+		{
+		    new titulo[100];
+		    format(titulo, sizeof(titulo),""GRAFF_Grey"Text Color "GRAFF_Grey"| "COL_PRIM"Current Text Color: {FFFFFF}%i",GRAFFTextColor[playerid]);
+            ShowPlayerDialog(playerid,ColorDialog,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Type a ARGB color code\
+			\n{FFFFFF}2. "COL_PRIM"Select a predefinded color","Next","Back");
+		}
+   		return 1;
+	}
+	if(dialogid == ColorDialog3)
+	{
+	    if(response) {
+	        switch(listitem)
+	        {
+	            case 0: { GRAFFTextColor[playerid] = HexToInt("0xFFFF0000"); } //Red
+	            case 1: { GRAFFTextColor[playerid] = HexToInt("0xFF04B404"); }
+	            case 2: { GRAFFTextColor[playerid] = HexToInt("0xFF00B5CD"); }
+	            case 3: { GRAFFTextColor[playerid] = HexToInt("0xFFFFFF00"); } //Yellow
+	            case 4: { GRAFFTextColor[playerid] = HexToInt("0xFF0000FF"); }
+	            case 5: { GRAFFTextColor[playerid] = HexToInt("0xFF848484"); }
+	            case 6: { GRAFFTextColor[playerid] = HexToInt("0xFFFF00FF"); }
+	            case 7: { GRAFFTextColor[playerid] = HexToInt("0xFFFFFFFF"); } //White
+	        }
+	        new string[80]; UpdateGraffObject(playerid);
+	        format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Text Color: {FFFFFF}%i", GRAFFTextColor[playerid]);
+			SendClientMessage(playerid,-1,string); ShowGraffMainMenu(playerid);
+		}
+		else
+		{
+		    new titulo[100];
+		    format(titulo, sizeof(titulo),""GRAFF_Grey"Text Color "GRAFF_Grey"| "COL_PRIM"Current Text Color: {FFFFFF}%i",GRAFFTextColor[playerid]);
+            ShowPlayerDialog(playerid,ColorDialog,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Type a ARGB color code\
+			\n{FFFFFF}2. "COL_PRIM"Select a predefinded color","Next","Back");
+		}
+   		return 1;
+	}
+	if(dialogid == BackgColorD)
+	{
+	    if(response)
+	    {
+	        switch(listitem)
+	        {
+	            case 0: { BackgColor[playerid] = 0; UpdateGraffObject(playerid);  ShowGraffMainMenu(playerid); SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Background Color: {FFFFFF}Disabled"); }
+	            case 1: {
+	                ShowPlayerDialog(playerid,ColorDialog4,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Background Color",
+			        ""GRAFF_Grey"Please, type a ARGB color code below (example = 0xFFFF0000):","Change","Back");
+	            }
+	            case 2: {
+	                ShowPlayerDialog(playerid,ColorDialog5,DIALOG_STYLE_LIST,""GRAFF_Grey"Color List",
+			        "{FF0000}Red\n{04B404}Green\n{00B5CD}Sky-Blue\n{FFFF00}Yellow\
+					\n{0000FF}Blue\n{848484}Grey\n{FF00FF}Pink\n{FFFFFF}White","Change","Back");
+	            }
+	        }
+	    }
+		else { ShowGraffMainMenu(playerid); }
+	    return 1;
+	}
+	if(dialogid == ColorDialog4)
+	{
+	    if(response) {
+	    	new string[80]; BackgColor[playerid] = HexToInt(inputtext);
+			format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Background Color: {FFFFFF}%i", BackgColor[playerid]);
+			SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
+		}
+		else
+		{
+		    new titulo[100];
+		    format(titulo, sizeof(titulo),""GRAFF_Grey"Object Background "GRAFF_Grey"| "COL_PRIM"Current Text Color: {FFFFFF}%i",BackgColor[playerid]);
+            ShowPlayerDialog(playerid,BackgColorD,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Disable Background\n{FFFFFF}2. "COL_PRIM"Type a ARGB color code\
+			\n{FFFFFF}3. "COL_PRIM"Select a predefinded color","Next","Back");
+		}
+   		return 1;
+	}
+	if(dialogid == ColorDialog5)
+	{
+	    if(response)
+		{
+	        switch(listitem)
+	        {
+	            case 0: { BackgColor[playerid] = HexToInt("0xFFFF0000"); } //Red
+	            case 1: { BackgColor[playerid] = HexToInt("0xFF04B404"); }
+	            case 2: { BackgColor[playerid] = HexToInt("0xFF00B5CD"); }
+	            case 3: { BackgColor[playerid] = HexToInt("0xFFFFFF00"); } //Yellow
+	            case 4: { BackgColor[playerid] = HexToInt("0xFF0000FF"); }
+	            case 5: { BackgColor[playerid] = HexToInt("0xFF848484"); }
+	            case 6: { BackgColor[playerid] = HexToInt("0xFFFF00FF"); }
+	            case 7: { BackgColor[playerid] = HexToInt("0xFFFFFFFF"); } //White
+	        }
+	        new string[80]; UpdateGraffObject(playerid); ShowGraffMainMenu(playerid);
+	        format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Background Color: {FFFFFF}%i", BackgColor[playerid]);
+			SendClientMessage(playerid,-1,string);
+		}
+		else
+		{
+		    new titulo[100];
+		    format(titulo, sizeof(titulo),""GRAFF_Grey"Object Background "GRAFF_Grey"| "COL_PRIM"Current Text Color: {FFFFFF}%i",BackgColor[playerid]);
+            ShowPlayerDialog(playerid,BackgColorD,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Disable Background\n{FFFFFF}2. "COL_PRIM"Type a ARGB color code\
+			\n{FFFFFF}3. "COL_PRIM"Select a predefinded color","Next","Back");
+		}
+   		return 1;
+	}
+	if(dialogid == AlignDialog)
+	{
+	    if(response)
+		{
+			switch(listitem)
+			{
+			    case 0:
+				{
+					TextAlign[playerid] = 0; UpdateGraffObject(playerid);
+					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Text Alignment: {FFFFFF}Left"), ShowGraffMainMenu(playerid);
+				}
+				case 1:
+				{
+					TextAlign[playerid] = 1; UpdateGraffObject(playerid);
+					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Text Alignment: {FFFFFF}Center"), ShowGraffMainMenu(playerid);
+				}
+				case 2:
+				{
+					TextAlign[playerid] = 2; UpdateGraffObject(playerid);
+					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Text Alignment: {FFFFFF}Right"), ShowGraffMainMenu(playerid);
+				}
+			}
+		}
+		else
+			ShowGraffMainMenu(playerid);
+	}
+	if(dialogid == GRAFFSaveDialog)
+	{
+	    if(response)
+	    {
+			CreatingTextO[playerid] = false, DestroyPlayerObject(playerid, GRAFFObject[playerid]);
+            PlayerSaveNewGraff(playerid);
+			TextAlign[playerid] = 1, Text[playerid] = "Blank", FontName[playerid] = "Arial",
+			GRAFFTextColor[playerid] = HexToInt("0xFFFF8200"), BackgColor[playerid] = HexToInt("0xFF000000"),
+			Size[playerid] = 50, Index[playerid] = 0, UseBold[playerid] = 0,
+			FontSize[playerid] = 24, OName[playerid] = "0", ObjectID[playerid] = 19353;
+
+			SendClientMessage(playerid,-1,"Graffiti has been sprayed and saved into the database successfully");
+			SendClientMessage(playerid,-1,"All settings have been reset so you can spray a new one");
+            IsGraffBeingCreated = false;
+		}
+		else { ShowGraffMainMenu(playerid); }
+	    return 1;
+	}
+	return 1;
+}
+
+ShowGraffMainMenu(playerid)
+{
+    new string[600];
+    strcat(string,"{FFFFFF}-. "COL_PRIM"Set Graffiti Object Model ID\n{FFFFFF}-. "COL_PRIM"Set Graffiti Text\
+	\n{FFFFFF}-. "COL_PRIM"Set Material Size\n");
+	strcat(string, "{FFFFFF}-. "COL_PRIM"Set Text Font\n{FFFFFF}-. "COL_PRIM"Set Text Size\n{FFFFFF}-. "COL_PRIM"Set Bold Text\
+	\n{FFFFFF}-. "COL_PRIM"Set Text Color\n{FFFFFF}-. "COL_PRIM"Set Background Color\n{FFFFFF}-. "COL_PRIM"Set Text Alignment\n{FFFFFF}-. "GRAFF_Grey"Edit Graffiti\
+	\n{FFFFFF}-. "GRAFF_Grey"Save Graffiti\n{FFFFFF}-. "GRAFF_Grey"Reset Graffiti");
+	ShowPlayerDialog(playerid,GRAFFMainDialog,DIALOG_STYLE_LIST,""GRAFF_Grey"Text Object | Main Menu",string,"Continue","Exit");
+	return 1;
+}
+
+UpdateGraffObject(playerid)
+{
+    GetPlayerObjectPos(playerid, GRAFFObject[playerid], GRAFFPos[0], GRAFFPos[1], GRAFFPos[2]);
+    GetPlayerObjectRot(playerid, GRAFFObject[playerid], GRAFFRot[0], GRAFFRot[1], GRAFFRot[2]); DestroyPlayerObject(playerid, GRAFFObject[playerid]);
+	GRAFFObject[playerid] = CreatePlayerObject(playerid, ObjectID[playerid], GRAFFPos[0], GRAFFPos[1], GRAFFPos[2], GRAFFRot[0], GRAFFRot[1], GRAFFRot[2]);
+
+	SetPlayerObjectMaterialText(playerid, GRAFFObject[playerid], Text[playerid], Index[playerid], Size[playerid], FontName[playerid],
+	FontSize[playerid], UseBold[playerid], GRAFFTextColor[playerid], BackgColor[playerid], TextAlign[playerid]);
+}
+
+forward OnPlayerEditGraffObject(playerid, playerobject, objectid, response, Float:fX, Float:fY, Float:fZ, Float:fRotX, Float:fRotY, Float:fRotZ);
+public OnPlayerEditGraffObject(playerid, playerobject, objectid, response, Float:fX, Float:fY, Float:fZ, Float:fRotX, Float:fRotY, Float:fRotZ)
+{
+    if(objectid == GRAFFObject[playerid])
+	{
+		if(response == EDIT_RESPONSE_FINAL)
+	 	{
+	 	    SendClientMessage(playerid,-1,""COL_PRIM"Object Edition: {FFFFFF}Updated");
+            DestroyPlayerObject(playerid, GRAFFObject[playerid]);
+			GRAFFObject[playerid] = CreatePlayerObject(playerid, ObjectID[playerid], fX, fY, fZ, fRotX, fRotY, fRotZ);
+			SetPlayerObjectMaterialText(playerid, GRAFFObject[playerid], Text[playerid], Index[playerid], Size[playerid], FontName[playerid],
+			FontSize[playerid], UseBold[playerid], GRAFFTextColor[playerid], BackgColor[playerid], TextAlign[playerid]);
+			ShowGraffMainMenu(playerid);
+			GRAFFPos[0] = fX;
+			GRAFFPos[1] = fY;
+			GRAFFPos[2] = fZ;
+			GRAFFRot[0] = fRotX;
+			GRAFFRot[1] = fRotY;
+			GRAFFRot[2] = fRotZ;
+		}
+		else if(response == EDIT_RESPONSE_CANCEL)
+		{
+            SendClientMessage(playerid,-1,""COL_PRIM"Object Edition: {FFFFFF}Cancelled updating"); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
+		}
+	}
+	return 1;
+}
+
+// graffiti <end>
+
 /*
 // Headshots start
 #include <YSI\y_hooks>
@@ -1851,7 +2633,8 @@ public OnGameModeInit()
 	LoadBases(); // Loads bases
 	LoadArenas(); // Loads areans
 	LoadDMs(); // Loads DMs
-	LoadDuels();
+	LoadDuels(); // Loads Duels
+    LoadGraffs(); // Loads Graffs
 
 
 	#if OBJECTS == 1
@@ -1924,6 +2707,7 @@ public OnGameModeInit()
 
 	SetTimer("OnScriptUpdate", 1000, true); // Timer that updates every second (will be using this for most stuff)
     //SetTimer("HeadShotCheck", 250, true);
+    InitVersionChecker();
 
 	if(ESLMode == true) {
 	    TeamScore[ATTACKER] = 0;
@@ -2191,9 +2975,9 @@ public OnPlayerConnect(playerid)
 
 
 
-	PingFPS[playerid] = Create3DTextLabel("_", 0x00FF00FF, 0, 0, 0, DRAW_DISTANCE, 0, true);
+	PingFPS[playerid] = Create3DTextLabel("_", 0x00FF00FF, 0, 0, 0, DRAW_DISTANCE, 0, 1);
     Attach3DTextLabelToPlayer(PingFPS[playerid], playerid, 0.0, 0.0, -0.745);
-	DmgLabel[playerid] = Create3DTextLabel(" ", -1, 0, 0, 0, 40.0, 0, true);
+	DmgLabel[playerid] = Create3DTextLabel(" ", -1, 0, 0, 0, 40.0, 0, 1);
 	Attach3DTextLabelToPlayer(DmgLabel[playerid], playerid, 0.0, 0.0, 0.8);
 
 	#if MYSQL == 1
@@ -2555,6 +3339,12 @@ public OnPlayerSpawn(playerid)
 
 public OnPlayerDisconnect(playerid, reason)
 {
+	if(CreatingTextO[playerid])
+	{
+	    PlayerSaveNewGraff(playerid);
+	    IsGraffBeingCreated = false;
+	}
+
 	if(Player[playerid][Spectating] == true && IsPlayerConnected(Player[playerid][IsSpectatingID])) StopSpectate(playerid);
 
    	if(playerid == HighestID) {
@@ -3392,6 +4182,12 @@ public OnPlayerEnterCheckpoint(playerid) {
     return 1;
 }
 
+public OnPlayerEditObject(playerid, playerobject, objectid, response, Float:fX, Float:fY, Float:fZ, Float:fRotX, Float:fRotY, Float:fRotZ)
+{
+    OnPlayerEditGraffObject(playerid, playerobject, objectid, response, Float:fX, Float:fY, Float:fZ, Float:fRotX, Float:fRotY, Float:fRotZ);
+	return 1;
+}
+
 public OnPlayerClickMap(playerid, Float:fX, Float:fY, Float:fZ)
 {
 	if(Player[playerid][Level] == 5 && Player[playerid][Playing] == false && Player[playerid][InDM] == false && Player[playerid][InDuel] == false && Player[playerid][Spectating] == false && Player[playerid][InHeadShot] == false && Player[playerid][AntiLag] == false) {
@@ -4121,6 +4917,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 
 public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 {
+    OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext);
 	if(dialogid == DIALOG_THEME_CHANGE1)
 	{
 	    if(response)
@@ -6112,137 +6909,19 @@ CMD:updates(playerid, params[])
 
 	string = "";
 
-    strcat(string, "{00FF00}Attack-Defend v2.3.1 updates:\n");
+    strcat(string, "{00FF00}Attack-Defend v2.4 updates:\n");
 
-	strcat(string, "\n{FFFFFF}- Fixed: players from the same team could headshot each other.");
-	strcat(string, "\n{FFFFFF}- Fixed: ESL help dialog was shown to re-added players while playing which caused conflicts.");
+	strcat(string, "\n{FFFFFF}- Fixed a few minor bugs which appeared in the previous version.");
+	strcat(string, "\n{FFFFFF}- Feature: you can now lead your team by pressing the key 'H' while being in round.");
+	strcat(string, "\n{FFFFFF}- Fixed: players' net stats were checked in duels even if they got netcheck status disabled.");
+	strcat(string, "\n{FFFFFF}- Added /changename command to change your in-game name.");
+	strcat(string, "\n{FFFFFF}- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it.");
+	strcat(string, "\n{FFFFFF}- Added a version checker to tell whether your gamemode version is up-to-date or not.");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
 
-
-	strcat(string, "{00FF00}Attack-Defend v2.3 updates:\n");
-
-	strcat(string, "\n{FFFFFF}- The gamemode has been updated to function properly with the new SA:MP version (0.3z)");
-	strcat(string, "\n{FFFFFF}- Headshots now should be more accurate than before");
-	strcat(string, "\n{FFFFFF}- Re-enabled anti-joypad");
-	strcat(string, "\n{FFFFFF}- Added: new commands to permanently lock a server or enable AC.");
-	strcat(string, "\n{FFFFFF}- Fixed: you would see Arena instead of TDM while it's a TDM running.");
-	strcat(string, "\n{FFFFFF}- Fixed: /accheck was mentioned in /acmds by mistake.");
-	strcat(string, "\n{FFFFFF}- Most of admin commands are now logged with exact time and date in 'admin_command_log.txt' in your scriptfiles directory.");
-	strcat(string, "\n{FFFFFF}- ESL system is back in Attdef again.");
-	strcat(string, "\n{FFFFFF}- Changed: chat text colour.");
-	strcat(string, "\n{FFFFFF}- Added: /changepass for non-plugin version.");
-
-/*
-	strcat(string, "{00FF00}Attack-Defend v2.2 updates:\n");
-
-	strcat(string, "\n{FFFFFF}- Fixed some memory issues");
-	strcat(string, "\n{FFFFFF}- Now you can choose between different theme colours, check {AAFFFF}/themes {FFFFFF}to try it yourself");
-	strcat(string, "\n{FFFFFF}- Removed GTA V like camera");
-	strcat(string, "\n{FFFFFF}- {00EE00}>greentext {FFFFFF}added");
-    strcat(string, "\n{FFFFFF}- Removed glitched s0biet detection");
-    strcat(string, "\n{FFFFFF}- Some textdraws will be hidden when you enter FreeCam mode");
- 	#if XMAS == 1
-    strcat(string, "\n{FFFFFF}- Added christmas stuff, check {AAFFFF}/xmascmds");
-	#endif
-	strcat(string, "\n{FFFFFF}- Added 2 new commands to set offline users level or delete offline users, check /acmds");
-	strcat(string, "\n{FFFFFF}- Headshots will now work with other weapons like Deagle, Rifle as well as Sniper");
-	strcat(string, "\n{FFFFFF}- Allowed every vehicle for /acar");
-	strcat(string, "\n{FFFFFF}- Allowed Coastguard, Firetruck LA, Nevada, Launch and blocked all trailers for /v command");
-	strcat(string, "\n{FFFFFF}- Fixed some bugs with duel");
-	strcat(string, "\n{FFFFFF}- PL is now also shown on players' bodies");
-	strcat(string, "\n{FFFFFF}- Fixed bug with radio auto-restarting when you synced");
-*/
-
-/*
-	strcat(string, "{00FF00}Attack-Defend v2.1 updates:\n");
-
-	strcat(string, "\n{00FFBB}Updates by Niko_boy and Khalid:");
-	strcat(string, "\n{FFFFFF}- Fixed a bug with duel ending that players were switched to no-team instead of their original teams");
-	strcat(string, "\n{FFFFFF}- Added a time gap of 8000 ms (8 seconds) between (un)pause requests");
-	strcat(string, "\n{FFFFFF}- After unpausing a round, vehicles move at the same speed which they get before pausing the round");
-    strcat(string, "\n{FFFFFF}- Players now get unarmed on round unpausing");
-    strcat(string, "\n{FFFFFF}- GTA V-like camera movement on base/arena starting");
-
-	strcat(string, "\n\n{00FFBB}Updates by X.K:");
-	strcat(string, "\n{FFFFFF}- Moved team skin icons to corners of screen a bit");
-	strcat(string, "\n{FFFFFF}- Centered 'AC Starting' textdraw");
-    strcat(string, "\n{FFFFFF}- /ann command now displays announcement as a textdraw instead of chat message");
-    strcat(string, "\n{FFFFFF}- Added a more visible 'Round Paused/Unpausing' textdraw at bottom of screen");
-    strcat(string, "\n{FFFFFF}- Added {AAFFFF}/autopause {FFFFFF}command for admins to enable/disable auto-pause on player disconnect in war mode");
-    strcat(string, "\n{FFFFFF}- Added {AAFFFF}/getgun [Weapon] [Ammo] {FFFFFF}command in lobby");
-    strcat(string, "\n{FFFFFF}- Added {AAFFFF}/lobbyguns {FFFFFF}command for admins to enable/disable guns in lobby");
-    strcat(string, "\n{FFFFFF}- Disabled /heal in HeadShot and Anti-Lag zones");
-	strcat(string, "\n{FFFFFF}- Updated /settings command with more current server settings info");
-    strcat(string, "\n{FFFFFF}- Updated /config command with many more configurable colored options indicating whether they are enabled/disabled");
-*/
-
-//  Old updates v2.0
-/*
-    strcat(string, "\n\n{00FF00}Attack-Defend v2.0 updates:\n");
-
-	strcat(string, "\n{FFFFFF}- Removed boxes that can make you lose HP if you step over them, removed exploding gas tanks");
-	strcat(string, "\n{FFFFFF}- Removed Anti-joypad");
-	strcat(string, "\n{FFFFFF}- Removed all reliance on www.sixtytiger.com, except for AC, and AC load reduced");
-	strcat(string, "\n{FFFFFF}- Fixed getting frozen while re-added into the round");
-	strcat(string, "\n{FFFFFF}- Fixed /freecam (you can't see in-round players)");
-	strcat(string, "\n{FFFFFF}- Added an option to /start that enables you to start the last played arena/base instead of using /lastplayed then use the ID etc.");
-	strcat(string, "\n{FFFFFF}- Now you see the info (Ping, PL, FPS and etc) of the player you shoot (or just aim at) so no more retarded busts because of high PL");
-	strcat(string, "\n{FFFFFF}- Added an option in config to enable/disable Target Info");
-	strcat(string, "\n{FFFFFF}- Fixed bugs with switching between Anti-lag and Headshot zones");
-	strcat(string, "\n{FFFFFF}- Improved Anti-Cheat");
-	strcat(string, "\n{FFFFFF}- Changed login system, so you won't have 'Unable to login' problems. Use random passwords as it can easily be converted");
-	strcat(string, "\n{FFFFFF}- Added {AAAAFF}/int {FFFFFF}command");
-	strcat(string, "\n{FFFFFF}- Added {AAAAFF}/ann {FFFFFF}command, for admin announcements");
-	strcat(string, "\n{FFFFFF}- Put marker on Map and you will be teleported there (if you are not in round)");
-	strcat(string, "\n{FFFFFF}- Added {AAAAFF}/porn {FFFFFF}command");
-
-//	strcat(string, "\n\n{00FFBB}Updates by X.K:");
-	strcat(string, "\n{FFFFFF}- You can't spam duel invite on same person now");
-	strcat(string, "\n{FFFFFF}- Level 3 and above can now use commands during duels except abusable commands like /heal etc.");
-	strcat(string, "\n{FFFFFF}- Added {AAAAFF}/setradio [Radio ID] [Radio Link] {FFFFFF}command for admins to change radio links");
-	strcat(string, "\n{FFFFFF}- Fixed a bug where typing /lobby still spawned player in anti-lag zone");
-	strcat(string, "\n{FFFFFF}- Added {AAAAFF}/blockpm(all) {FFFFFF}or {AAAAFF}/nopm(all) {FFFFFF}commands");
-	strcat(string, "\n{FFFFFF}- Reduced cheat check time from 5 seconds to 3 seconds");
-	strcat(string, "\n{FFFFFF}- Added {AAAAFF}/antispam {FFFFFF}command for admins to enable/disable anti-spam");
-	strcat(string, "\n{FFFFFF}- Added {AAAAFF}/shortcuts [on | off] {FFFFFF}command for admins to enable/disable team shortcut messages");
-	strcat(string, "\n{FFFFFF}- Players must wait at least 3 seconds before sending consecutive team shortcut messages");
-
-//	strcat(string, "\n\n{00FFBB}Updates by Niko_boy:");
-	strcat(string, "\n{FFFFFF}- Added new {AAAAFF}Round end textdraws {FFFFFF}with top stats.");
-	strcat(string, "\n{FFFFFF}- Added {AAAAFF}/rounds {FFFFFF}to see list of rounds played during a match.");
-	strcat(string, "\n{FFFFFF}- Added {AAAAFF}/defaultskins {FFFFFF}command to reset skins to default skin ids 170, 177, 51");
-
-	strcat(string, "\n{FFFFFF}- Added {AAAAFF}/showspectateinfo {FFFFFF}command which is same as {AAAAFF}/teamdmg {FFFFFF}to show spectating player information.");
-	strcat(string, "\n{FFFFFF}- Added {AAAAFF}/nolag {FFFFFF}command. Option also available in /config to enable/disable anti-lag everywhere.");
-    strcat(string, "\n{FFFFFF}- Player teams are now saved before a duel has started and restored after it has ended.");
-
-*/
-
-//  Old updates v1.9
-/*	strcat(string, "\n{FFFFFF}- Car ram and heli kill protection");
-	strcat(string, "\n{FFFFFF}- Heart/Armour icon on player heads when they take hit");
-	strcat(string, "\n{FFFFFF}- Vehicle number plate will show player's name without tag");
-	strcat(string, "\n{FFFFFF}- Remaining HP/Armour will be shown on {AAAAFF}/kill{FFFFFF}, {AAAAFF}/rem {FFFFFF}and {AAAAFF}/remove");
-	strcat(string, "\n{FFFFFF}- Skin icons in round stats (toggle-able with {AAAAFF}/skinicons {FFFFFF}command)");
-	strcat(string, "\n{FFFFFF}- Duels Won, Duels Lost and Last played radio are saved in player accounts");
-	strcat(string, "\n{FFFFFF}- Warning messages shown to players if their FPS, Ping or PL cross set limits");
-
-	strcat(string, "\n\n{00BBFF}Updates by Khalid:");
-	strcat(string, "\n{FFFFFF}- {AAAAFF}/freecam {FFFFFF}command");
-	strcat(string, "\n{FFFFFF}- {AAAAFF}/muteall and {AAAAFF}/unmuteall {FFFFFF}commands");
-	strcat(string, "\n{FFFFFF}- Headshot Zone: {AAAAFF}/headshot");
-	strcat(string, "\n{FFFFFF}- Headshot detection to announce when a player head-shots someone");
-	strcat(string, "\n{FFFFFF}- Spectation toggler system: {AAAAFF}/togspec(all)");
-	strcat(string, "\n{FFFFFF}- Non-admins can ask to pause the round by pressing {AAAAFF}Y");
-	strcat(string, "\n{FFFFFF}- Lots of useful commands can be executed now by just clicking on a player from TAB");
-	strcat(string, "\n{FFFFFF}- Team-chat shortcuts system with four texts editable with {AAAAFF}/shortcuts {FFFFFF}command");
-	strcat(string, "\n{FFFFFF}- Fixed the x V x textdraws");
-	strcat(string, "\n{FFFFFF}- Added a fix for the well-known SA:MP bug, G-bug (Description: If you press G to enter a vehicle\nas a passenger and after 3 seconds entry isn't achieved you are teleported inside)");
-    strcat(string, "\n{FFFFFF}- Installed a game-text filter to avoid crashes");
-
-	strcat(string, "\n\n{FFBBBB}Other Updates:");
-	strcat(string, "\n{FFFFFF}- Anti-aimbot by Luk_Ass");
-	strcat(string, "\n{FFFFFF}- Textdraws improved by 062_");
-	strcat(string, "\n{FFFFFF}- F4 class selection bug fixed by Whitetiger");*/
 
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
 	return 1;
@@ -6314,7 +6993,7 @@ CMD:acmds(playerid, params[])
 
 	if(Player[playerid][Level] > 3) {
 		strcat(string, "\n\n"COL_PRIM"Level 4:");
-		strcat(string, "\n{FFFFFF}/acar   /banip   /mainspawn");
+		strcat(string, "\n{FFFFFF}/acar   /banip   /mainspawn  /spray  /deletegraff");
 	}
 
 	if(Player[playerid][Level] > 4) {
@@ -11069,6 +11748,7 @@ CMD:end(playerid, params[])
 	GangZoneDestroy(ArenaZone);
 	
 	ResetTeamLeaders();
+	LoadGraffs();
 	
     LogAdminCommand("end", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -16766,6 +17446,9 @@ stock CanPlay(playerid)
 
     if(!(Player[playerid][Team] == ATTACKER || Player[playerid][Team] == DEFENDER))
 		return 0; // can not play
+		
+	if(CreatingTextO[playerid])
+		return 0; // can not play
 
 
 	return 1; // can play
@@ -18829,7 +19512,18 @@ stock SpawnPlayerEx(playerid) {
 }
 
 
-
+stock HexToInt(string[])
+{
+  if (string[0]==0) return 0;
+  new i;
+  new cur=1;
+  new res=0;
+  for (i=strlen(string);i>0;i--) {
+    if (string[i-1]<58) res=res+cur*(string[i-1]-48); else res=res+cur*(string[i-1]-65+10);
+    cur=cur*16;
+  }
+  return res;
+}
 
 
 stock IsNumeric(string[]){
@@ -20502,6 +21196,7 @@ public OnPlayerInGameReplace(ToAddID, i, playerid) {
 forward OnArenaStart(ArenaID);
 public OnArenaStart(ArenaID)
 {
+    DeleteAllGraffs();
     ResetTeamLeaders();
     ClearKillList(); // Clears the kill-list.
     DestroyAllVehicles(); // Destroys (removes) all the spawned vehicles
@@ -21047,6 +21742,7 @@ GivePlayerArenaWeapons(playerid)
 forward OnBaseStart(BaseID);
 public OnBaseStart(BaseID)
 {
+	DeleteAllGraffs();
     ResetTeamLeaders();
     ClearKillList(); // Clears the kill-list.
     DestroyAllVehicles(); // Destroys (removes) all the spawned vehicles
@@ -22055,6 +22751,7 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 
 	FixVsTextDraw();    //fixbyxk
     ResetTeamLeaders();
+    LoadGraffs();
 	return 1;
 }
 
