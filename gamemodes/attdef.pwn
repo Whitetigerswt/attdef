@@ -7,7 +7,7 @@
 	- Fixed: players' net stats were checked in duels even if they got netcheck status disabled.
 	- Added /changename command to change your in-game name.
 	- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it
-	- Added a version checker to tell whether your gamemode version is up-to-date or not.
+	- Added a version checker to tell whether your gamemode version is up-to-date or not (/checkversion).
 
 
 */
@@ -217,7 +217,7 @@ stock _HOOKED_PlayerTextDrawSetString(playerid, PlayerText:text, string[])
 #define TEAM_LEADER_COLOUR 		0xB7FFAEFF  // Light green colour
 
 
-#define COL_PRIM    "{F36164}" // niko's orange >> {E66000}
+#define COL_PRIM    "{F36164}"
 #define COL_SEC     "{FFFFFF}"
 
 new MAIN_BACKGROUND_COLOUR = (0xEEEEEE33);
@@ -645,6 +645,7 @@ enum PlayerVariables {
 	TimesSpawned,
 	VWorld,
 	lastChat,
+	LastAskLeader,
 	RoundPlayed,
 	shotsHit,
 	Float:Accuracy,
@@ -832,8 +833,8 @@ new Float:RoundHP = 100.0, Float:RoundAR = 100.0;
 new Skin[MAX_TEAMS];
 new TextColor[MAX_TEAMS][10];
 new TDC[MAX_TEAMS][7];
-new bool:TeamHasLeader[2];
-new TeamLeader[2];
+new bool:TeamHasLeader[MAX_TEAMS];
+new TeamLeader[MAX_TEAMS];
 
 
 new GunMenuWeapons[10][2];
@@ -1625,35 +1626,36 @@ main(){} //---------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
 // version checker <start>
-#define VERSIONCHECKER_OFFSET   30
-#define VERSION_CHAR_LENGTH     4
+#define VERSION_CHAR_LENGTH     		4
 
-#define VERSION_IS_BEHIND       0
-#define VERSION_IS_UPTODATE     1
+#define VERSION_CHECKER_VERSION_URL		"sixtytiger.com/khalid/AttDef_API/VersionChecker/version.php"
+#define VERSION_CHECKER_CHANGELOG_URL	"sixtytiger.com/khalid/AttDef_API/VersionChecker/changelog.php"
+
+#define VERSION_IS_BEHIND       		0
+#define VERSION_IS_UPTODATE     		1
 
 new VersionReport = -1;
 new bool:VersionCheckerStatus = false;
-new LatestVersionStr[64];
+new LatestVersionStr[64], LatestVersionChangesStr[512];
 stock InitVersionChecker()
 {
 	SetTimer("ReportServerVersion", 20 * 60 * 1000, true);
-    HTTP(VERSIONCHECKER_OFFSET, HTTP_GET, "sixtytiger.com/khalid/AttDef_API/version.php", "", "SaveVersionInStr");
+    HTTP(0, HTTP_GET, VERSION_CHECKER_VERSION_URL, "", "SaveVersionInStr");
 	return 1;
 }
 
 forward ReportServerVersion();
 public ReportServerVersion()
 {
-    printf("VersionReport: %d", VersionReport);
 	if(VersionReport == VERSION_IS_BEHIND)
  	{
      	SendClientMessageToAll(-1, ""COL_PRIM"Version checker: {FFFFFF}the version used in this server is out-dated. You can visit "COL_PRIM"www.sixtytiger.com {FFFFFF}to get the latest version");
-        SendClientMessageToAll(-1, sprintf(""COL_PRIM"Your version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
+        SendClientMessageToAll(-1, sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
 	}
-	else
+	/*else
  	{
-     	SendClientMessageToAll(-1, sprintf(""COL_PRIM"Your version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
-	}
+     	SendClientMessageToAll(-1, sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
+	}*/
 	return 1;
 }
 
@@ -1665,6 +1667,19 @@ public SaveVersionInStr(index, response_code, data[])
 		format(LatestVersionStr, sizeof LatestVersionStr, "%s", data);
 		VersionCheckerStatus = true;
 		VersionReport = ReportVersion();
+		//HTTP(0, HTTP_GET, VERSION_CHECKER_CHANGELOG_URL, "", "SaveChangelogInStr");
+    }
+    else
+        VersionCheckerStatus = false;
+    return 1;
+}
+
+forward SaveChangelogInStr(index, response_code, data[]);
+public SaveChangelogInStr(index, response_code, data[])
+{
+    if(response_code == 200)
+    {
+		format(LatestVersionChangesStr, sizeof LatestVersionChangesStr, "%s", data);
     }
     else
         VersionCheckerStatus = false;
@@ -1682,13 +1697,16 @@ stock ReportVersion()
 	format(second, sizeof second, "");
 	format(third, sizeof third, "");
 	new pos = 0;
-	for(new i = 0; i < strlen(LatestVersionStr); i ++)
+	for(new i = 0; i < strlen(LatestVersionStr) + 2; i ++)
 	{
 	    if(LatestVersionStr[i] == '.')
 	    {
 			pos ++;
 			continue;
 		}
+        if(!strlen(LatestVersionStr[i]))
+		    break;
+
 		switch(pos)
 		{
 		    case 0:
@@ -1705,13 +1723,16 @@ stock ReportVersion()
 	format(svsecond, sizeof svsecond, "");
 	format(svthird, sizeof svthird, "");
 	pos = 0;
-	for(new i = 0; i < strlen(GM_VERSION); i ++)
+	for(new i = 0; i < strlen(GM_VERSION) + 2; i ++)
 	{
 	    if(GM_VERSION[i] == '.')
 	    {
 			pos ++;
 			continue;
 		}
+		if(!strlen(GM_VERSION[i]))
+		    break;
+		    
 		switch(pos)
 		{
 		    case 0:
@@ -1749,6 +1770,18 @@ stock ReportVersion()
 	}
             	
 	return VERSION_IS_UPTODATE;
+}
+
+CMD:checkversion(playerid, params[])
+{
+	/*new str[720];
+    format(str, sizeof str, ""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s\n\n"COL_PRIM"What's new\n{FFFFFF}%s", GM_VERSION, LatestVersionStr, LatestVersionChangesStr);
+	ShowPlayerDialog(playerid, 0, DIALOG_STYLE_MSGBOX, "Version Checker",
+	 str, "Okay", "");
+	*/
+    ShowPlayerDialog(playerid, 0, DIALOG_STYLE_MSGBOX, "Version Checker",
+	 sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr), "Okay", "");
+	return 1;
 }
 // version checker <end>
 
@@ -2875,6 +2908,7 @@ public OnPlayerConnect(playerid)
 	Player[playerid][TimesSpawned] = 0;
 	Player[playerid][VWorld] = 1;
 	Player[playerid][lastChat] = GetTickCount()+1000;
+	Player[playerid][LastAskLeader] = GetTickCount()+1000;
     ArenaWeapons[0][playerid] = 0;
     ArenaWeapons[1][playerid] = 0;
     Player[playerid][RoundPlayed] = 0;
@@ -6916,7 +6950,7 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Fixed: players' net stats were checked in duels even if they got netcheck status disabled.");
 	strcat(string, "\n{FFFFFF}- Added /changename command to change your in-game name.");
 	strcat(string, "\n{FFFFFF}- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it.");
-	strcat(string, "\n{FFFFFF}- Added a version checker to tell whether your gamemode version is up-to-date or not.");
+	strcat(string, "\n{FFFFFF}- Added a version checker to tell whether your gamemode version is up-to-date or not. (/checkversion)");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -12189,7 +12223,7 @@ CMD:get(playerid,params[])
 	new iString[160];
 	format(iString, sizeof(iString),"{FFFFFF}%s "COL_PRIM"has teleported {FFFFFF}%s "COL_PRIM"to himself.",Player[playerid][Name],Player[gid][Name]);
 	SendClientMessageToAll(-1, iString);
-    LogAdminCommand("", playerid, gid);
+    LogAdminCommand("get", playerid, gid);
 	return 1;
 }
 
@@ -16480,6 +16514,7 @@ stock PlayerLeadTeam(playerid, bool:force, bool:message = true)
 	}
 	SetPlayerColor(playerid, TEAM_LEADER_COLOUR);
     RadarFix();
+    print("PlayerLeadTeam was called!");
 	return 1;
 }
 
@@ -16510,6 +16545,7 @@ stock PlayerNoLeadTeam(playerid)
 			}
 	    }
 	}
+	print("PlayerNoLeadTeam was called!");
 	return 1;
 }
 
@@ -16538,6 +16574,7 @@ stock ResetTeamLeaders()
 	    TeamLeader[team] = INVALID_PLAYER_ID;
 		TeamHasLeader[team] = false;
 	}
+	print("ResetTeamLeaders was called!");
 	return 1;
 }
 
@@ -19360,7 +19397,6 @@ stock ColorFix(playerid) {
 	        case DEFENDER_SUB: SetPlayerColor(playerid, DEFENDER_SUB_COLOR);
 		}
 	}
-	return 1;
 }
 
 stock RadarFix() {
@@ -19940,7 +19976,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 		{
             if(PRESSED(65536) && RoundPaused == false)
             {
-			    if((GetTickCount() - Player[playerid][lastChat]) < 8000)
+			    if((GetTickCount() - Player[playerid][lastChat]) < 10000)
 				{
 					SendErrorMessage(playerid,"Please wait.");
 					return 0;
@@ -19950,7 +19986,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 			}
 			if(PRESSED(65536) && RoundPaused == true)
             {
-			    if((GetTickCount() - Player[playerid][lastChat]) < 8000)
+			    if((GetTickCount() - Player[playerid][lastChat]) < 10000)
 				{
 					SendErrorMessage(playerid,"Please wait.");
 					return 0;
@@ -19962,6 +19998,14 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 
         if(PRESSED(262144) && AllowStartBase == true && Player[playerid][Playing] == true)
         {
+            if(IsPlayerInAnyVehicle(playerid))
+                return 1;
+                
+            if((GetTickCount() - Player[playerid][LastAskLeader]) < 10000)
+			{
+				SendErrorMessage(playerid,"Please wait.");
+				return 0;
+			}
             new team = Player[playerid][Team];
 			if(TeamHasLeader[team] != true)
             {
@@ -19976,6 +20020,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
            	    else
            	    	SendErrorMessage(playerid, "Your team already has a leader!");
            	}
+           	Player[playerid][LastAskLeader] = GetTickCount();
         }
 
 		if(PRESSED(131072) && AllowStartBase == true && Player[playerid][Playing] == true)
@@ -19984,7 +20029,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
                 new iString[160];
 				foreach(new i : Player) {
 				    if((Player[i][Playing] == true || GetPlayerState(i) == PLAYER_STATE_SPECTATING) && i != playerid && Player[i][Team] == ATTACKER) {
-						format(iString, sizeof(iString), "{FF8800}[HELP] {FFFFFF}%s {FF8800}has requested for backup! .:Distance %.0f feet:.", Player[playerid][Name], GetDistanceBetweenPlayers(i, playerid));
+						format(iString, sizeof(iString), "{BEFFBB}[HELP] {FFFFFF}%s {BEFFBB}has requested for backup! .:Distance %.0f feet:.", Player[playerid][Name], GetDistanceBetweenPlayers(i, playerid));
 					    SendClientMessage(i, -1, iString);
 					    PlayerPlaySound(i,1137,0.0,0.0,0.0);
 					}
@@ -19993,14 +20038,14 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 				Player[playerid][AskingForHelp] = true;
 				SetPlayerColor(playerid, ATTACKER_ASKING_HELP);
 
-				SendClientMessage(playerid, -1, "{FF8800}[HELP] {FFFFFF}You have requested for backup.");
+				SendClientMessage(playerid, -1, "{BEFFBB}[HELP] {FFFFFF}You have requested for backup.");
 				Player[playerid][AskingForHelpTimer] = SetTimerEx("AttackerAskingHelp", 7000, 0, "i", playerid);
 
 			} else if(Player[playerid][Team] == DEFENDER && TeamHelp[DEFENDER] == false) {
                 new iString[160];
 				foreach(new i : Player) {
 				    if((Player[i][Playing] == true || GetPlayerState(i) == PLAYER_STATE_SPECTATING) && i != playerid && Player[i][Team] == DEFENDER) {
-				    	format(iString, sizeof(iString), "{FF8800}[HELP] {FFFFFF}%s {FF8800}has requested for backup! .:Distance %.0f feet:.", Player[playerid][Name], GetDistanceBetweenPlayers(i, playerid));
+				    	format(iString, sizeof(iString), "{BEFFBB}[HELP] {FFFFFF}%s {BEFFBB}has requested for backup! .:Distance %.0f feet:.", Player[playerid][Name], GetDistanceBetweenPlayers(i, playerid));
 					    SendClientMessage(i, -1, iString);
 					    PlayerPlaySound(i,1137,0.0,0.0,0.0);
 					}
@@ -20009,7 +20054,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 				Player[playerid][AskingForHelp] = true;
 				SetPlayerColor(playerid, DEFENDER_ASKING_HELP);
 
-				SendClientMessage(playerid, -1, "{FF8800}[HELP] {FFFFFF}You have requested for backup.");
+				SendClientMessage(playerid, -1, "{BEFFBB}[HELP] {FFFFFF}You have requested for backup.");
 				Player[playerid][AskingForHelpTimer] = SetTimerEx("DefenderAskingHelp", 7000, 0, "i", playerid);
 
 			}
