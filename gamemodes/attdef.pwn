@@ -8,6 +8,8 @@
 	- Added /changename command to change your in-game name.
 	- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it
 	- Added a version checker to tell whether your gamemode version is up-to-date or not (/checkversion).
+	- Added a command to clear admin command log file. (/clearadmcmd)
+	- An attempt to fix AC glitch with some users: getting kicked while AC is running.
 
 
 */
@@ -217,7 +219,7 @@ stock _HOOKED_PlayerTextDrawSetString(playerid, PlayerText:text, string[])
 #define TEAM_LEADER_COLOUR 		0xB7FFAEFF  // Light green colour
 
 
-#define COL_PRIM    "{F36164}"
+#define COL_PRIM    "{01A2F8}" // 0044FF   F36164
 #define COL_SEC     "{FFFFFF}"
 
 new MAIN_BACKGROUND_COLOUR = (0xEEEEEE33);
@@ -1690,7 +1692,7 @@ stock ReportVersion()
 {
 	if(!VersionCheckerStatus)
 		return -1;
-		
+
 	// spliting the version str on the website
 	new first[VERSION_CHAR_LENGTH], second[VERSION_CHAR_LENGTH], third[VERSION_CHAR_LENGTH];
 	format(first, sizeof first, "");
@@ -1732,7 +1734,7 @@ stock ReportVersion()
 		}
 		if(!strlen(GM_VERSION[i]))
 		    break;
-		    
+
 		switch(pos)
 		{
 		    case 0:
@@ -1744,7 +1746,7 @@ stock ReportVersion()
 		}
 	}
 	// comparing them
-	
+
 	if(strval(first) > strval(svfirst))
  	{
  	    return VERSION_IS_BEHIND;
@@ -1757,7 +1759,7 @@ stock ReportVersion()
      	    return VERSION_IS_BEHIND;
 		}
 	}
-            
+
     if(strval(first) == strval(svfirst))
     {
     	if(strval(second) == strval(svsecond))
@@ -1768,7 +1770,7 @@ stock ReportVersion()
 			}
 		}
 	}
-            	
+
 	return VERSION_IS_UPTODATE;
 }
 
@@ -2603,7 +2605,7 @@ public OnGameModeInit()
     new ServerIP[30];
     GetServerVarAsString("hostname", hostname, sizeof(hostname));
     GetServerVarAsString("bind", ServerIP, sizeof(ServerIP));
-    
+
     /*lagcompmode = GetServerVarAsInt("lagcompmode");
 
     new hn[128];
@@ -3512,7 +3514,7 @@ public OnPlayerDisconnect(playerid, reason)
 				ServerLocked = false;
 				PermLocked = false;
 			}
-			
+
 			#if ANTICHEAT == 1
 
 			if(PermAC != true)
@@ -6951,6 +6953,10 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Added /changename command to change your in-game name.");
 	strcat(string, "\n{FFFFFF}- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it.");
 	strcat(string, "\n{FFFFFF}- Added a version checker to tell whether your gamemode version is up-to-date or not. (/checkversion)");
+	strcat(string, "\n{FFFFFF}- Added a command to clear admin command log file. (/clearadmcmd)");
+	strcat(string, "\n{FFFFFF}- An attempt to fix AC glitch with some users: getting kicked while AC is running.");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -6986,13 +6992,13 @@ CMD:cmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr   /fix   /para   /vote   /voteint");
 
 	strcat(string, "\n\n"COL_PRIM"Player profile commands:");
-	strcat(string, "\n{FFFFFF}/weather (/w)   /time (/t)   /changepass   /sound   /testsound   /textdraw   /togspec(all)   /shortcuts");
+	strcat(string, "\n{FFFFFF}/changename  /weather (/w)   /time (/t)   /changepass   /sound   /testsound   /textdraw   /togspec(all)   /shortcuts");
 
 	strcat(string, "\n\n"COL_PRIM"Chat-related commands:");
 	strcat(string, "\n{FFFFFF}/pm   /r   /blockpm(all)   /nopm(all)   /cchannel   /pchannel   Use "COL_PRIM"# {FFFFFF}to talk in chat channel");
 
 	strcat(string, "\n\n"COL_PRIM"Other commands:");
-	strcat(string, "\n{FFFFFF}/admins   /credits   /view   /getpos   /serverpassword   /sp   /settings   /freecam   /porn   /int");
+	strcat(string, "\n{FFFFFF}/admins   /credits   /view   /getpos   /serverpassword   /sp   /settings   /freecam   /porn   /int  /checkversion");
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Player Commands", string, "OK","");
 	return 1;
@@ -7027,15 +7033,23 @@ CMD:acmds(playerid, params[])
 
 	if(Player[playerid][Level] > 3) {
 		strcat(string, "\n\n"COL_PRIM"Level 4:");
-		strcat(string, "\n{FFFFFF}/acar   /banip   /mainspawn  /spray  /deletegraff");
+		strcat(string, "\n{FFFFFF}/acar   /banip   /mainspawn  /spray  /deletegraff  /clearadmcmd");
 	}
 
 	if(Player[playerid][Level] > 4) {
 		strcat(string, "\n\n"COL_PRIM"Level 5:");
-		strcat(string, "\n{FFFFFF}/setlevel   /config   /base   /website   /themes   /deleteacc   /setacclevel  /permac  /permlock");
+		strcat(string, "\n{FFFFFF}/setlevel   /config   /base   /website   /themes   /deleteacc   /setacclevel  /permac  /permlock  ");
 	}
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Admin Commands", string, "OK","");
+	return 1;
+}
+
+CMD:clearadmcmd(playerid, params[])
+{
+    if(Player[playerid][Level] < 4) return SendErrorMessage(playerid,"You must be level 4 to use this command.");
+    ClearAdminCommandLog();
+    SendClientMessage(playerid, -1, "Admin command log has been successfully cleared!");
 	return 1;
 }
 
@@ -10485,7 +10499,7 @@ CMD:connstats( playerid, params[] )
 
 	if( sscanf(params, "d", pID) ) return SendUsageMessage(playerid,"/connStats <playerid>");
 	if( !IsPlayerConnected(pID) ) return SendErrorMessage(playerid,"** Invalid PlayerID! ");
-	
+
 	new szString[80];
 	format(szString, sizeof(szString), "(%d)%s's current connection status: %i.", pID, Player[pID][Name], NetStats_ConnectionStatus(pID) );
 	SendClientMessage(playerid, -1, szString);
@@ -11171,10 +11185,10 @@ CMD:changename(playerid,params[])
 	        new iString[256],
 				DBResult: result
 			;
-			
+
 			format( iString, sizeof(iString), "SELECT * FROM `Players` WHERE `Name` = '%s'", DB_Escape(params) );
 			result = db_query(sqliteconnection, iString);
-			
+
 			if( db_num_rows(result) > 0 )
 			{
 			    db_free_result(result);
@@ -11189,10 +11203,10 @@ CMD:changename(playerid,params[])
 
 				format(iString, sizeof(iString),">> {FFFFFF}%s "COL_PRIM"has changed name to {FFFFFF}%s",Player[playerid][Name],params);
 				SendClientMessageToAll(-1,iString);
-				
+
 				format(iString, sizeof(iString), "UPDATE `Players` SET `Name` = '%s' WHERE `Name` = '%s'", DB_Escape(params), DB_Escape(Player[playerid][Name]) );
 				db_free_result(db_query(sqliteconnection, iString));
-				
+
 				format( Player[playerid][Name], MAX_PLAYER_NAME, "%s", params );
 
 			    new NewName[MAX_PLAYER_NAME];
@@ -11640,7 +11654,7 @@ CMD:readd(playerid, params[])
 	    	SendErrorMessage(playerid,"That player must be part of one of the following teams: Attacker, Defender or Referee.");
 		}
 	}
-    
+
 	return 1;
 }
 
@@ -11780,10 +11794,10 @@ CMD:end(playerid, params[])
 
     GangZoneDestroy(CPZone);
 	GangZoneDestroy(ArenaZone);
-	
+
 	ResetTeamLeaders();
 	LoadGraffs();
-	
+
     LogAdminCommand("end", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
@@ -16487,7 +16501,7 @@ stock ShowDeathMessage(playerid, killerid)
 {
 	if(playerid == INVALID_PLAYER_ID || killerid == INVALID_PLAYER_ID)
 	    return 0;
-	    
+
 	PlayerTextDrawSetString(Player[playerid][DeathMsgTD],
 	return 1;
 }*/
@@ -16514,7 +16528,6 @@ stock PlayerLeadTeam(playerid, bool:force, bool:message = true)
 	}
 	SetPlayerColor(playerid, TEAM_LEADER_COLOUR);
     RadarFix();
-    print("PlayerLeadTeam was called!");
 	return 1;
 }
 
@@ -16545,7 +16558,6 @@ stock PlayerNoLeadTeam(playerid)
 			}
 	    }
 	}
-	print("PlayerNoLeadTeam was called!");
 	return 1;
 }
 
@@ -16563,7 +16575,7 @@ stock ResetTeamLeaders()
 	    TeamLeader[team] = INVALID_PLAYER_ID;
 		TeamHasLeader[team] = false;
 	}
-	
+
 	team = 1;
 	if(TeamHasLeader[team] == true)
 	{
@@ -16574,7 +16586,6 @@ stock ResetTeamLeaders()
 	    TeamLeader[team] = INVALID_PLAYER_ID;
 		TeamHasLeader[team] = false;
 	}
-	print("ResetTeamLeaders was called!");
 	return 1;
 }
 
@@ -16595,7 +16606,7 @@ stock LogAdminCommand(cmd[], adminid, playerid)
   	if(playerid != INVALID_PLAYER_ID)
   	{
 		fwrite(log, sprintf("[%02d/%02d/%d][%02d:%02d:%02d] %s [%d] has used the command (/%s) at %s [%d]. \r\n", Day, Month, Year, Hours, Minutes, Seconds, Player[adminid][Name], adminid, cmd, Player[playerid][Name], playerid));
-  	}
+   	}
   	else
 	{
 		fwrite(log, sprintf("[%02d/%02d/%d][%02d:%02d:%02d] %s [%d] has used the command (/%s). \r\n", Day, Month, Year, Hours, Minutes, Seconds, Player[adminid][Name], adminid, cmd));
@@ -16603,6 +16614,14 @@ stock LogAdminCommand(cmd[], adminid, playerid)
   	//fwrite(log, "\r\n");
   	fclose(log);
   	return 1;
+}
+
+stock ClearAdminCommandLog()
+{
+    new File:log = fopen("admin_command_log.txt", io_write);
+    fwrite(log, "");
+    fclose(log);
+	return 1;
 }
 
 stock DamagePlayer(playerid, Float:amnt)
@@ -17483,7 +17502,7 @@ stock CanPlay(playerid)
 
     if(!(Player[playerid][Team] == ATTACKER || Player[playerid][Team] == DEFENDER))
 		return 0; // can not play
-		
+
 	if(CreatingTextO[playerid])
 		return 0; // can not play
 
@@ -19378,13 +19397,13 @@ stock RemoveClanTagFromName(playerid) {
 
 stock ColorFix(playerid) {
 	if(Player[playerid][Playing] == true) {
-	
+
 	    switch(Player[playerid][Team]) {
 	        case ATTACKER: SetPlayerColor(playerid, ATTACKER_PLAYING);
 	        case DEFENDER: SetPlayerColor(playerid, DEFENDER_PLAYING);
 	        case REFEREE: SetPlayerColor(playerid, REFEREE_COLOR);
 		}
-		
+
 		new team = Player[playerid][Team];
 		if(TeamHasLeader[team] == true && TeamLeader[team] == playerid)
 		    PlayerLeadTeam(playerid, true, false);
@@ -19591,7 +19610,7 @@ public Float:GetPlayerPacketLoss(playerid) {
             packetloss = floatstr(stats);
         }
     }*/
-    
+
     return NetStats_PacketLossPercent(playerid);
 }
 
@@ -20000,7 +20019,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
         {
             if(IsPlayerInAnyVehicle(playerid))
                 return 1;
-                
+
             if((GetTickCount() - Player[playerid][LastAskLeader]) < 10000)
 			{
 				SendErrorMessage(playerid,"Please wait.");
