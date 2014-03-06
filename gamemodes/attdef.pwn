@@ -8,6 +8,7 @@
 	- Added /changename command to change your in-game name.
 	- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it
 	- Added a version checker to tell whether your gamemode version is up-to-date or not (/checkversion).
+	- Added a command to clear admin command log file. (/clearadmcmd)
 
 
 */
@@ -217,7 +218,7 @@ stock _HOOKED_PlayerTextDrawSetString(playerid, PlayerText:text, string[])
 #define TEAM_LEADER_COLOUR 		0xB7FFAEFF  // Light green colour
 
 
-#define COL_PRIM    "{F36164}"
+#define COL_PRIM    "{01A2F8}" // 0044FF   F36164
 #define COL_SEC     "{FFFFFF}"
 
 new MAIN_BACKGROUND_COLOUR = (0xEEEEEE33);
@@ -6951,6 +6952,8 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Added /changename command to change your in-game name.");
 	strcat(string, "\n{FFFFFF}- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it.");
 	strcat(string, "\n{FFFFFF}- Added a version checker to tell whether your gamemode version is up-to-date or not. (/checkversion)");
+	strcat(string, "\n{FFFFFF}- Added a command to clear admin command log file. (/clearadmcmd)");
+	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -6986,13 +6989,13 @@ CMD:cmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr   /fix   /para   /vote   /voteint");
 
 	strcat(string, "\n\n"COL_PRIM"Player profile commands:");
-	strcat(string, "\n{FFFFFF}/weather (/w)   /time (/t)   /changepass   /sound   /testsound   /textdraw   /togspec(all)   /shortcuts");
+	strcat(string, "\n{FFFFFF}/changename  /weather (/w)   /time (/t)   /changepass   /sound   /testsound   /textdraw   /togspec(all)   /shortcuts");
 
 	strcat(string, "\n\n"COL_PRIM"Chat-related commands:");
 	strcat(string, "\n{FFFFFF}/pm   /r   /blockpm(all)   /nopm(all)   /cchannel   /pchannel   Use "COL_PRIM"# {FFFFFF}to talk in chat channel");
 
 	strcat(string, "\n\n"COL_PRIM"Other commands:");
-	strcat(string, "\n{FFFFFF}/admins   /credits   /view   /getpos   /serverpassword   /sp   /settings   /freecam   /porn   /int");
+	strcat(string, "\n{FFFFFF}/admins   /credits   /view   /getpos   /serverpassword   /sp   /settings   /freecam   /porn   /int  /checkversion");
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Player Commands", string, "OK","");
 	return 1;
@@ -7027,15 +7030,23 @@ CMD:acmds(playerid, params[])
 
 	if(Player[playerid][Level] > 3) {
 		strcat(string, "\n\n"COL_PRIM"Level 4:");
-		strcat(string, "\n{FFFFFF}/acar   /banip   /mainspawn  /spray  /deletegraff");
+		strcat(string, "\n{FFFFFF}/acar   /banip   /mainspawn  /spray  /deletegraff  /clearadmcmd");
 	}
 
 	if(Player[playerid][Level] > 4) {
 		strcat(string, "\n\n"COL_PRIM"Level 5:");
-		strcat(string, "\n{FFFFFF}/setlevel   /config   /base   /website   /themes   /deleteacc   /setacclevel  /permac  /permlock");
+		strcat(string, "\n{FFFFFF}/setlevel   /config   /base   /website   /themes   /deleteacc   /setacclevel  /permac  /permlock  ");
 	}
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Admin Commands", string, "OK","");
+	return 1;
+}
+
+CMD:clearadmcmd(playerid, params[])
+{
+    if(Player[playerid][Level] < 4) return SendErrorMessage(playerid,"You must be level 4 to use this command.");
+    ClearAdminCommandLog();
+    SendClientMessage(playerid, -1, "Admin command log has been successfully cleared!");
 	return 1;
 }
 
@@ -16514,7 +16525,6 @@ stock PlayerLeadTeam(playerid, bool:force, bool:message = true)
 	}
 	SetPlayerColor(playerid, TEAM_LEADER_COLOUR);
     RadarFix();
-    print("PlayerLeadTeam was called!");
 	return 1;
 }
 
@@ -16545,7 +16555,6 @@ stock PlayerNoLeadTeam(playerid)
 			}
 	    }
 	}
-	print("PlayerNoLeadTeam was called!");
 	return 1;
 }
 
@@ -16574,7 +16583,6 @@ stock ResetTeamLeaders()
 	    TeamLeader[team] = INVALID_PLAYER_ID;
 		TeamHasLeader[team] = false;
 	}
-	print("ResetTeamLeaders was called!");
 	return 1;
 }
 
@@ -16595,7 +16603,7 @@ stock LogAdminCommand(cmd[], adminid, playerid)
   	if(playerid != INVALID_PLAYER_ID)
   	{
 		fwrite(log, sprintf("[%02d/%02d/%d][%02d:%02d:%02d] %s [%d] has used the command (/%s) at %s [%d]. \r\n", Day, Month, Year, Hours, Minutes, Seconds, Player[adminid][Name], adminid, cmd, Player[playerid][Name], playerid));
-  	}
+   	}
   	else
 	{
 		fwrite(log, sprintf("[%02d/%02d/%d][%02d:%02d:%02d] %s [%d] has used the command (/%s). \r\n", Day, Month, Year, Hours, Minutes, Seconds, Player[adminid][Name], adminid, cmd));
@@ -16603,6 +16611,14 @@ stock LogAdminCommand(cmd[], adminid, playerid)
   	//fwrite(log, "\r\n");
   	fclose(log);
   	return 1;
+}
+
+stock ClearAdminCommandLog()
+{
+    new File:log = fopen("admin_command_log.txt", io_write);
+    fwrite(log, "");
+    fclose(log);
+	return 1;
 }
 
 stock DamagePlayer(playerid, Float:amnt)
