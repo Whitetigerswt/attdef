@@ -4479,7 +4479,7 @@ public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY
 //============
 
 
-public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart)
+public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 {
     if(ToggleTargetInfo == true) ShowTargetInfo(playerid, damagedid);
 
@@ -23848,7 +23848,7 @@ public OnACUpdated(playerid) {
 	new iString[400];
 
 	if(!AC_Running(playerid)) {
-	    if(Player[playerid][ACKick] >= 1) {
+	    if(Player[playerid][ACKick] >= 2) {
 			format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has been kicked for not running the Anti-Cheat.", Player[playerid][Name]);
 			SendClientMessageToAll(-1, iString);
 
@@ -23865,13 +23865,13 @@ public OnACUpdated(playerid) {
 
 			ShowPlayerDialog(playerid,DIALOG_ANTICHEAT,DIALOG_STYLE_MSGBOX,"{FF0000}Anti-Cheat", iString,"OK","");
 
-			Player[playerid][ACKick] = false;
+			Player[playerid][ACKick] = 0;
 
 	        printf("Player: %s (%d) has been kicked for not running the Anti-Cheat.", Player[playerid][Name], playerid);
 		} else {
 			Player[playerid][ACKick]++;
 
-			format(iString,sizeof(iString),"{CCCCCC}AC is off %d/2", Player[playerid][ACKick]);
+			format(iString,sizeof(iString),"{CCCCCC}AC is off %d/3", Player[playerid][ACKick]);
    			SendClientMessage(playerid, -1, iString);
 
    			format(iString, sizeof(iString), ""COL_PRIM"Warning: {FFFFFF}%s's"COL_PRIM" AC is off.", Player[playerid][Name]);
