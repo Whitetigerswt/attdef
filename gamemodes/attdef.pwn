@@ -23884,7 +23884,7 @@ public OnACUpdated(playerid) {
 
 			ShowPlayerDialog(playerid,DIALOG_ANTICHEAT,DIALOG_STYLE_MSGBOX,"{FF0000}Anti-Cheat", iString,"OK","");
 
-			Player[playerid][ACKick] = false;
+			Player[playerid][ACKick] = 0;
 
 	        printf("Player: %s (%d) has been kicked for not running the Anti-Cheat.", Player[playerid][Name], playerid);
 		} else {
