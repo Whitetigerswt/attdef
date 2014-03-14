@@ -6,11 +6,13 @@
 	- Feature: you can now lead your team by pressing the key 'H' while being in round.
 	- Fixed: players' net stats were checked in duels even if they got netcheck status disabled.
 	- Added /changename command to change your in-game name.
-	- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it
+	- Added graffiti system: /spray, /seegraff and /deletegraff
 	- Added a version checker to tell whether your gamemode version is up-to-date or not (/checkversion).
 	- Added a command to clear admin command log file. (/clearadmcmd)
-	- An attempt to fix AC glitch with some users: getting kicked while AC is running.
+	- Added spectation player info textdraws. (not optional)
+	
 
+	Note: I (Khalid) started to work on a match sync system, but it's still in EARLY BETA.
 
 */
 
@@ -32,6 +34,7 @@ new 	GM_VERSION[6] =		"2.4.0"; // Don't forget to change the length
 #define STATS           0 	// Shows ESL player stats from duels and VERSUS.
 #define OBJECTS         0   // Loads extra objects/maps
 #define XMAS            0   // Loads Christmas stuff
+#define MATCH_SYNC      0   // (Beta) Uploads each match data somewhere so that it can be easily displayed in a website.
 #define SKINICONS       0	// Loads skin icons in round stats
 #define SILENTAIMDETECT 1   // Anti Wallhack/Silent Aim							//silentaim
 
@@ -959,7 +962,6 @@ new UnpauseTimer;
 // - OnPlayerTakeDamage Variables
 
 
-
 new gLastHit[6][MAX_PLAYERS];
 new TakeDmgCD[6][MAX_PLAYERS];
 //new Float:HPLost[MAX_PLAYERS][MAX_PLAYERS];
@@ -1627,6 +1629,173 @@ new const Interiors[][intinfo] = {
 main(){} //---------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
+// match sync <start>
+#if MATCH_SYNC == 1
+
+#include <a_mysql>
+
+new
+	MATCHSYNC_Kills[MAX_PLAYERS],
+	MATCHSYNC_Damage[MAX_PLAYERS],
+	MATCHSYNC_Accuracy[MAX_PLAYERS],
+	MATCHSYNC_Rounds[MAX_PLAYERS];
+
+stock MATCHSYNC_Init()
+{
+	mysql_close();
+	mysql_debug(1);
+	mysql_connect("sql2.freemysqlhosting.net", "sql232925", "sql232925", "tH9*vP4%");
+	return 1;
+}
+
+stock MATCHSYNC_DoesNameExist(nametocheck[])
+{
+	new query[70],result[128];
+	format(query, sizeof(query), "SELECT SQLid FROM Players WHERE Name='%s'", nametocheck);
+	mysql_query(query);
+	mysql_store_result();
+	if(mysql_fetch_row(result))
+	{
+	    mysql_free_result();
+	    return 1;
+ 	}
+ 	else
+ 	{
+ 	    mysql_free_result();
+  	}
+	return 0;
+}
+
+stock MATCHSYNC_SyncPlayerKills(playerid)
+{
+    new name[MAX_PLAYER_NAME];
+    GetPlayerName(playerid, name, sizeof name);
+	new query[70],result[128];
+	format(query, sizeof(query), "SELECT Kills FROM Players WHERE Name='%s'", name);
+	mysql_query(query);
+	mysql_store_result();
+	if(mysql_fetch_row(result))
+	{
+	    MATCHSYNC_Kills[playerid] = strval(result);
+ 	}
+ 	mysql_free_result();
+	return 1;
+}
+
+stock MATCHSYNC_SyncPlayerDamage(playerid)
+{
+    new name[MAX_PLAYER_NAME];
+    GetPlayerName(playerid, name, sizeof name);
+	new query[70],result[128];
+	format(query, sizeof(query), "SELECT Damage FROM Players WHERE Name='%s'", name);
+	mysql_query(query);
+	mysql_store_result();
+	if(mysql_fetch_row(result))
+	{
+	    MATCHSYNC_Damage[playerid] = strval(result);
+ 	}
+ 	mysql_free_result();
+	return 1;
+}
+
+stock MATCHSYNC_SyncPlayerAccuracy(playerid)
+{
+    new name[MAX_PLAYER_NAME];
+    GetPlayerName(playerid, name, sizeof name);
+	new query[70],result[128];
+	format(query, sizeof(query), "SELECT Accuracy FROM Players WHERE Name='%s'", name);
+	mysql_query(query);
+	mysql_store_result();
+	if(mysql_fetch_row(result))
+	{
+	    MATCHSYNC_Accuracy[playerid] = strval(result);
+ 	}
+ 	mysql_free_result();
+	return 1;
+}
+
+stock MATCHSYNC_SyncPlayerRounds(playerid)
+{
+    new name[MAX_PLAYER_NAME];
+    GetPlayerName(playerid, name, sizeof name);
+	new query[70],result[128];
+	format(query, sizeof(query), "SELECT Rounds FROM Players WHERE Name='%s'", name);
+	mysql_query(query);
+	mysql_store_result();
+	if(mysql_fetch_row(result))
+	{
+	    MATCHSYNC_Rounds[playerid] = strval(result);
+ 	}
+ 	mysql_free_result();
+	return 1;
+}
+
+stock MATCHSYNC_SyncAllPlayers()
+{
+    foreach(new i : Player)
+    {
+        new name[MAX_PLAYER_NAME];
+        GetPlayerName(i, name, sizeof name);
+        if(strfind(name, "[KHK]", true, 0) != -1)
+        {
+            MATCHSYNC_SyncPlayerKills(i);
+            MATCHSYNC_SyncPlayerDamage(i);
+            MATCHSYNC_SyncPlayerAccuracy(i);
+            MATCHSYNC_SyncPlayerRounds(i);
+        }
+    }
+	return 1;
+}
+
+stock MATCHSYNC_InsertPlayer(playerid)
+{
+	new query[256];
+	new _name[MAX_PLAYER_NAME];
+	GetPlayerName(playerid, _name, sizeof(_name));
+	format(query, sizeof(query), "INSERT INTO Players (Name, Damage, Kills, Accuracy, Rounds) VALUES ('%s', %d, %d, %d, %d)", _name, floatround(Player[playerid][TotalDamage]), Player[playerid][TotalKills], floatround(Player[playerid][TotalAccuracy]), Player[playerid][RoundPlayed]);
+	mysql_query(query);
+}
+
+stock MATCHSYNC_UpdatePlayer(playerid)
+{
+	new name[MAX_PLAYER_NAME];
+	GetPlayerName(playerid, name, sizeof name);
+	new query[256];
+	format(query, sizeof(query), "UPDATE Players SET Damage=%d, Kills=%d, Accuracy=%d, Rounds=%d WHERE Name='%s'", MATCHSYNC_Damage[playerid], MATCHSYNC_Kills[playerid], MATCHSYNC_Accuracy[playerid], MATCHSYNC_Rounds[playerid]);
+	mysql_query(query);
+	return 1;
+}
+
+stock MATCHSYNC_UpdateAllPlayers()
+{
+	if(ESLMode == false && WarMode == true && (!strcmp(TeamName[ATTACKER], "KHK", true, 3) || !strcmp(TeamName[DEFENDER], "KHK", true, 3)))
+	{
+	    MATCHSYNC_SyncAllPlayers();
+	    foreach(new i : Player)
+	    {
+	        new name[MAX_PLAYER_NAME];
+	        GetPlayerName(i, name, sizeof name);
+	        if(strfind(name, "[KHK]", true, 0) != -1)
+	        {
+	            if(MATCHSYNC_DoesNameExist(name) == 0)
+ 					MATCHSYNC_InsertPlayer(i);
+				else
+				{
+					MATCHSYNC_Kills[i] += Player[i][TotalKills];
+					MATCHSYNC_Damage[i] += floatround(Player[i][TotalDamage]);
+					MATCHSYNC_Accuracy[i] += floatround(Player[i][TotalAccuracy]);
+					MATCHSYNC_Rounds[i] += Player[i][RoundPlayed];
+					MATCHSYNC_UpdatePlayer(i);
+				}
+	        }
+	    }
+	}
+	return 1;
+}
+
+#endif
+// match sync <end>
+
 // version checker <start>
 #define VERSION_CHAR_LENGTH     		4
 
@@ -1892,7 +2061,7 @@ stock LoadGraffs()
             new obj = CreateObject(GraffData[i][G_objectmodel], GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], GraffData[i][G_pos][3], GraffData[i][G_pos][4], GraffData[i][G_pos][5]);
         	SetObjectMaterialText(obj, GraffData[i][G_sprayedtext], 0, GraffData[i][G_materialsize], GraffData[i][G_fontface],
 			GraffData[i][G_fontsize], GraffData[i][G_bold], GraffData[i][G_textcolor], GraffData[i][G_backcolor], GraffData[i][G_textalignment]);
-			GraffData[i][G_label] = Create3DTextLabel(sprintf("Graffiti ID: %d", i), 0x47B0FEFF, GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], 25.0, 0, 0);
+			GraffData[i][G_label] = Create3DTextLabel(sprintf("Graffito ID: %d", i), 0x47B0FEFF, GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], 25.0, 0, 0);
 			IsGraff[obj] = true;
 			TotalGraffs ++;
 		} while(db_next_row(res));
@@ -1921,7 +2090,7 @@ stock PlayerSaveNewGraff(playerid)
 
 	db_free_result(db_query(sqliteconnection, iString));
 
-	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has just finished spraying {FFFFFF}Graffiti ID: %d", Player[playerid][Name], GraffID);
+	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has just finished spraying {FFFFFF}Graffito ID: %d", Player[playerid][Name], GraffID);
 	SendClientMessageToAll(-1, iString);
 
 	LoadGraffs();
@@ -1955,11 +2124,27 @@ stock DeleteAllGraffs()
 	return 1;
 }
 
+CMD:seegraff(playerid, params[])
+{
+    if(isnull(params))
+		return SendUsageMessage(playerid,"/seegraff [Graffito ID]");
+	new gid = strval(params);
+
+	if(!GraffExists[gid])
+		return SendErrorMessage(playerid,"Invalid ID");
+		
+	if(Player[playerid][Playing] || Player[playerid][Spectating])
+	    return 1;
+		
+	SetPlayerPos(playerid, GraffData[gid][G_pos][0], GraffData[gid][G_pos][1], GraffData[gid][G_pos][2] + 5.0);
+	return 1;
+}
+
 CMD:deletegraff(playerid, params[])
 {
     if(Player[playerid][Level] < 4) return SendErrorMessage(playerid,"Your admin level isn't high enough for this.");
 
-    if(isnull(params)) return SendUsageMessage(playerid,"/deletegraff [Graffiti ID]");
+    if(isnull(params)) return SendUsageMessage(playerid,"/deletegraff [Graffito ID]");
 	new gid = strval(params);
     DeleteGraff(gid);
 	return 1;
@@ -2627,7 +2812,6 @@ public OnGameModeInit()
     format(post, sizeof(post), "IP=%s&Port=%d&HostName=%s", ServerIP, port, hostname);
     HTTP(100, HTTP_POST, "sixtytiger.com/attdef-api/serverlist.php", post, "");
 
-
 	ZMax[0] = -1;
 	ZMax[1] = -1;
 	ZMin[0] = -1;
@@ -2647,6 +2831,10 @@ public OnGameModeInit()
 
 	#if XMAS == 1
 	CreateXmasObjects();
+	#endif
+
+	#if MATCH_SYNC == 1
+    MATCHSYNC_Init();
 	#endif
 
     db_close(sqliteconnection);
@@ -4544,6 +4732,7 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 
 public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 {
+    //ShowHitArrow(playerid, issuerid);
 	if(playerid != INVALID_PLAYER_ID && issuerid != INVALID_PLAYER_ID && bodypart == 9) // headshot
 	{
 	    if(Player[issuerid][InHeadShot])
@@ -6951,10 +7140,11 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Feature: you can now lead your team by pressing the key 'H' while being in round.");
 	strcat(string, "\n{FFFFFF}- Fixed: players' net stats were checked in duels even if they got netcheck status disabled.");
 	strcat(string, "\n{FFFFFF}- Added /changename command to change your in-game name.");
-	strcat(string, "\n{FFFFFF}- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it.");
+	strcat(string, "\n{FFFFFF}- Added graffiti system: /spray, /seegraff and /deletegraff.");
 	strcat(string, "\n{FFFFFF}- Added a version checker to tell whether your gamemode version is up-to-date or not. (/checkversion)");
 	strcat(string, "\n{FFFFFF}- Added a command to clear admin command log file. (/clearadmcmd)");
-	strcat(string, "\n{FFFFFF}- An attempt to fix AC glitch with some users: getting kicked while AC is running.");
+	strcat(string, "\n{FFFFFF}- Added spectation player info textdraws. (not optional)");
+	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -16497,6 +16687,78 @@ stock SpawnConnectedPlayer(playerid, team)
 //------------------------------------------------------------------------------
 
 /*
+stock ShowHitArrow(playerid, hitterid)
+{
+	// if last hit by the same then break
+	new Float:hitangleZ, Float:hitangleY = 90.0;
+ 	GetPlayerFacingAngle(hitterid, hitangleZ);
+ 	//hitangleZ -= 180.0;
+ 	new Float:pX, Float:pY, Float:pZ;
+ 	GetPlayerPos(playerid, pX, pY, pZ);
+ 	new Float:oX, Float:oY, Float:oZ;
+ 	GetPlayerPos(hitterid, oX, oY, oZ);
+ 	new Float:countZ = 0.0;
+ 	new bool:arrowDown = false;
+ 	if(oZ != pZ)
+ 	{
+ 	    if(oZ > pZ)
+ 	    {
+ 	        countZ = oZ - pZ;
+ 	    }
+ 	    else
+ 	    {
+ 	        countZ = pZ - oZ;
+ 	        arrowDown = true;
+ 	    }
+ 	}
+ 	if(countZ == 0.0)
+		hitangleY = 90.0;
+	else if((pX == oX) && (pY == oY) && (pZ != oZ))
+	    hitangleY = 0.0;
+	else
+	{
+	    new Float:distancePandO = GetDistanceBetweenPlayers(playerid, hitterid);
+        hitangleY = asin(countZ / distancePandO);
+        if(arrowDown == true)
+            hitangleY += 180.0;
+		printf("hitangleY: %f", hitangleY);
+	}
+ 	new objID;
+ 	new rnd = random(4);
+	switch(rnd)
+	{
+	    case 0:
+	    {
+	        objID = CreatePlayerObject(playerid, 19134, pX + randomExFloat(1.0, 2.0), pY + randomExFloat(1.0, 2.0), pZ + randomExFloat(1.0, 2.0), 0.0, hitangleY, hitangleZ, 0.0);
+	    }
+	    case 1:
+		{
+		    objID = CreatePlayerObject(playerid, 19134, pX - randomExFloat(1.0, 2.0), pY + randomExFloat(1.0, 2.0), pZ + randomExFloat(1.0, 2.0), 0.0, hitangleY, hitangleZ, 0.0);
+		}
+		case 2:
+		{
+		    objID = CreatePlayerObject(playerid, 19134, pX + randomExFloat(1.0, 2.0), pY - randomExFloat(1.0, 2.0), pZ + randomExFloat(1.0, 2.0), 0.0, hitangleY, hitangleZ, 0.0);
+		}
+		case 3:
+		{
+		    objID = CreatePlayerObject(playerid, 19134, pX - randomExFloat(1.0, 2.0), pY - randomExFloat(1.0, 2.0), pZ + randomExFloat(1.0, 2.0), 0.0, hitangleY, hitangleZ, 0.0);
+		}
+	}
+	// set material colour
+	SetTimerEx("DestroyHitObject", 5000, false, "ii", playerid, objID);
+	return 1;
+}
+
+
+forward DestroyHitObject(playerid, objectid);
+public DestroyHitObject(playerid, objectid)
+{
+	DestroyPlayerObject(playerid, objectid);
+	return 1;
+}
+*/
+
+/*
 stock ShowDeathMessage(playerid, killerid)
 {
 	if(playerid == INVALID_PLAYER_ID || killerid == INVALID_PLAYER_ID)
@@ -16505,6 +16767,17 @@ stock ShowDeathMessage(playerid, killerid)
 	PlayerTextDrawSetString(Player[playerid][DeathMsgTD],
 	return 1;
 }*/
+
+stock randomExFloat(Float:min, Float:max)
+{
+	new rand = random(floatround(max-min, floatround_round))+floatround(min, floatround_round);
+	return rand;
+}
+
+stock randomExInt(min, max)
+{
+	return random(max-min) + min;
+}
 
 stock PlayerLeadTeam(playerid, bool:force, bool:message = true)
 {
@@ -23073,6 +23346,10 @@ public PreMatchResults()
 forward WarEnded();
 public WarEnded()
 {
+	#if MATCH_SYNC == 1
+	MATCHSYNC_UpdateAllPlayers();
+	#endif
+
     ClearKillList(); // Clears the kill-list.
 
 	new iString[256], TopString[3][128];
@@ -23417,32 +23694,39 @@ SpectatePlayer(playerid, specid) {
 
 
 
-	if(TeamHPDamage == false) {
-		new iString[256],Float:aArmour, Float:aHealth;
-		GetPlayerHealth(specid, aHealth);
-		GetPlayerArmour(specid, aArmour);
+	//if(TeamHPDamage == false)
+	//{
+	// spectation info tds
+	new iString[256],Float:aArmour, Float:aHealth;
+	GetPlayerHealth(specid, aHealth);
+	GetPlayerArmour(specid, aArmour);
 
-	/*	new Float:Angle;
-		GetPlayerFacingAngle(specid, Angle);
+	format(iString, sizeof(iString),"%s%s ~r~~h~%d~n~~n~%s(%.0f) (~r~~h~%.0f%s)~n~FPS: ~r~~h~%d %sPing: ~r~~h~%d~n~%sPacket-Loss: ~r~~h~%.1f~n~%sKills: ~r~~h~%d~n~%sDamage: ~r~~h~%.0f~n~%sTotal Dmg: ~r~~h~%.0f",
+		MAIN_TEXT_COLOUR, Player[specid][Name], specid, MAIN_TEXT_COLOUR, Player[specid][pArmour], Player[specid][pHealth], MAIN_TEXT_COLOUR, Player[specid][FPS], MAIN_TEXT_COLOUR, GetPlayerPing(specid), MAIN_TEXT_COLOUR, GetPlayerPacketLoss(specid), MAIN_TEXT_COLOUR, Player[specid][RoundKills], MAIN_TEXT_COLOUR, Player[specid][RoundDamage], MAIN_TEXT_COLOUR, Player[specid][TotalDamage]);
+	PlayerTextDrawSetString(playerid, SpecText[1], iString);
+	PlayerTextDrawSetString(playerid, SpecText[3], SpecWeapons(specid));
 
-		format(iString,sizeof(iString),"~l~%s ~r~%d~n~~l~(~l~%.0f~l~)  (~r~~h~%.0f~l~)~n~~l~Ping ~r~%d ~l~FPS ~r~%d~n~~l~Packet-Loss ~r~%.1f", Player[specid][Name], specid, aArmour, aHealth, GetPlayerPing(specid), Player[specid][FPS], GetPlayerPacketLoss(specid));
-		PlayerTextDrawSetString(playerid, SpecText[0], iString);
-	    PlayerTextDrawShow(playerid,SpecText[0]);
+ 	for(new i; i < 4; i++) {
+		PlayerTextDrawShow(playerid, SpecText[i]);
+	}
+	if(Player[playerid][Team] == ATTACKER || Player[playerid][Team] == ATTACKER_SUB)
+	{
+		TextDrawHideForPlayer(playerid, DefenderTeam[2]);
+		TextDrawHideForPlayer(playerid, DefenderTeam[3]);
+		TextDrawHideForPlayer(playerid, AttackerTeam[0]);
+		TextDrawHideForPlayer(playerid, AttackerTeam[1]);
+	}
+	else if(Player[playerid][Team] == DEFENDER || Player[playerid][Team] == DEFENDER_SUB)
+	{
+		TextDrawHideForPlayer(playerid, AttackerTeam[2]);
+		TextDrawHideForPlayer(playerid, AttackerTeam[3]);
+		TextDrawHideForPlayer(playerid, DefenderTeam[0]);
+		TextDrawHideForPlayer(playerid, DefenderTeam[1]);
+	}
 
-		format(iString,sizeof(iString),"~l~R-Dmg ~r~%.0f  ~l~T-Dmg ~r~%.0f~n~~l~Facing ~r~%s~n~~l~%s", Player[specid][RoundDamage], Player[specid][TotalDamage], GetCardinalPoint(Angle), SpecWeapons(specid));
-		PlayerTextDrawSetString(playerid, SpecText[1], iString);
-	    PlayerTextDrawShow(playerid,SpecText[1]);
-*/
-		format(iString, sizeof(iString),"%s%s ~r~~h~%d~n~~n~%s(%.0f) (~r~~h~%.0f%s)~n~FPS: ~r~~h~%d %sPing: ~r~~h~%d~n~%sPacket-Loss: ~r~~h~%.1f~n~%sKills: ~r~~h~%d~n~%sDamage: ~r~~h~%.0f~n~%sTotal Dmg: ~r~~h~%.0f",
-			MAIN_TEXT_COLOUR, Player[specid][Name], specid, MAIN_TEXT_COLOUR, Player[specid][pArmour], Player[specid][pHealth], MAIN_TEXT_COLOUR, Player[specid][FPS], MAIN_TEXT_COLOUR, GetPlayerPing(specid), MAIN_TEXT_COLOUR, GetPlayerPacketLoss(specid), MAIN_TEXT_COLOUR, Player[specid][RoundKills], MAIN_TEXT_COLOUR, Player[specid][RoundDamage], MAIN_TEXT_COLOUR, Player[specid][TotalDamage]);
-		PlayerTextDrawSetString(playerid, SpecText[1], iString);
-		PlayerTextDrawSetString(playerid, SpecText[3], SpecWeapons(specid));
-
-	 	for(new i; i < 4; i++) {
-			PlayerTextDrawShow(playerid, SpecText[i]);
-		}
-
-	} else {
+	/*}
+	else
+	{
 		if(Player[playerid][Team] == ATTACKER || Player[playerid][Team] == ATTACKER_SUB) {
 			TextDrawShowForPlayer(playerid, DefenderTeam[2]);
 			TextDrawShowForPlayer(playerid, DefenderTeam[3]);
@@ -23454,7 +23738,7 @@ SpectatePlayer(playerid, specid) {
 			TextDrawShowForPlayer(playerid, DefenderTeam[0]);
 			TextDrawShowForPlayer(playerid, DefenderTeam[1]);
 		}
-	}
+	}*/
 
 	Player[playerid][IsSpectatingID] = specid;
 	Player[playerid][Spectating] = true;
