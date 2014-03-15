@@ -12,6 +12,7 @@
 	- Added spectation player info textdraws. (not optional)
 	- Added team-chat for team referee.
 	- /ac should now work for admins level 3 and higher.
+	- Fixed: team-mate visibility on radar.
 	
 
 	Note: I (Khalid) started to work on a match sync system, but it's still in EARLY BETA.
@@ -7162,8 +7163,8 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Added a command to clear admin command log file. (/clearadmcmd)");
 	strcat(string, "\n{FFFFFF}- Added spectation player info textdraws. (not optional)");
 	strcat(string, "\n{FFFFFF}- Added team-chat for team referee.");
-	strcat(string, "\n{FFFFFF}");
-	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}- Fixed: team-mate visibility on radar.");
+	strcat(string, "\n{FFFFFF}- /ac should now work for admins level 3 and higher.");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -16803,7 +16804,7 @@ stock PlayerLeadTeam(playerid, bool:force, bool:message = true)
     if(!force && TeamHasLeader[team] == true)
         return 0;
 
-    KillTimer(Player[playerid][AskingForHelpTimer]);
+    //KillTimer(Player[playerid][AskingForHelpTimer]);
     TeamLeader[team] = playerid;
 	TeamHasLeader[team] = true;
 	if(message)
@@ -19417,7 +19418,7 @@ stock LoadPlayerVariables(playerid)
 			SetPlayerSkin(playerid, Skin[Player[playerid][Team]]);
 			SAMP_SetPlayerTeam(playerid, Player[playerid][Team]);
 
-//			RadarFix();
+   			RadarFix();
 
 	        if(GameType == BASE)
 			{
@@ -21551,7 +21552,6 @@ forward OnArenaStart(ArenaID);
 public OnArenaStart(ArenaID)
 {
     DeleteAllGraffs();
-    ResetTeamLeaders();
     ClearKillList(); // Clears the kill-list.
     DestroyAllVehicles(); // Destroys (removes) all the spawned vehicles
 	Current = ArenaID; // Current will be the ID of the base that we just started. We do this so that we can use this ID later on (e.g. check /car command for the use).
@@ -21693,6 +21693,7 @@ public ViewArenaForPlayers()
 
 	if(ViewTimer == 0) {
 	    SpawnPlayersInArena();
+	    ResetTeamLeaders();
 	    return 1;
 	}
 
@@ -22097,7 +22098,6 @@ forward OnBaseStart(BaseID);
 public OnBaseStart(BaseID)
 {
 	DeleteAllGraffs();
-    ResetTeamLeaders();
     ClearKillList(); // Clears the kill-list.
     DestroyAllVehicles(); // Destroys (removes) all the spawned vehicles
 	Current = BaseID; // Current will be the ID of the base that we just started. We do this so that we can use this ID later on (e.g. check /car command for the use).
@@ -22222,6 +22222,7 @@ public ViewBaseForPlayers()
 {
 	if(ViewTimer == 0) {
 	    SpawnPlayersInBase();
+	    ResetTeamLeaders();
 	    return 1;
 	}
 
