@@ -10,6 +10,8 @@
 	- Added a version checker to tell whether your gamemode version is up-to-date or not (/checkversion).
 	- Added a command to clear admin command log file. (/clearadmcmd)
 	- Added spectation player info textdraws. (not optional)
+	- Added team-chat for team referee.
+	- /ac should now work for admins level 3 and higher.
 	
 
 	Note: I (Khalid) started to work on a match sync system, but it's still in EARLY BETA.
@@ -1761,34 +1763,37 @@ stock MATCHSYNC_UpdatePlayer(playerid)
 	new name[MAX_PLAYER_NAME];
 	GetPlayerName(playerid, name, sizeof name);
 	new query[256];
-	format(query, sizeof(query), "UPDATE Players SET Damage=%d, Kills=%d, Accuracy=%d, Rounds=%d WHERE Name='%s'", MATCHSYNC_Damage[playerid], MATCHSYNC_Kills[playerid], MATCHSYNC_Accuracy[playerid], MATCHSYNC_Rounds[playerid]);
+	format(query, sizeof(query), "UPDATE Players SET Damage=%d, Kills=%d, Accuracy=%d, Rounds=%d WHERE Name='%s'", MATCHSYNC_Damage[playerid], MATCHSYNC_Kills[playerid], MATCHSYNC_Accuracy[playerid], MATCHSYNC_Rounds[playerid], name);
 	mysql_query(query);
 	return 1;
 }
 
 stock MATCHSYNC_UpdateAllPlayers()
 {
-	if(ESLMode == false && WarMode == true && (!strcmp(TeamName[ATTACKER], "KHK", true, 3) || !strcmp(TeamName[DEFENDER], "KHK", true, 3)))
+	if(ESLMode == false && WarMode == true)
 	{
-	    MATCHSYNC_SyncAllPlayers();
-	    foreach(new i : Player)
-	    {
-	        new name[MAX_PLAYER_NAME];
-	        GetPlayerName(i, name, sizeof name);
-	        if(strfind(name, "[KHK]", true, 0) != -1)
-	        {
-	            if(MATCHSYNC_DoesNameExist(name) == 0)
- 					MATCHSYNC_InsertPlayer(i);
-				else
-				{
-					MATCHSYNC_Kills[i] += Player[i][TotalKills];
-					MATCHSYNC_Damage[i] += floatround(Player[i][TotalDamage]);
-					MATCHSYNC_Accuracy[i] += floatround(Player[i][TotalAccuracy]);
-					MATCHSYNC_Rounds[i] += Player[i][RoundPlayed];
-					MATCHSYNC_UpdatePlayer(i);
-				}
-	        }
-	    }
+	    if((strlen(TeamName[ATTACKER]) <= 3 && !strcmp(TeamName[ATTACKER], "KHK", true, 3)) || (strlen(TeamName[DEFENDER]) <= 3 && !strcmp(TeamName[DEFENDER], "KHK", true, 3)))
+		{
+			MATCHSYNC_SyncAllPlayers();
+		    foreach(new i : Player)
+		    {
+		        new name[MAX_PLAYER_NAME];
+		        GetPlayerName(i, name, sizeof name);
+		        if(strfind(name, "[KHK]", true, 0) != -1)
+		        {
+		            if(MATCHSYNC_DoesNameExist(name) == 0)
+	 					MATCHSYNC_InsertPlayer(i);
+					else
+					{
+						MATCHSYNC_Kills[i] += Player[i][TotalKills];
+						MATCHSYNC_Damage[i] += floatround(Player[i][TotalDamage]);
+						MATCHSYNC_Accuracy[i] += floatround(Player[i][TotalAccuracy]);
+						MATCHSYNC_Rounds[i] += Player[i][RoundPlayed];
+						MATCHSYNC_UpdatePlayer(i);
+					}
+		        }
+		    }
+		}
 	}
 	return 1;
 }
@@ -4147,27 +4152,39 @@ public OnPlayerText(playerid, text[])
 	    return 0;
 	}
 
-	if(text[0] == '!') {
+	if(text[0] == '!')
+	{
 	    new ChatColor;
-	    switch(Player[playerid][Team]) {
+	    switch(Player[playerid][Team])
+		{
 	        case REFEREE: 		ChatColor = 0xFFFF90FF;
 	        case DEFENDER: 		ChatColor = 0x0088FFFF;
 	        case ATTACKER: 		ChatColor = 0xFF2040FF;
 	        case ATTACKER_SUB: 	ChatColor = ATTACKER_SUB_COLOR;
 	        case DEFENDER_SUB: 	ChatColor = DEFENDER_SUB_COLOR;
-	        case NON: 			{ SendErrorMessage(playerid,"You must be part of a team."); return 0; }
+	        case NON:
+			{ SendErrorMessage(playerid,"You must be part of a team."); return 0; }
 	    }
 		format(ChatString,sizeof(ChatString),".: Team Chat | %s (%d) | %s", Player[playerid][Name], playerid, text[1]);
 
-		foreach(new i : Player) {
-			if(Player[i][Team] != NON) {
-		        if((Player[playerid][Team] == ATTACKER || Player[playerid][Team] == ATTACKER_SUB) && (Player[i][Team] == ATTACKER || Player[i][Team] == ATTACKER_SUB)) { SendClientMessage(i, ChatColor, ChatString); PlayerPlaySound(i,1137,0.0,0.0,0.0); }
-		        if((Player[playerid][Team] == DEFENDER || Player[playerid][Team] == DEFENDER_SUB) && (Player[i][Team] == DEFENDER || Player[i][Team] == DEFENDER_SUB)) { SendClientMessage(i, ChatColor, ChatString); PlayerPlaySound(i,1137,0.0,0.0,0.0); }
+		foreach(new i : Player)
+		{
+			if(Player[i][Team] != NON)
+			{
+		        if((Player[playerid][Team] == ATTACKER || Player[playerid][Team] == ATTACKER_SUB) && (Player[i][Team] == ATTACKER || Player[i][Team] == ATTACKER_SUB))
+				{ SendClientMessage(i, ChatColor, ChatString); PlayerPlaySound(i,1137,0.0,0.0,0.0); }
+		        if((Player[playerid][Team] == DEFENDER || Player[playerid][Team] == DEFENDER_SUB) && (Player[i][Team] == DEFENDER || Player[i][Team] == DEFENDER_SUB))
+				{ SendClientMessage(i, ChatColor, ChatString); PlayerPlaySound(i,1137,0.0,0.0,0.0); }
+				if(Player[playerid][Team] == REFEREE && Player[i][Team] == REFEREE)
+			   	{ SendClientMessage(i, ChatColor, ChatString); PlayerPlaySound(i,1137,0.0,0.0,0.0); }
 			}
-	    }
+		}
 	    return 0;
-	} else {
-	    if(Player[playerid][Mute] == true) { SendErrorMessage(playerid,"You are muted, STFU."); return 0; }
+	}
+	else
+	{
+	    if(Player[playerid][Mute] == true)
+		{ SendErrorMessage(playerid,"You are muted, STFU."); return 0; }
 	}
 
 	if(text[0] == '@' && Player[playerid][Level] > 0) {
@@ -7144,7 +7161,7 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Added a version checker to tell whether your gamemode version is up-to-date or not. (/checkversion)");
 	strcat(string, "\n{FFFFFF}- Added a command to clear admin command log file. (/clearadmcmd)");
 	strcat(string, "\n{FFFFFF}- Added spectation player info textdraws. (not optional)");
-	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}- Added team-chat for team referee.");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -7198,7 +7215,7 @@ CMD:acmds(playerid, params[])
 {
     if(Player[playerid][Level] < 1) return SendErrorMessage(playerid,"You need to be an admin to do that.");
 
-	new string[2048];
+	new string[3000];
 	string = "";
 	strcat(string, "{00CC00}@ {FFFFFF}for admin chat");
 
@@ -10763,7 +10780,7 @@ CMD:permac(playerid, params[])
 
 CMD:ac(playerid, params[])
 {
-	if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
+	if(Player[playerid][Level] < 3 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
 
 	new iString[160], newhostname[128];
 
