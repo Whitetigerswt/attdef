@@ -225,12 +225,12 @@ stock _HOOKED_PlayerTextDrawSetString(playerid, PlayerText:text, string[])
 #define TEAM_LEADER_COLOUR 		0xB7FFAEFF  // Light green colour
 
 
-#define COL_PRIM    "{01A2F8}" // 0044FF   F36164
+#define COL_PRIM    "{01A2F8}" // 0044FF   F36164 /* Dont change value of COL_PRIM define */
 #define COL_SEC     "{FFFFFF}"
 
 new MAIN_BACKGROUND_COLOUR = (0xEEEEEE33);
 new MAIN_TEXT_COLOUR[16] /*   =	("~l~")*/;
-
+new ColScheme[10] = ""COL_PRIM"";
 // Freecam
 
 #define MOVE_SPEED              100.0
@@ -1627,6 +1627,115 @@ new const Interiors[][intinfo] = {
 #include <gBugFix>
 //#include <freecam>
 
+//==========================
+/*	Linking function to make a new string that would
+	reformat string by replacing COL_PRIM by selected
+	color layout
+*/
+//#define formatz(%1,%2,%3) format(%1,%2,%3),format_fix_color(%1)
+//======================================================
+/* Changes Occurance of COL_PRIM to value contained in ColScheme */
+/* Dont change value of COL_PRIM define */
+stock format_fix_color(string[])
+{
+	new l = 0 , len = 0;
+	loop_again:
+	l = strfind(string,COL_PRIM,true,l+len);
+	if( l != -1 )
+	{
+		len = strlen(COL_PRIM);
+		strdel(string,l,l+len);
+		strins(string,ColScheme,l, strlen(string) + 10);
+		goto loop_again;
+	}
+	else return 1;
+    return 0;
+}
+// did made this code snippet from editing of Ryder`'s SendFormatMessage!
+stock _reformat(string[], const iLen, const szFormat[], { Float, _ }: ...) {
+    new
+        iArgs = (numargs() - 3) << 2
+    ;
+    //printf("string: %s // len : %d, %s", string, iLen, szFormat );
+    if(iArgs) {
+        static
+            s_iAddr1,
+            s_iAddr2
+        ;
+        #emit ADDR.PRI szFormat
+        #emit STOR.PRI s_iAddr1
+
+        for(s_iAddr2 = s_iAddr1 + iArgs, iArgs += 12; s_iAddr2 != s_iAddr1; s_iAddr2 -= 4) {
+            #emit LOAD.PRI s_iAddr2
+            #emit LOAD.I
+            #emit PUSH.PRI
+        }
+		//load into primary register
+		#emit LOAD.S.PRI string
+
+		//push arguments in order 3 , 2 , 1 respec
+        #emit PUSH.S szFormat
+        #emit PUSH.S iLen
+        #emit PUSH.PRI  //push primary registery into stack >.>
+        #emit PUSH.S iArgs // number of args
+        #emit SYSREQ.C format
+		// called ^ native function in format: format( string, ilen,szformat )
+        #emit LCTRL 4
+        #emit LOAD.S.ALT iArgs
+        #emit ADD.C 4
+        #emit ADD
+        #emit SCTRL 4
+        
+        //strcat(string,s_szBuf,iLen);
+		//printf("INSIDE reformat1 : %s",string);
+		format_fix_color(string);
+		//printf("INSIDE reformat2 : %s",string);
+        return 1;
+    }
+    return 0;
+}
+
+#if defined _ALS_format
+    #undef format
+#else
+    #define _ALS_format
+#endif
+// Reroute future calls to our function.
+#define format _reformat
+
+//======================================================
+stock fixColor_SendClientMessage(playerid,color,mess[])
+{
+    format_fix_color(mess);
+	SendClientMessage(playerid,color,mess);
+	return 1;
+}
+#if defined _ALS_SendClientMessage
+    #undef SendClientMessage
+#else
+    #define _ALS_SendClientMessage
+#endif
+// Reroute future calls to our function.
+#define SendClientMessage fixColor_SendClientMessage
+
+//======================================================
+stock fixColor_SendClientMessageToAll(color,mess[])
+{
+    format_fix_color(mess);
+	SendClientMessageToAll(color,mess);
+	return 1;
+}
+#if defined _ALS_SendClientMessageToAll
+    #undef SendClientMessageToAll
+#else
+    #define _ALS_SendClientMessageToAll
+#endif
+// Reroute future calls to our function.
+#define SendClientMessageToAll fixColor_SendClientMessageToAll
+
+
+//===========================
+
 
 //------------------------------------------------------------------------------
 main(){} //---------------------------------------------------------------------
@@ -2866,6 +2975,7 @@ public OnGameModeInit()
 
 	SendRconCommand(hn);
 */
+
 	GetServerVarAsString("hostname", hostname, sizeof(hostname));
 
     new port = GetServerVarAsInt("port");
@@ -11197,6 +11307,53 @@ CMD:help(playerid, params[])
 
 	return 1;
 }
+/* Changes Occurance of COL_PRIM to value contained in ColScheme */
+CMD:chatcolor(playerid,params[])
+{
+	new col[7];
+	
+	if( !isnull(params) && !strcmp(params,"01A2F8",true) )
+	{
+		params[0] = '\0';
+	    strcat(params,"01A2F7",7);
+	}
+	if( strlen(params) != 6 || sscanf(params,"h",col) )
+	{
+	    SendErrorMessage(playerid,"Please Enter a Valid Hex color code.");
+	    new bigString[512];
+	    new colorList[] = // enter as much colors here
+		{
+		    0x01BA2F8FF, 0x0044FFFF, 0xF36164FF
+		};
+	    strcat( bigString, "\t\tSyntax: /ChatColor ColorCode || E.g: /ChatColor 0044FF\t\t\t\n{EBEBEB}Some Examples:\n",sizeof(bigString) );
+
+		for(new i = 0, tmpint = 0; i < sizeof(colorList); i++)
+		{
+			tmpint = colorList[i] >> 8 & 0x00FFFFFF;
+			format( bigString, sizeof(bigString), "%s{%06x}%06x   ", bigString, tmpint, tmpint );
+			if( i == 9 ) strcat( bigString, "\n", sizeof(bigString) );
+		}
+
+		strcat( bigString, "\n\nHex Code need to have 6 Digits and can contain only number from 0 - 9 and letters A - F", sizeof(bigString) );
+   	    strcat( bigString, "\n\t{01A2F8}You can get some color codes from websites like: Www.ColorPicker.Com \n\t\t{37B6FA}Notice: In-Game Colors might appear different from website.\n", sizeof(bigString) );
+
+		ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX, "Hints for the command.", bigString, "Close", "" );
+		return 1;
+	}
+    if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be level 4 or rcon admin.");
+
+	format(ColScheme,10,"{%06x}", col);
+	//printf("ColScheme Changed to: %s %x", ColScheme, col );
+	new iString[128];
+	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has changed {FFFFFF}Chat Color to "COL_PRIM"%06x", Player[playerid][Name], col );
+	SendClientMessageToAll(-1, iString);
+
+	format(iString, sizeof(iString), "UPDATE `Configs` SET `Value` = '%06x' WHERE `Option` = 'ChatColor'", col);
+    db_free_result(db_query(sqliteconnection, iString));
+
+	return 1;
+}
+
 
 CMD:themes(playerid, params[])
 {
@@ -16305,11 +16462,16 @@ LoadConfig()
 	MaxTDMKills = strval(iString);
 	if( MaxTDMKills <= 0 ) MaxTDMKills = 10;
 	db_next_row(res);
+	
+	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Color Scheme ID
+ 	format( ColScheme, 10, "{%s}", iString );
+ 	db_next_row(res);
 
 	db_free_result(res);
 
 	printf("Server Config Loaded.");
 }
+
 
 //------------------------------------------------------------------------------
 // SQL Forwards

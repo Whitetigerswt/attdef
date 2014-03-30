@@ -18,33 +18,8 @@
 
 #define _geolocation_included
 
-#tryinclude <a_samp>
-#tryinclude <a_http>
+#include <a_samp>
 
-/*
-	---------------------------------------------------------------------------------------
-	Callbacks
-	---------------------------------------------------------------------------------------
-*/
-
-/*
-	public OnProxyResponse(playerid, bool:proxy);
-
-*/
-
-/*
-	---------------------------------------------------------------------------------------
-	NATIVES
-	---------------------------------------------------------------------------------------
-*/
-
-/*
-	native GetPlayerCountry(playerid, string[], const len = sizeof(string));
-	native GetPlayerISP(playerid, string[], const len = sizeof(string));
-	native GetPlayerCity(playerid, string[], const len = sizeof(string));
-	native GetPlayerGMT(playerid);
-	native GetPlayerProxy(playerid);
-*/
 
 /*
 	---------------------------------------------------------------------------------------
@@ -64,8 +39,24 @@
 new DB:geoip_db;
 new DB:geoip_city;
 
+new stock g_iBackwardsCompat = -1;
+
 
 new DBResult:_result;
+
+/*
+	---------------------------------------------------------------------------------------
+	NATIVES
+	---------------------------------------------------------------------------------------
+*/
+
+/*
+	native GetPlayerCountry(playerid, string[], const len = sizeof(string));
+	native GetPlayerISP(playerid, string[], const len = sizeof(string));
+	native GetPlayerCity(playerid, string[], const len = sizeof(string));
+	native GetPlayerGMT(playerid);
+	native GetPlayerProxy(playerid);
+*/
 
 stock GetPlayerCountry(playerid, string[], const len = sizeof(string)) {
 	new ip[24];
@@ -107,7 +98,7 @@ stock GetPlayerProxy(playerid) {
 	new ip[24];
 	GetPlayerIp(playerid, ip, sizeof(ip));
 	
-	return GetIPProxy(ip, playerid);
+	return GetIPProxy(ip);
 }
 
 /*
@@ -130,7 +121,27 @@ stock GetIPCountry(ip[], dest[], const len = sizeof(dest)) {
 	tmp = ip2long(ip);
 	
 	new string[500];
-	format(string, sizeof(string), "SELECT cn FROM ip_country WHERE idx >= (%s-(%s %% 65536)) AND ip_to >= %s AND  ip_from < %s LIMIT 1", tmp, tmp, tmp, tmp);
+	
+	
+	geoip_db = db_open(GeoIP_MainFile);
+	
+	if(g_iBackwardsCompat == -1) {
+	    _result = db_query(geoip_db, "SELECT name FROM sqlite_master WHERE type='table' AND name='ip_country'");
+	    if(db_num_rows(_result) >= 1)
+        {
+            g_iBackwardsCompat = 1;
+        }
+        else
+        {
+            g_iBackwardsCompat = 0;
+		}
+	}
+
+	if(g_iBackwardsCompat == 1) {
+	    format(string, sizeof(string), "SELECT cn FROM ip_country WHERE idx >= (%s-(%s %% 65536)) AND ip_to >= %s AND  ip_from < %s LIMIT 1", tmp, tmp, tmp, tmp);
+	} else {
+		format(string, sizeof(string), "SELECT loc.*\n FROM loc_country loc,\n blocks_country blk\n WHERE blk.idx >= (%s-(%s %% 65536))\n AND blk.startIpNum < %s\n AND blk.endIpNum > %s\n AND loc.locId = blk.locId LIMIT 1;", tmp, tmp, tmp, tmp);
+	}
 	
 	geoip_db = db_open(GeoIP_MainFile);
     _result = db_query(geoip_db, string);
@@ -196,7 +207,7 @@ stock GetIPGMT(ip[]) {
 	new dest[50];
 	
 	new string[500];
-	format(string, sizeof(string), "SELECT loc.*\n FROM geolocation loc,\n geoblocks blk\n WHERE blk.idx = (%s-(%s %% 65536))\n AND blk.startIpNum < %s\n AND blk.endIpNum > %s\n AND loc.locId = blk.locId LIMIT 1;", tmp, tmp, tmp, tmp);
+	format(string, sizeof(string), "SELECT blk.*\n FROM geolocation loc,\n geoblocks blk\n WHERE blk.idx >= (%s-(%s %% 65536))\n AND blk.startIpNum < %s\n AND blk.endIpNum > %s\n AND loc.locId = blk.locId LIMIT 1;", tmp, tmp, tmp, tmp);
 
 	geoip_city = db_open(GeoIP_CityFile);
     _result = db_query(geoip_city, string);
@@ -212,34 +223,52 @@ stock GetIPGMT(ip[]) {
 	return floatround( strval( dest ) / 15 );
 }
 
-new IPInfo[MAX_PLAYERS][MAX_PLAYER_NAME];
+stock GetIPProxy(ip[]) {
 
-stock GetIPProxy(ip[], playerid) {
-
-	if(IsPlayerConnected(playerid) && strlen(ip) > 0) {
-	
-	    if(!strcmp(ip, "127.0.0.1", true)) {
-	        return false;
-	    }
-		new str[128];
-		GetIPCountry(ip, str, sizeof(str));
-
-		if(strlen(str) > 0 && !strcmp("Anonymous Proxy",str)) {
-		    //CallLocalFunction("OnProxyResponse", "ii", playerid, true);
-		    return true;
-		} else {
-
-			format(IPInfo[playerid], MAX_PLAYER_NAME, "%s", ip);
-		    format(str, sizeof(str), "www.ipqualityscore.com/api/ip_lookup.php?KEY=onekz5t6ksv8aidtrhcj7bhjit7u0&IP=%s", ip);
-		    HTTP(playerid, HTTP_GET, str, "", "OnProxyRecieved");
+    if(g_iBackwardsCompat == -1) {
+	    _result = db_query(geoip_db, "SELECT name FROM sqlite_master WHERE type='table' AND name='ip_country'");
+	    if(db_num_rows(_result) >= 1)
+        {
+            g_iBackwardsCompat = 1;
+        }
+        else
+        {
+            g_iBackwardsCompat = 0;
 		}
+	}
+	
+	if(g_iBackwardsCompat == 1) {
+	    printf("Error: GetIPProxy cannot work on old GeoIP Database files, please update your database files!");
+	    printf("http://forum.sa-mp.com/showthread.php?t=296171");
+	    return false;
+	}
+	if(strlen(ip) > 0) {
+	
+		new tmp[90];
+		tmp = ip2long(ip);
+
+		new dest[50];
+
+		new string[500];
+		format(string, sizeof(string), "SELECT blk.*\n FROM geolocation loc,\n geoblocks blk\n WHERE blk.idx = (%s-(%s %% 65536))\n AND blk.startIpNum < %s\n AND blk.endIpNum > %s\n AND loc.locId = blk.locId LIMIT 1;", tmp, tmp, tmp, tmp);
+
+		geoip_city = db_open(GeoIP_CityFile);
+		_result = db_query(geoip_city, string);
+		if(db_num_rows(_result) >= 1)
+		{
+			db_get_field_assoc(_result, "is_anonymous_proxy", dest, sizeof(dest));
+		}
+		db_free_result(_result);
+		db_close(geoip_city);
+		
+		return strval(dest);
 	}
 	
 	
 	return false;
 }
 
-forward OnProxyRecieved(index, response_code, data[]);
+/*forward OnProxyRecieved(index, response_code, data[]);
 public OnProxyRecieved(index, response_code, data[]) {
 
 	if(IsPlayerConnected(index)) {
@@ -252,7 +281,7 @@ public OnProxyRecieved(index, response_code, data[]) {
 		}
 	}
 	IPInfo[index] = "";
-}
+}*/
 
 stock ip2long(ip[]) {
 	new ips[4];
@@ -523,5 +552,3 @@ stock sscanf_(string[], format[], {Float,_}:...) // by Y_Less
 	while (delim > ' ');
 	return 0;
 }
-
-forward OnProxyResponse(playerid, bool:proxy);
