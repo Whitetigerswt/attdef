@@ -1769,7 +1769,10 @@ stock MATCHSYNC_UpdatePlayer(playerid)
 	return 1;
 }
 
-stock MATCHSYNC_UpdateAllPlayers()
+#define WHEN_ROUND_END 0
+#define WHEN_MATCH_END 1
+
+stock MATCHSYNC_UpdateAllPlayers(when)
 {
 	if(ESLMode == false && WarMode == true)
 	{
@@ -1780,23 +1783,78 @@ stock MATCHSYNC_UpdateAllPlayers()
 		    {
 		        new name[MAX_PLAYER_NAME];
 		        GetPlayerName(i, name, sizeof name);
-		        if(strfind(name, "[KHK]", true, 0) != -1)
+		        if(strfind(name, "[KHK]", true, 0) != -1 || strfind(name, "[KHKr]", true, 0) != -1 || strfind(name, "[KHKa]", true, 0) != -1)
 		        {
 		            if(MATCHSYNC_DoesNameExist(name) == 0)
 	 					MATCHSYNC_InsertPlayer(i);
 					else
 					{
-						MATCHSYNC_Kills[i] += Player[i][TotalKills];
-						MATCHSYNC_Damage[i] += floatround(Player[i][TotalDamage]);
-						MATCHSYNC_Accuracy[i] += floatround(Player[i][TotalAccuracy]);
-						MATCHSYNC_Rounds[i] += Player[i][RoundPlayed];
+					    switch(when)
+					    {
+					        case WHEN_MATCH_END:
+					        {
+					            if(Player[i][RoundKills] == 0 && floatround(Player[i][RoundDamage]) == 0 && floatround(Player[i][Accuracy]) == 0)
+									goto skipped;
+								MATCHSYNC_Kills[i] += Player[i][TotalKills];
+								MATCHSYNC_Damage[i] += floatround(Player[i][TotalDamage]);
+								MATCHSYNC_Accuracy[i] += floatround(Player[i][TotalAccuracy]); // null
+								MATCHSYNC_Rounds[i] += Player[i][RoundPlayed];
+							}
+							case WHEN_ROUND_END:
+							{
+							    if(Player[i][RoundKills] == 0 && floatround(Player[i][RoundDamage]) == 0 && floatround(Player[i][Accuracy]) == 0)
+									goto skipped;
+							    MATCHSYNC_Kills[i] += Player[i][RoundKills];
+								MATCHSYNC_Damage[i] += floatround(Player[i][RoundDamage]);
+								MATCHSYNC_Accuracy[i] += floatround(Player[i][Accuracy]);
+								MATCHSYNC_Rounds[i] ++;
+							}
+						}
 						MATCHSYNC_UpdatePlayer(i);
+						skipped:
 					}
 		        }
 		    }
 		}
 	}
 	return 1;
+}
+
+stock MATCHSYNC_InsertMatchStats()
+{
+	new winnerName[16], loserName[16], score[16];
+	if(TeamScore[ATTACKER] > TeamScore[DEFENDER])
+	{
+	    format(winnerName, sizeof winnerName, "%s", TeamName[ATTACKER]);
+	    format(loserName, sizeof loserName, "%s", TeamName[DEFENDER]);
+	    format(score, sizeof score, "%d:%d", TeamScore[ATTACKER], TeamScore[DEFENDER]);
+	}
+	else if(TeamScore[DEFENDER] > TeamScore[ATTACKER])
+	{
+	    format(winnerName, sizeof winnerName, "%s", TeamName[DEFENDER]);
+	    format(loserName, sizeof loserName, "%s", TeamName[ATTACKER]);
+	    format(score, sizeof score, "%d:%d", TeamScore[DEFENDER], TeamScore[ATTACKER]);
+	}
+	else
+	{
+	    format(winnerName, sizeof winnerName, "%s", TeamName[ATTACKER]);
+	    format(loserName, sizeof loserName, "%s", TeamName[DEFENDER]);
+	    format(score, sizeof score, "%d:%d", TeamScore[ATTACKER], TeamScore[DEFENDER]);
+	}
+	new date[64];
+    new Year, Month, Day;
+	getdate(Year, Month, Day);
+	new Hours, Minutes, Seconds;
+	gettime(Hours, Minutes, Seconds);
+	format(date, sizeof date, "[%02d/%02d/%d]:[%02d:%02d:%02d]", Day, Month, Year, Hours, Minutes, Seconds);
+	new alAC[16];
+	if(AntiCheat == true)
+		format(alAC, sizeof alAC, "Was On");
+	else
+		format(alAC, sizeof alAC, "Was Off");
+	new query[300];
+	format(query, sizeof(query), "INSERT INTO Matches (TeamA, TeamB, Score, DateTime, AC) VALUES ('%s', '%s', '%s', '%s', '%s')", winnerName, loserName, score, date, alAC);
+	mysql_query(query);
 }
 
 #endif
@@ -2993,6 +3051,9 @@ public OnGameModeInit()
 public OnGameModeExit()
 {
 	db_close(sqliteconnection);
+	#if MATCH_SYNC == 1
+	mysql_close();
+	#endif
 	return 1;
 }
 
@@ -6736,6 +6797,7 @@ public OnPlayerClickTextDraw(playerid, Text:clickedid)
 			SpawnPlayerEx(playerid);
 
 			LoadPlayerVariables(playerid);
+			RadarFix();
 
 			#if XMAS == 1
 			CreateSnow(playerid);
@@ -16695,6 +16757,7 @@ stock SpawnConnectedPlayer(playerid, team)
 		SpawnPlayerEx(playerid);
 
 		LoadPlayerVariables(playerid);
+		RadarFix();
 	}
 	return 1;
 }
@@ -18320,6 +18383,7 @@ stock OnPlayerAmmoUpdate(playerid) {
 		Player[playerid][TotalBulletsFired] = Player[playerid][TotalBulletsFired] + TotalShots;
   		Player[playerid][TotalshotsHit] = Player[playerid][TotalshotsHit] + Player[playerid][shotsHit];
 		Player[playerid][Accuracy] = accuracy;
+		Player[playerid][TotalAccuracy] += accuracy;
 	}
 
 	return 1;
@@ -22654,6 +22718,9 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 		    MatchRoundsRecord[ MatchRoundsStarted - 1 ][ round__completed ] = true;
 		}
 	}
+	#if MATCH_SYNC == 1
+	MATCHSYNC_UpdateAllPlayers(WHEN_ROUND_END);
+	#endif
 
     ElapsedTime = 0;
     PlayersInCP = 0;
@@ -23365,7 +23432,8 @@ forward WarEnded();
 public WarEnded()
 {
 	#if MATCH_SYNC == 1
-	MATCHSYNC_UpdateAllPlayers();
+	//MATCHSYNC_UpdateAllPlayers(WHEN_MATCH_END);
+	MATCHSYNC_InsertMatchStats();
 	#endif
 
     ClearKillList(); // Clears the kill-list.
