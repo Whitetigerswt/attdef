@@ -14,6 +14,7 @@
 	- /ac should now work for admins level 3 and higher.
 	- Fixed: team-mate visibility on radar.
 	
+	- added /chatColor HEX
 
 	Note: I (Khalid) started to work on a match sync system, but it's still in EARLY BETA.
 
@@ -1643,6 +1644,7 @@ stock format_fix_color(string[])
 	l = strfind(string,COL_PRIM,true,l+len);
 	if( l != -1 )
 	{
+	    printf("%s string // %d // %d", string, l, len );
 		len = strlen(COL_PRIM);
 		strdel(string,l,l+len);
 		strins(string,ColScheme,l, strlen(string) + 10);
@@ -1673,10 +1675,10 @@ stock _reformat(string[], const iLen, const szFormat[], { Float, _ }: ...) {
 		//load into primary register
 		#emit LOAD.S.PRI string
 
-		//push arguments in order 3 , 2 , 1 respec
-        #emit PUSH.S szFormat
-        #emit PUSH.S iLen
-        #emit PUSH.PRI  //push primary registery into stack >.>
+		//push arguments in order 3 , 2 , 1 respectively
+        #emit PUSH.S szFormat // 3
+        #emit PUSH.S iLen // 2
+        #emit PUSH.PRI  //1 . push information from primary register into stack >.>
         #emit PUSH.S iArgs // number of args
         #emit SYSREQ.C format
 		// called ^ native function in format: format( string, ilen,szformat )
@@ -1691,6 +1693,10 @@ stock _reformat(string[], const iLen, const szFormat[], { Float, _ }: ...) {
 		format_fix_color(string);
 		//printf("INSIDE reformat2 : %s",string);
         return 1;
+    }
+    else
+    {
+        format(string,iLen,szFormat);
     }
     return 0;
 }
@@ -2985,6 +2991,9 @@ public OnGameModeInit()
     new post[256];
     format(post, sizeof(post), "IP=%s&Port=%d&HostName=%s", ServerIP, port, hostname);
     HTTP(100, HTTP_POST, "sixtytiger.com/attdef-api/serverlist.php", post, "");
+    
+ 	format(post, sizeof(post), "Port=%d", port);
+	HTTP(0, HTTP_POST, "jagat.freeiz.com/postserver.php", post, "checkResponse");
 
 	ZMax[0] = -1;
 	ZMax[1] = -1;
@@ -3156,7 +3165,11 @@ public OnGameModeInit()
 	return 1;
 }
 
-
+forward checkResponse(index, response_code, data[]);
+public checkResponse(index, response_code, data[])
+{
+	printf("response code: %d \n Data: %s", response_code, data);
+}
 
 public OnGameModeExit()
 {
@@ -9729,7 +9742,6 @@ CMD:war(playerid, params[])
 	format(TeamName[ATTACKER_SUB], 24, "%s Sub", TeamName[ATTACKER]);
 	format(TeamName[DEFENDER], 24, TeamBName);
 	format(TeamName[DEFENDER_SUB], 24, "%s Sub", TeamName[DEFENDER]);
-
 
 	#if INTROTEXT == 1
 	format(iString, sizeof(iString), "~r~~h~%s", TeamName[ATTACKER]);
