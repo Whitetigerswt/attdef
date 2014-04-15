@@ -394,9 +394,15 @@ stock AC_GetAllInfo() {
 		
 		if(strlen(postdata) > 0) format(postdata, sizeof(postdata), "%s&IP%d=%s", postdata, i, IP);
 		else format(postdata, sizeof(postdata), "IP%d=%s", i, IP);
+		
+		if(i % 10 == 0) {
+		    HTTP(THREAD_OFFSET, HTTP_POST, ALL_QUERY_URL, postdata, "AllACResponse");
+		    postdata = "";
+		}
 	}
-
-	HTTP(THREAD_OFFSET, HTTP_POST, ALL_QUERY_URL, postdata, "AllACResponse");
+	if(strlen(postdata) > 0) {
+	    HTTP(THREAD_OFFSET, HTTP_POST, ALL_QUERY_URL, postdata, "AllACResponse");
+	}
 }
 
 /*forward BanResponse(index, code, data[]);

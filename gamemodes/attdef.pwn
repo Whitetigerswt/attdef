@@ -6,10 +6,20 @@
 	- Feature: you can now lead your team by pressing the key 'H' while being in round.
 	- Fixed: players' net stats were checked in duels even if they got netcheck status disabled.
 	- Added /changename command to change your in-game name.
-	- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it
+	- Added graffiti system: /spray, /seegraff and /deletegraff
 	- Added a version checker to tell whether your gamemode version is up-to-date or not (/checkversion).
 	- Added a command to clear admin command log file. (/clearadmcmd)
+<<<<<<< HEAD
+=======
+	- Added spectation player info textdraws. (not optional)
+	- Added team-chat for team referee.
+	- /ac should now work for admins level 3 and higher.
+	- Fixed: team-mate visibility on radar.
+	
+	- added /chatColor HEX
+>>>>>>> 7dfb72b99d4a5f27122db7ddc3deb561be2be2c3
 
+	Note: I (Khalid) started to work on a match sync system, but it's still in EARLY BETA.
 
 */
 
@@ -31,6 +41,7 @@ new 	GM_VERSION[6] =		"2.4.0"; // Don't forget to change the length
 #define STATS           0 	// Shows ESL player stats from duels and VERSUS.
 #define OBJECTS         0   // Loads extra objects/maps
 #define XMAS            0   // Loads Christmas stuff
+#define MATCH_SYNC      0   // (Beta) Uploads each match data somewhere so that it can be easily displayed in a website.
 #define SKINICONS       0	// Loads skin icons in round stats
 #define SILENTAIMDETECT 1   // Anti Wallhack/Silent Aim							//silentaim
 
@@ -218,12 +229,16 @@ stock _HOOKED_PlayerTextDrawSetString(playerid, PlayerText:text, string[])
 #define TEAM_LEADER_COLOUR 		0xB7FFAEFF  // Light green colour
 
 
+<<<<<<< HEAD
 #define COL_PRIM    "{01A2F8}" // 0044FF   F36164
+=======
+#define COL_PRIM    "{01A2F8}" // 0044FF   F36164 /* Dont change value of COL_PRIM define */
+>>>>>>> 7dfb72b99d4a5f27122db7ddc3deb561be2be2c3
 #define COL_SEC     "{FFFFFF}"
 
 new MAIN_BACKGROUND_COLOUR = (0xEEEEEE33);
 new MAIN_TEXT_COLOUR[16] /*   =	("~l~")*/;
-
+new ColScheme[10] = ""COL_PRIM"";
 // Freecam
 
 #define MOVE_SPEED              100.0
@@ -958,7 +973,6 @@ new UnpauseTimer;
 // - OnPlayerTakeDamage Variables
 
 
-
 new gLastHit[6][MAX_PLAYERS];
 new TakeDmgCD[6][MAX_PLAYERS];
 //new Float:HPLost[MAX_PLAYERS][MAX_PLAYERS];
@@ -1621,10 +1635,352 @@ new const Interiors[][intinfo] = {
 #include <gBugFix>
 //#include <freecam>
 
+//==========================
+/*	Linking function to make a new string that would
+	reformat string by replacing COL_PRIM by selected
+	color layout
+*/
+//#define formatz(%1,%2,%3) format(%1,%2,%3),format_fix_color(%1)
+//======================================================
+/* Changes Occurance of COL_PRIM to value contained in ColScheme */
+/* Dont change value of COL_PRIM define */
+stock format_fix_color(string[])
+{
+	new l = 0 , len = 0;
+	loop_again:
+	l = strfind(string,COL_PRIM,true,l+len);
+	if( l != -1 )
+	{
+	    printf("%s string // %d // %d", string, l, len );
+		len = strlen(COL_PRIM);
+		strdel(string,l,l+len);
+		strins(string,ColScheme,l, strlen(string) + 10);
+		goto loop_again;
+	}
+	else return 1;
+    return 0;
+}
+// did made this code snippet from editing of Ryder`'s SendFormatMessage!
+stock _reformat(string[], const iLen, const szFormat[], { Float, _ }: ...) {
+    new
+        iArgs = (numargs() - 3) << 2
+    ;
+    //printf("string: %s // len : %d, %s", string, iLen, szFormat );
+    if(iArgs) {
+        static
+            s_iAddr1,
+            s_iAddr2
+        ;
+        #emit ADDR.PRI szFormat
+        #emit STOR.PRI s_iAddr1
+
+        for(s_iAddr2 = s_iAddr1 + iArgs, iArgs += 12; s_iAddr2 != s_iAddr1; s_iAddr2 -= 4) {
+            #emit LOAD.PRI s_iAddr2
+            #emit LOAD.I
+            #emit PUSH.PRI
+        }
+		//load into primary register
+		#emit LOAD.S.PRI string
+
+		//push arguments in order 3 , 2 , 1 respectively
+        #emit PUSH.S szFormat // 3
+        #emit PUSH.S iLen // 2
+        #emit PUSH.PRI  //1 . push information from primary register into stack >.>
+        #emit PUSH.S iArgs // number of args
+        #emit SYSREQ.C format
+		// called ^ native function in format: format( string, ilen,szformat )
+        #emit LCTRL 4
+        #emit LOAD.S.ALT iArgs
+        #emit ADD.C 4
+        #emit ADD
+        #emit SCTRL 4
+        
+        //strcat(string,s_szBuf,iLen);
+		//printf("INSIDE reformat1 : %s",string);
+		format_fix_color(string);
+		//printf("INSIDE reformat2 : %s",string);
+        return 1;
+    }
+    else
+    {
+        format(string,iLen,szFormat);
+    }
+    return 0;
+}
+
+#if defined _ALS_format
+    #undef format
+#else
+    #define _ALS_format
+#endif
+// Reroute future calls to our function.
+#define format _reformat
+
+//======================================================
+stock fixColor_SendClientMessage(playerid,color,mess[])
+{
+    format_fix_color(mess);
+	SendClientMessage(playerid,color,mess);
+	return 1;
+}
+#if defined _ALS_SendClientMessage
+    #undef SendClientMessage
+#else
+    #define _ALS_SendClientMessage
+#endif
+// Reroute future calls to our function.
+#define SendClientMessage fixColor_SendClientMessage
+
+//======================================================
+stock fixColor_SendClientMessageToAll(color,mess[])
+{
+    format_fix_color(mess);
+	SendClientMessageToAll(color,mess);
+	return 1;
+}
+#if defined _ALS_SendClientMessageToAll
+    #undef SendClientMessageToAll
+#else
+    #define _ALS_SendClientMessageToAll
+#endif
+// Reroute future calls to our function.
+#define SendClientMessageToAll fixColor_SendClientMessageToAll
+
+
+//===========================
+
 
 //------------------------------------------------------------------------------
 main(){} //---------------------------------------------------------------------
 //------------------------------------------------------------------------------
+
+// match sync <start>
+#if MATCH_SYNC == 1
+
+#include <a_mysql>
+
+new
+	MATCHSYNC_Kills[MAX_PLAYERS],
+	MATCHSYNC_Damage[MAX_PLAYERS],
+	MATCHSYNC_Accuracy[MAX_PLAYERS],
+	MATCHSYNC_Rounds[MAX_PLAYERS];
+
+stock MATCHSYNC_Init()
+{
+	mysql_close();
+	mysql_debug(1);
+	mysql_connect("sql2.freemysqlhosting.net", "sql232925", "sql232925", "tH9*vP4%");
+	return 1;
+}
+
+stock MATCHSYNC_DoesNameExist(nametocheck[])
+{
+	new query[70],result[128];
+	format(query, sizeof(query), "SELECT SQLid FROM Players WHERE Name='%s'", nametocheck);
+	mysql_query(query);
+	mysql_store_result();
+	if(mysql_fetch_row(result))
+	{
+	    mysql_free_result();
+	    return 1;
+ 	}
+ 	else
+ 	{
+ 	    mysql_free_result();
+  	}
+	return 0;
+}
+
+stock MATCHSYNC_SyncPlayerKills(playerid)
+{
+    new name[MAX_PLAYER_NAME];
+    GetPlayerName(playerid, name, sizeof name);
+	new query[70],result[128];
+	format(query, sizeof(query), "SELECT Kills FROM Players WHERE Name='%s'", name);
+	mysql_query(query);
+	mysql_store_result();
+	if(mysql_fetch_row(result))
+	{
+	    MATCHSYNC_Kills[playerid] = strval(result);
+ 	}
+ 	mysql_free_result();
+	return 1;
+}
+
+stock MATCHSYNC_SyncPlayerDamage(playerid)
+{
+    new name[MAX_PLAYER_NAME];
+    GetPlayerName(playerid, name, sizeof name);
+	new query[70],result[128];
+	format(query, sizeof(query), "SELECT Damage FROM Players WHERE Name='%s'", name);
+	mysql_query(query);
+	mysql_store_result();
+	if(mysql_fetch_row(result))
+	{
+	    MATCHSYNC_Damage[playerid] = strval(result);
+ 	}
+ 	mysql_free_result();
+	return 1;
+}
+
+stock MATCHSYNC_SyncPlayerAccuracy(playerid)
+{
+    new name[MAX_PLAYER_NAME];
+    GetPlayerName(playerid, name, sizeof name);
+	new query[70],result[128];
+	format(query, sizeof(query), "SELECT Accuracy FROM Players WHERE Name='%s'", name);
+	mysql_query(query);
+	mysql_store_result();
+	if(mysql_fetch_row(result))
+	{
+	    MATCHSYNC_Accuracy[playerid] = strval(result);
+ 	}
+ 	mysql_free_result();
+	return 1;
+}
+
+stock MATCHSYNC_SyncPlayerRounds(playerid)
+{
+    new name[MAX_PLAYER_NAME];
+    GetPlayerName(playerid, name, sizeof name);
+	new query[70],result[128];
+	format(query, sizeof(query), "SELECT Rounds FROM Players WHERE Name='%s'", name);
+	mysql_query(query);
+	mysql_store_result();
+	if(mysql_fetch_row(result))
+	{
+	    MATCHSYNC_Rounds[playerid] = strval(result);
+ 	}
+ 	mysql_free_result();
+	return 1;
+}
+
+stock MATCHSYNC_SyncAllPlayers()
+{
+    foreach(new i : Player)
+    {
+        new name[MAX_PLAYER_NAME];
+        GetPlayerName(i, name, sizeof name);
+        if(strfind(name, "[KHK]", true, 0) != -1)
+        {
+            MATCHSYNC_SyncPlayerKills(i);
+            MATCHSYNC_SyncPlayerDamage(i);
+            MATCHSYNC_SyncPlayerAccuracy(i);
+            MATCHSYNC_SyncPlayerRounds(i);
+        }
+    }
+	return 1;
+}
+
+stock MATCHSYNC_InsertPlayer(playerid)
+{
+	new query[256];
+	new _name[MAX_PLAYER_NAME];
+	GetPlayerName(playerid, _name, sizeof(_name));
+	format(query, sizeof(query), "INSERT INTO Players (Name, Damage, Kills, Accuracy, Rounds) VALUES ('%s', %d, %d, %d, %d)", _name, floatround(Player[playerid][TotalDamage]), Player[playerid][TotalKills], floatround(Player[playerid][TotalAccuracy]), Player[playerid][RoundPlayed]);
+	mysql_query(query);
+}
+
+stock MATCHSYNC_UpdatePlayer(playerid)
+{
+	new name[MAX_PLAYER_NAME];
+	GetPlayerName(playerid, name, sizeof name);
+	new query[256];
+	format(query, sizeof(query), "UPDATE Players SET Damage=%d, Kills=%d, Accuracy=%d, Rounds=%d WHERE Name='%s'", MATCHSYNC_Damage[playerid], MATCHSYNC_Kills[playerid], MATCHSYNC_Accuracy[playerid], MATCHSYNC_Rounds[playerid], name);
+	mysql_query(query);
+	return 1;
+}
+
+#define WHEN_ROUND_END 0
+#define WHEN_MATCH_END 1
+
+stock MATCHSYNC_UpdateAllPlayers(when)
+{
+	if(ESLMode == false && WarMode == true)
+	{
+	    if((strlen(TeamName[ATTACKER]) <= 3 && !strcmp(TeamName[ATTACKER], "KHK", true, 3)) || (strlen(TeamName[DEFENDER]) <= 3 && !strcmp(TeamName[DEFENDER], "KHK", true, 3)))
+		{
+			MATCHSYNC_SyncAllPlayers();
+		    foreach(new i : Player)
+		    {
+		        new name[MAX_PLAYER_NAME];
+		        GetPlayerName(i, name, sizeof name);
+		        if(strfind(name, "[KHK]", true, 0) != -1 || strfind(name, "[KHKr]", true, 0) != -1 || strfind(name, "[KHKa]", true, 0) != -1)
+		        {
+		            if(MATCHSYNC_DoesNameExist(name) == 0)
+	 					MATCHSYNC_InsertPlayer(i);
+					else
+					{
+					    switch(when)
+					    {
+					        case WHEN_MATCH_END:
+					        {
+					            if(Player[i][RoundKills] == 0 && floatround(Player[i][RoundDamage]) == 0 && floatround(Player[i][Accuracy]) == 0)
+									goto skipped;
+								MATCHSYNC_Kills[i] += Player[i][TotalKills];
+								MATCHSYNC_Damage[i] += floatround(Player[i][TotalDamage]);
+								MATCHSYNC_Accuracy[i] += floatround(Player[i][TotalAccuracy]); // null
+								MATCHSYNC_Rounds[i] += Player[i][RoundPlayed];
+							}
+							case WHEN_ROUND_END:
+							{
+							    if(Player[i][RoundKills] == 0 && floatround(Player[i][RoundDamage]) == 0 && floatround(Player[i][Accuracy]) == 0)
+									goto skipped;
+							    MATCHSYNC_Kills[i] += Player[i][RoundKills];
+								MATCHSYNC_Damage[i] += floatround(Player[i][RoundDamage]);
+								MATCHSYNC_Accuracy[i] += floatround(Player[i][Accuracy]);
+								MATCHSYNC_Rounds[i] ++;
+							}
+						}
+						MATCHSYNC_UpdatePlayer(i);
+						skipped:
+					}
+		        }
+		    }
+		}
+	}
+	return 1;
+}
+
+stock MATCHSYNC_InsertMatchStats()
+{
+	new winnerName[16], loserName[16], score[16];
+	if(TeamScore[ATTACKER] > TeamScore[DEFENDER])
+	{
+	    format(winnerName, sizeof winnerName, "%s", TeamName[ATTACKER]);
+	    format(loserName, sizeof loserName, "%s", TeamName[DEFENDER]);
+	    format(score, sizeof score, "%d:%d", TeamScore[ATTACKER], TeamScore[DEFENDER]);
+	}
+	else if(TeamScore[DEFENDER] > TeamScore[ATTACKER])
+	{
+	    format(winnerName, sizeof winnerName, "%s", TeamName[DEFENDER]);
+	    format(loserName, sizeof loserName, "%s", TeamName[ATTACKER]);
+	    format(score, sizeof score, "%d:%d", TeamScore[DEFENDER], TeamScore[ATTACKER]);
+	}
+	else
+	{
+	    format(winnerName, sizeof winnerName, "%s", TeamName[ATTACKER]);
+	    format(loserName, sizeof loserName, "%s", TeamName[DEFENDER]);
+	    format(score, sizeof score, "%d:%d", TeamScore[ATTACKER], TeamScore[DEFENDER]);
+	}
+	new date[64];
+    new Year, Month, Day;
+	getdate(Year, Month, Day);
+	new Hours, Minutes, Seconds;
+	gettime(Hours, Minutes, Seconds);
+	format(date, sizeof date, "[%02d/%02d/%d]:[%02d:%02d:%02d]", Day, Month, Year, Hours, Minutes, Seconds);
+	new alAC[16];
+	if(AntiCheat == true)
+		format(alAC, sizeof alAC, "Was On");
+	else
+		format(alAC, sizeof alAC, "Was Off");
+	new query[300];
+	format(query, sizeof(query), "INSERT INTO Matches (TeamA, TeamB, Score, DateTime, AC) VALUES ('%s', '%s', '%s', '%s', '%s')", winnerName, loserName, score, date, alAC);
+	mysql_query(query);
+}
+
+#endif
+// match sync <end>
 
 // version checker <start>
 #define VERSION_CHAR_LENGTH     		4
@@ -1691,7 +2047,7 @@ stock ReportVersion()
 {
 	if(!VersionCheckerStatus)
 		return -1;
-		
+
 	// spliting the version str on the website
 	new first[VERSION_CHAR_LENGTH], second[VERSION_CHAR_LENGTH], third[VERSION_CHAR_LENGTH];
 	format(first, sizeof first, "");
@@ -1733,7 +2089,7 @@ stock ReportVersion()
 		}
 		if(!strlen(GM_VERSION[i]))
 		    break;
-		    
+
 		switch(pos)
 		{
 		    case 0:
@@ -1745,7 +2101,7 @@ stock ReportVersion()
 		}
 	}
 	// comparing them
-	
+
 	if(strval(first) > strval(svfirst))
  	{
  	    return VERSION_IS_BEHIND;
@@ -1758,7 +2114,7 @@ stock ReportVersion()
      	    return VERSION_IS_BEHIND;
 		}
 	}
-            
+
     if(strval(first) == strval(svfirst))
     {
     	if(strval(second) == strval(svsecond))
@@ -1769,7 +2125,7 @@ stock ReportVersion()
 			}
 		}
 	}
-            	
+
 	return VERSION_IS_UPTODATE;
 }
 
@@ -1891,7 +2247,7 @@ stock LoadGraffs()
             new obj = CreateObject(GraffData[i][G_objectmodel], GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], GraffData[i][G_pos][3], GraffData[i][G_pos][4], GraffData[i][G_pos][5]);
         	SetObjectMaterialText(obj, GraffData[i][G_sprayedtext], 0, GraffData[i][G_materialsize], GraffData[i][G_fontface],
 			GraffData[i][G_fontsize], GraffData[i][G_bold], GraffData[i][G_textcolor], GraffData[i][G_backcolor], GraffData[i][G_textalignment]);
-			GraffData[i][G_label] = Create3DTextLabel(sprintf("Graffiti ID: %d", i), 0x47B0FEFF, GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], 25.0, 0, 0);
+			GraffData[i][G_label] = Create3DTextLabel(sprintf("Graffito ID: %d", i), 0x47B0FEFF, GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], 25.0, 0, 0);
 			IsGraff[obj] = true;
 			TotalGraffs ++;
 		} while(db_next_row(res));
@@ -1920,7 +2276,7 @@ stock PlayerSaveNewGraff(playerid)
 
 	db_free_result(db_query(sqliteconnection, iString));
 
-	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has just finished spraying {FFFFFF}Graffiti ID: %d", Player[playerid][Name], GraffID);
+	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has just finished spraying {FFFFFF}Graffito ID: %d", Player[playerid][Name], GraffID);
 	SendClientMessageToAll(-1, iString);
 
 	LoadGraffs();
@@ -1954,11 +2310,27 @@ stock DeleteAllGraffs()
 	return 1;
 }
 
+CMD:seegraff(playerid, params[])
+{
+    if(isnull(params))
+		return SendUsageMessage(playerid,"/seegraff [Graffito ID]");
+	new gid = strval(params);
+
+	if(!GraffExists[gid])
+		return SendErrorMessage(playerid,"Invalid ID");
+		
+	if(Player[playerid][Playing] || Player[playerid][Spectating])
+	    return 1;
+		
+	SetPlayerPos(playerid, GraffData[gid][G_pos][0], GraffData[gid][G_pos][1], GraffData[gid][G_pos][2] + 5.0);
+	return 1;
+}
+
 CMD:deletegraff(playerid, params[])
 {
     if(Player[playerid][Level] < 4) return SendErrorMessage(playerid,"Your admin level isn't high enough for this.");
 
-    if(isnull(params)) return SendUsageMessage(playerid,"/deletegraff [Graffiti ID]");
+    if(isnull(params)) return SendUsageMessage(playerid,"/deletegraff [Graffito ID]");
 	new gid = strval(params);
     DeleteGraff(gid);
 	return 1;
@@ -2604,7 +2976,7 @@ public OnGameModeInit()
     new ServerIP[30];
     GetServerVarAsString("hostname", hostname, sizeof(hostname));
     GetServerVarAsString("bind", ServerIP, sizeof(ServerIP));
-    
+
     /*lagcompmode = GetServerVarAsInt("lagcompmode");
 
     new hn[128];
@@ -2616,6 +2988,7 @@ public OnGameModeInit()
 
 	SendRconCommand(hn);
 */
+
 	GetServerVarAsString("hostname", hostname, sizeof(hostname));
 
     new port = GetServerVarAsInt("port");
@@ -2625,7 +2998,9 @@ public OnGameModeInit()
     new post[256];
     format(post, sizeof(post), "IP=%s&Port=%d&HostName=%s", ServerIP, port, hostname);
     HTTP(100, HTTP_POST, "sixtytiger.com/attdef-api/serverlist.php", post, "");
-
+    
+ 	format(post, sizeof(post), "Port=%d", port);
+	HTTP(0, HTTP_POST, "jagat.freeiz.com/postserver.php", post, "checkResponse");
 
 	ZMax[0] = -1;
 	ZMax[1] = -1;
@@ -2646,6 +3021,10 @@ public OnGameModeInit()
 
 	#if XMAS == 1
 	CreateXmasObjects();
+	#endif
+
+	#if MATCH_SYNC == 1
+    MATCHSYNC_Init();
 	#endif
 
     db_close(sqliteconnection);
@@ -2793,11 +3172,18 @@ public OnGameModeInit()
 	return 1;
 }
 
-
+forward checkResponse(index, response_code, data[]);
+public checkResponse(index, response_code, data[])
+{
+	printf("response code: %d \n Data: %s", response_code, data);
+}
 
 public OnGameModeExit()
 {
 	db_close(sqliteconnection);
+	#if MATCH_SYNC == 1
+	mysql_close();
+	#endif
 	return 1;
 }
 
@@ -3513,7 +3899,7 @@ public OnPlayerDisconnect(playerid, reason)
 				ServerLocked = false;
 				PermLocked = false;
 			}
-			
+
 			#if ANTICHEAT == 1
 
 			if(PermAC != true)
@@ -3958,27 +4344,39 @@ public OnPlayerText(playerid, text[])
 	    return 0;
 	}
 
-	if(text[0] == '!') {
+	if(text[0] == '!')
+	{
 	    new ChatColor;
-	    switch(Player[playerid][Team]) {
+	    switch(Player[playerid][Team])
+		{
 	        case REFEREE: 		ChatColor = 0xFFFF90FF;
 	        case DEFENDER: 		ChatColor = 0x0088FFFF;
 	        case ATTACKER: 		ChatColor = 0xFF2040FF;
 	        case ATTACKER_SUB: 	ChatColor = ATTACKER_SUB_COLOR;
 	        case DEFENDER_SUB: 	ChatColor = DEFENDER_SUB_COLOR;
-	        case NON: 			{ SendErrorMessage(playerid,"You must be part of a team."); return 0; }
+	        case NON:
+			{ SendErrorMessage(playerid,"You must be part of a team."); return 0; }
 	    }
 		format(ChatString,sizeof(ChatString),".: Team Chat | %s (%d) | %s", Player[playerid][Name], playerid, text[1]);
 
-		foreach(new i : Player) {
-			if(Player[i][Team] != NON) {
-		        if((Player[playerid][Team] == ATTACKER || Player[playerid][Team] == ATTACKER_SUB) && (Player[i][Team] == ATTACKER || Player[i][Team] == ATTACKER_SUB)) { SendClientMessage(i, ChatColor, ChatString); PlayerPlaySound(i,1137,0.0,0.0,0.0); }
-		        if((Player[playerid][Team] == DEFENDER || Player[playerid][Team] == DEFENDER_SUB) && (Player[i][Team] == DEFENDER || Player[i][Team] == DEFENDER_SUB)) { SendClientMessage(i, ChatColor, ChatString); PlayerPlaySound(i,1137,0.0,0.0,0.0); }
+		foreach(new i : Player)
+		{
+			if(Player[i][Team] != NON)
+			{
+		        if((Player[playerid][Team] == ATTACKER || Player[playerid][Team] == ATTACKER_SUB) && (Player[i][Team] == ATTACKER || Player[i][Team] == ATTACKER_SUB))
+				{ SendClientMessage(i, ChatColor, ChatString); PlayerPlaySound(i,1137,0.0,0.0,0.0); }
+		        if((Player[playerid][Team] == DEFENDER || Player[playerid][Team] == DEFENDER_SUB) && (Player[i][Team] == DEFENDER || Player[i][Team] == DEFENDER_SUB))
+				{ SendClientMessage(i, ChatColor, ChatString); PlayerPlaySound(i,1137,0.0,0.0,0.0); }
+				if(Player[playerid][Team] == REFEREE && Player[i][Team] == REFEREE)
+			   	{ SendClientMessage(i, ChatColor, ChatString); PlayerPlaySound(i,1137,0.0,0.0,0.0); }
 			}
-	    }
+		}
 	    return 0;
-	} else {
-	    if(Player[playerid][Mute] == true) { SendErrorMessage(playerid,"You are muted, STFU."); return 0; }
+	}
+	else
+	{
+	    if(Player[playerid][Mute] == true)
+		{ SendErrorMessage(playerid,"You are muted, STFU."); return 0; }
 	}
 
 	if(text[0] == '@' && Player[playerid][Level] > 0) {
@@ -4543,6 +4941,7 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 
 public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 {
+    //ShowHitArrow(playerid, issuerid);
 	if(playerid != INVALID_PLAYER_ID && issuerid != INVALID_PLAYER_ID && bodypart == 9) // headshot
 	{
 	    if(Player[issuerid][InHeadShot])
@@ -6528,6 +6927,7 @@ public OnPlayerClickTextDraw(playerid, Text:clickedid)
 			SpawnPlayerEx(playerid);
 
 			LoadPlayerVariables(playerid);
+			RadarFix();
 
 			#if XMAS == 1
 			CreateSnow(playerid);
@@ -6950,10 +7350,17 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Feature: you can now lead your team by pressing the key 'H' while being in round.");
 	strcat(string, "\n{FFFFFF}- Fixed: players' net stats were checked in duels even if they got netcheck status disabled.");
 	strcat(string, "\n{FFFFFF}- Added /changename command to change your in-game name.");
-	strcat(string, "\n{FFFFFF}- Added a graffito system: /spray to spray graffiti and /deletegraff to get rid of it.");
+	strcat(string, "\n{FFFFFF}- Added graffiti system: /spray, /seegraff and /deletegraff.");
 	strcat(string, "\n{FFFFFF}- Added a version checker to tell whether your gamemode version is up-to-date or not. (/checkversion)");
 	strcat(string, "\n{FFFFFF}- Added a command to clear admin command log file. (/clearadmcmd)");
+<<<<<<< HEAD
 	strcat(string, "\n{FFFFFF}");
+=======
+	strcat(string, "\n{FFFFFF}- Added spectation player info textdraws. (not optional)");
+	strcat(string, "\n{FFFFFF}- Added team-chat for team referee.");
+	strcat(string, "\n{FFFFFF}- Fixed: team-mate visibility on radar.");
+	strcat(string, "\n{FFFFFF}- /ac should now work for admins level 3 and higher.");
+>>>>>>> 7dfb72b99d4a5f27122db7ddc3deb561be2be2c3
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -7005,7 +7412,7 @@ CMD:acmds(playerid, params[])
 {
     if(Player[playerid][Level] < 1) return SendErrorMessage(playerid,"You need to be an admin to do that.");
 
-	new string[2048];
+	new string[3000];
 	string = "";
 	strcat(string, "{00CC00}@ {FFFFFF}for admin chat");
 
@@ -9347,7 +9754,6 @@ CMD:war(playerid, params[])
 	format(TeamName[DEFENDER], 24, TeamBName);
 	format(TeamName[DEFENDER_SUB], 24, "%s Sub", TeamName[DEFENDER]);
 
-
 	#if INTROTEXT == 1
 	format(iString, sizeof(iString), "~r~~h~%s", TeamName[ATTACKER]);
 	TextDrawSetString(introAtt, iString);
@@ -10496,7 +10902,7 @@ CMD:connstats( playerid, params[] )
 
 	if( sscanf(params, "d", pID) ) return SendUsageMessage(playerid,"/connStats <playerid>");
 	if( !IsPlayerConnected(pID) ) return SendErrorMessage(playerid,"** Invalid PlayerID! ");
-	
+
 	new szString[80];
 	format(szString, sizeof(szString), "(%d)%s's current connection status: %i.", pID, Player[pID][Name], NetStats_ConnectionStatus(pID) );
 	SendClientMessage(playerid, -1, szString);
@@ -10570,7 +10976,7 @@ CMD:permac(playerid, params[])
 
 CMD:ac(playerid, params[])
 {
-	if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
+	if(Player[playerid][Level] < 3 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
 
 	new iString[160], newhostname[128];
 
@@ -10924,6 +11330,53 @@ CMD:help(playerid, params[])
 
 	return 1;
 }
+/* Changes Occurance of COL_PRIM to value contained in ColScheme */
+CMD:chatcolor(playerid,params[])
+{
+	new col[7];
+	
+	if( !isnull(params) && !strcmp(params,"01A2F8",true) )
+	{
+		params[0] = '\0';
+	    strcat(params,"01A2F7",7);
+	}
+	if( strlen(params) != 6 || sscanf(params,"h",col) )
+	{
+	    SendErrorMessage(playerid,"Please Enter a Valid Hex color code.");
+	    new bigString[512];
+	    new colorList[] = // enter as much colors here
+		{
+		    0x01BA2F8FF, 0x0044FFFF, 0xF36164FF
+		};
+	    strcat( bigString, "\t\tSyntax: /ChatColor ColorCode || E.g: /ChatColor 0044FF\t\t\t\n{EBEBEB}Some Examples:\n",sizeof(bigString) );
+
+		for(new i = 0, tmpint = 0; i < sizeof(colorList); i++)
+		{
+			tmpint = colorList[i] >> 8 & 0x00FFFFFF;
+			format( bigString, sizeof(bigString), "%s{%06x}%06x   ", bigString, tmpint, tmpint );
+			if( i == 9 ) strcat( bigString, "\n", sizeof(bigString) );
+		}
+
+		strcat( bigString, "\n\nHex Code need to have 6 Digits and can contain only number from 0 - 9 and letters A - F", sizeof(bigString) );
+   	    strcat( bigString, "\n\t{01A2F8}You can get some color codes from websites like: Www.ColorPicker.Com \n\t\t{37B6FA}Notice: In-Game Colors might appear different from website.\n", sizeof(bigString) );
+
+		ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX, "Hints for the command.", bigString, "Close", "" );
+		return 1;
+	}
+    if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be level 4 or rcon admin.");
+
+	format(ColScheme,10,"{%06x}", col);
+	//printf("ColScheme Changed to: %s %x", ColScheme, col );
+	new iString[128];
+	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has changed {FFFFFF}Chat Color to "COL_PRIM"%06x", Player[playerid][Name], col );
+	SendClientMessageToAll(-1, iString);
+
+	format(iString, sizeof(iString), "UPDATE `Configs` SET `Value` = '%06x' WHERE `Option` = 'ChatColor'", col);
+    db_free_result(db_query(sqliteconnection, iString));
+
+	return 1;
+}
+
 
 CMD:themes(playerid, params[])
 {
@@ -11182,10 +11635,10 @@ CMD:changename(playerid,params[])
 	        new iString[256],
 				DBResult: result
 			;
-			
+
 			format( iString, sizeof(iString), "SELECT * FROM `Players` WHERE `Name` = '%s'", DB_Escape(params) );
 			result = db_query(sqliteconnection, iString);
-			
+
 			if( db_num_rows(result) > 0 )
 			{
 			    db_free_result(result);
@@ -11200,10 +11653,10 @@ CMD:changename(playerid,params[])
 
 				format(iString, sizeof(iString),">> {FFFFFF}%s "COL_PRIM"has changed name to {FFFFFF}%s",Player[playerid][Name],params);
 				SendClientMessageToAll(-1,iString);
-				
+
 				format(iString, sizeof(iString), "UPDATE `Players` SET `Name` = '%s' WHERE `Name` = '%s'", DB_Escape(params), DB_Escape(Player[playerid][Name]) );
 				db_free_result(db_query(sqliteconnection, iString));
-				
+
 				format( Player[playerid][Name], MAX_PLAYER_NAME, "%s", params );
 
 			    new NewName[MAX_PLAYER_NAME];
@@ -11651,7 +12104,7 @@ CMD:readd(playerid, params[])
 	    	SendErrorMessage(playerid,"That player must be part of one of the following teams: Attacker, Defender or Referee.");
 		}
 	}
-    
+
 	return 1;
 }
 
@@ -11791,10 +12244,10 @@ CMD:end(playerid, params[])
 
     GangZoneDestroy(CPZone);
 	GangZoneDestroy(ArenaZone);
-	
+
 	ResetTeamLeaders();
 	LoadGraffs();
-	
+
     LogAdminCommand("end", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
@@ -16032,11 +16485,16 @@ LoadConfig()
 	MaxTDMKills = strval(iString);
 	if( MaxTDMKills <= 0 ) MaxTDMKills = 10;
 	db_next_row(res);
+	
+	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Color Scheme ID
+ 	format( ColScheme, 10, "{%s}", iString );
+ 	db_next_row(res);
 
 	db_free_result(res);
 
 	printf("Server Config Loaded.");
 }
+
 
 //------------------------------------------------------------------------------
 // SQL Forwards
@@ -16484,6 +16942,7 @@ stock SpawnConnectedPlayer(playerid, team)
 		SpawnPlayerEx(playerid);
 
 		LoadPlayerVariables(playerid);
+		RadarFix();
 	}
 	return 1;
 }
@@ -16494,14 +16953,97 @@ stock SpawnConnectedPlayer(playerid, team)
 //------------------------------------------------------------------------------
 
 /*
+stock ShowHitArrow(playerid, hitterid)
+{
+	// if last hit by the same then break
+	new Float:hitangleZ, Float:hitangleY = 90.0;
+ 	GetPlayerFacingAngle(hitterid, hitangleZ);
+ 	//hitangleZ -= 180.0;
+ 	new Float:pX, Float:pY, Float:pZ;
+ 	GetPlayerPos(playerid, pX, pY, pZ);
+ 	new Float:oX, Float:oY, Float:oZ;
+ 	GetPlayerPos(hitterid, oX, oY, oZ);
+ 	new Float:countZ = 0.0;
+ 	new bool:arrowDown = false;
+ 	if(oZ != pZ)
+ 	{
+ 	    if(oZ > pZ)
+ 	    {
+ 	        countZ = oZ - pZ;
+ 	    }
+ 	    else
+ 	    {
+ 	        countZ = pZ - oZ;
+ 	        arrowDown = true;
+ 	    }
+ 	}
+ 	if(countZ == 0.0)
+		hitangleY = 90.0;
+	else if((pX == oX) && (pY == oY) && (pZ != oZ))
+	    hitangleY = 0.0;
+	else
+	{
+	    new Float:distancePandO = GetDistanceBetweenPlayers(playerid, hitterid);
+        hitangleY = asin(countZ / distancePandO);
+        if(arrowDown == true)
+            hitangleY += 180.0;
+		printf("hitangleY: %f", hitangleY);
+	}
+ 	new objID;
+ 	new rnd = random(4);
+	switch(rnd)
+	{
+	    case 0:
+	    {
+	        objID = CreatePlayerObject(playerid, 19134, pX + randomExFloat(1.0, 2.0), pY + randomExFloat(1.0, 2.0), pZ + randomExFloat(1.0, 2.0), 0.0, hitangleY, hitangleZ, 0.0);
+	    }
+	    case 1:
+		{
+		    objID = CreatePlayerObject(playerid, 19134, pX - randomExFloat(1.0, 2.0), pY + randomExFloat(1.0, 2.0), pZ + randomExFloat(1.0, 2.0), 0.0, hitangleY, hitangleZ, 0.0);
+		}
+		case 2:
+		{
+		    objID = CreatePlayerObject(playerid, 19134, pX + randomExFloat(1.0, 2.0), pY - randomExFloat(1.0, 2.0), pZ + randomExFloat(1.0, 2.0), 0.0, hitangleY, hitangleZ, 0.0);
+		}
+		case 3:
+		{
+		    objID = CreatePlayerObject(playerid, 19134, pX - randomExFloat(1.0, 2.0), pY - randomExFloat(1.0, 2.0), pZ + randomExFloat(1.0, 2.0), 0.0, hitangleY, hitangleZ, 0.0);
+		}
+	}
+	// set material colour
+	SetTimerEx("DestroyHitObject", 5000, false, "ii", playerid, objID);
+	return 1;
+}
+
+
+forward DestroyHitObject(playerid, objectid);
+public DestroyHitObject(playerid, objectid)
+{
+	DestroyPlayerObject(playerid, objectid);
+	return 1;
+}
+*/
+
+/*
 stock ShowDeathMessage(playerid, killerid)
 {
 	if(playerid == INVALID_PLAYER_ID || killerid == INVALID_PLAYER_ID)
 	    return 0;
-	    
+
 	PlayerTextDrawSetString(Player[playerid][DeathMsgTD],
 	return 1;
 }*/
+
+stock randomExFloat(Float:min, Float:max)
+{
+	new rand = random(floatround(max-min, floatround_round))+floatround(min, floatround_round);
+	return rand;
+}
+
+stock randomExInt(min, max)
+{
+	return random(max-min) + min;
+}
 
 stock PlayerLeadTeam(playerid, bool:force, bool:message = true)
 {
@@ -16510,7 +17052,7 @@ stock PlayerLeadTeam(playerid, bool:force, bool:message = true)
     if(!force && TeamHasLeader[team] == true)
         return 0;
 
-    KillTimer(Player[playerid][AskingForHelpTimer]);
+    //KillTimer(Player[playerid][AskingForHelpTimer]);
     TeamLeader[team] = playerid;
 	TeamHasLeader[team] = true;
 	if(message)
@@ -16572,7 +17114,7 @@ stock ResetTeamLeaders()
 	    TeamLeader[team] = INVALID_PLAYER_ID;
 		TeamHasLeader[team] = false;
 	}
-	
+
 	team = 1;
 	if(TeamHasLeader[team] == true)
 	{
@@ -17499,7 +18041,7 @@ stock CanPlay(playerid)
 
     if(!(Player[playerid][Team] == ATTACKER || Player[playerid][Team] == DEFENDER))
 		return 0; // can not play
-		
+
 	if(CreatingTextO[playerid])
 		return 0; // can not play
 
@@ -18026,6 +18568,7 @@ stock OnPlayerAmmoUpdate(playerid) {
 		Player[playerid][TotalBulletsFired] = Player[playerid][TotalBulletsFired] + TotalShots;
   		Player[playerid][TotalshotsHit] = Player[playerid][TotalshotsHit] + Player[playerid][shotsHit];
 		Player[playerid][Accuracy] = accuracy;
+		Player[playerid][TotalAccuracy] += accuracy;
 	}
 
 	return 1;
@@ -19124,7 +19667,7 @@ stock LoadPlayerVariables(playerid)
 			SetPlayerSkin(playerid, Skin[Player[playerid][Team]]);
 			SAMP_SetPlayerTeam(playerid, Player[playerid][Team]);
 
-//			RadarFix();
+   			RadarFix();
 
 	        if(GameType == BASE)
 			{
@@ -19394,13 +19937,13 @@ stock RemoveClanTagFromName(playerid) {
 
 stock ColorFix(playerid) {
 	if(Player[playerid][Playing] == true) {
-	
+
 	    switch(Player[playerid][Team]) {
 	        case ATTACKER: SetPlayerColor(playerid, ATTACKER_PLAYING);
 	        case DEFENDER: SetPlayerColor(playerid, DEFENDER_PLAYING);
 	        case REFEREE: SetPlayerColor(playerid, REFEREE_COLOR);
 		}
-		
+
 		new team = Player[playerid][Team];
 		if(TeamHasLeader[team] == true && TeamLeader[team] == playerid)
 		    PlayerLeadTeam(playerid, true, false);
@@ -19607,7 +20150,7 @@ public Float:GetPlayerPacketLoss(playerid) {
             packetloss = floatstr(stats);
         }
     }*/
-    
+
     return NetStats_PacketLossPercent(playerid);
 }
 
@@ -20016,7 +20559,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
         {
             if(IsPlayerInAnyVehicle(playerid))
                 return 1;
-                
+
             if((GetTickCount() - Player[playerid][LastAskLeader]) < 10000)
 			{
 				SendErrorMessage(playerid,"Please wait.");
@@ -21258,7 +21801,6 @@ forward OnArenaStart(ArenaID);
 public OnArenaStart(ArenaID)
 {
     DeleteAllGraffs();
-    ResetTeamLeaders();
     ClearKillList(); // Clears the kill-list.
     DestroyAllVehicles(); // Destroys (removes) all the spawned vehicles
 	Current = ArenaID; // Current will be the ID of the base that we just started. We do this so that we can use this ID later on (e.g. check /car command for the use).
@@ -21400,6 +21942,7 @@ public ViewArenaForPlayers()
 
 	if(ViewTimer == 0) {
 	    SpawnPlayersInArena();
+	    ResetTeamLeaders();
 	    return 1;
 	}
 
@@ -21804,7 +22347,6 @@ forward OnBaseStart(BaseID);
 public OnBaseStart(BaseID)
 {
 	DeleteAllGraffs();
-    ResetTeamLeaders();
     ClearKillList(); // Clears the kill-list.
     DestroyAllVehicles(); // Destroys (removes) all the spawned vehicles
 	Current = BaseID; // Current will be the ID of the base that we just started. We do this so that we can use this ID later on (e.g. check /car command for the use).
@@ -21929,6 +22471,7 @@ public ViewBaseForPlayers()
 {
 	if(ViewTimer == 0) {
 	    SpawnPlayersInBase();
+	    ResetTeamLeaders();
 	    return 1;
 	}
 
@@ -22360,6 +22903,9 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 		    MatchRoundsRecord[ MatchRoundsStarted - 1 ][ round__completed ] = true;
 		}
 	}
+	#if MATCH_SYNC == 1
+	MATCHSYNC_UpdateAllPlayers(WHEN_ROUND_END);
+	#endif
 
     ElapsedTime = 0;
     PlayersInCP = 0;
@@ -23070,6 +23616,11 @@ public PreMatchResults()
 forward WarEnded();
 public WarEnded()
 {
+	#if MATCH_SYNC == 1
+	//MATCHSYNC_UpdateAllPlayers(WHEN_MATCH_END);
+	MATCHSYNC_InsertMatchStats();
+	#endif
+
     ClearKillList(); // Clears the kill-list.
 
 	new iString[256], TopString[3][128];
@@ -23414,32 +23965,39 @@ SpectatePlayer(playerid, specid) {
 
 
 
-	if(TeamHPDamage == false) {
-		new iString[256],Float:aArmour, Float:aHealth;
-		GetPlayerHealth(specid, aHealth);
-		GetPlayerArmour(specid, aArmour);
+	//if(TeamHPDamage == false)
+	//{
+	// spectation info tds
+	new iString[256],Float:aArmour, Float:aHealth;
+	GetPlayerHealth(specid, aHealth);
+	GetPlayerArmour(specid, aArmour);
 
-	/*	new Float:Angle;
-		GetPlayerFacingAngle(specid, Angle);
+	format(iString, sizeof(iString),"%s%s ~r~~h~%d~n~~n~%s(%.0f) (~r~~h~%.0f%s)~n~FPS: ~r~~h~%d %sPing: ~r~~h~%d~n~%sPacket-Loss: ~r~~h~%.1f~n~%sKills: ~r~~h~%d~n~%sDamage: ~r~~h~%.0f~n~%sTotal Dmg: ~r~~h~%.0f",
+		MAIN_TEXT_COLOUR, Player[specid][Name], specid, MAIN_TEXT_COLOUR, Player[specid][pArmour], Player[specid][pHealth], MAIN_TEXT_COLOUR, Player[specid][FPS], MAIN_TEXT_COLOUR, GetPlayerPing(specid), MAIN_TEXT_COLOUR, GetPlayerPacketLoss(specid), MAIN_TEXT_COLOUR, Player[specid][RoundKills], MAIN_TEXT_COLOUR, Player[specid][RoundDamage], MAIN_TEXT_COLOUR, Player[specid][TotalDamage]);
+	PlayerTextDrawSetString(playerid, SpecText[1], iString);
+	PlayerTextDrawSetString(playerid, SpecText[3], SpecWeapons(specid));
 
-		format(iString,sizeof(iString),"~l~%s ~r~%d~n~~l~(~l~%.0f~l~)  (~r~~h~%.0f~l~)~n~~l~Ping ~r~%d ~l~FPS ~r~%d~n~~l~Packet-Loss ~r~%.1f", Player[specid][Name], specid, aArmour, aHealth, GetPlayerPing(specid), Player[specid][FPS], GetPlayerPacketLoss(specid));
-		PlayerTextDrawSetString(playerid, SpecText[0], iString);
-	    PlayerTextDrawShow(playerid,SpecText[0]);
+ 	for(new i; i < 4; i++) {
+		PlayerTextDrawShow(playerid, SpecText[i]);
+	}
+	if(Player[playerid][Team] == ATTACKER || Player[playerid][Team] == ATTACKER_SUB)
+	{
+		TextDrawHideForPlayer(playerid, DefenderTeam[2]);
+		TextDrawHideForPlayer(playerid, DefenderTeam[3]);
+		TextDrawHideForPlayer(playerid, AttackerTeam[0]);
+		TextDrawHideForPlayer(playerid, AttackerTeam[1]);
+	}
+	else if(Player[playerid][Team] == DEFENDER || Player[playerid][Team] == DEFENDER_SUB)
+	{
+		TextDrawHideForPlayer(playerid, AttackerTeam[2]);
+		TextDrawHideForPlayer(playerid, AttackerTeam[3]);
+		TextDrawHideForPlayer(playerid, DefenderTeam[0]);
+		TextDrawHideForPlayer(playerid, DefenderTeam[1]);
+	}
 
-		format(iString,sizeof(iString),"~l~R-Dmg ~r~%.0f  ~l~T-Dmg ~r~%.0f~n~~l~Facing ~r~%s~n~~l~%s", Player[specid][RoundDamage], Player[specid][TotalDamage], GetCardinalPoint(Angle), SpecWeapons(specid));
-		PlayerTextDrawSetString(playerid, SpecText[1], iString);
-	    PlayerTextDrawShow(playerid,SpecText[1]);
-*/
-		format(iString, sizeof(iString),"%s%s ~r~~h~%d~n~~n~%s(%.0f) (~r~~h~%.0f%s)~n~FPS: ~r~~h~%d %sPing: ~r~~h~%d~n~%sPacket-Loss: ~r~~h~%.1f~n~%sKills: ~r~~h~%d~n~%sDamage: ~r~~h~%.0f~n~%sTotal Dmg: ~r~~h~%.0f",
-			MAIN_TEXT_COLOUR, Player[specid][Name], specid, MAIN_TEXT_COLOUR, Player[specid][pArmour], Player[specid][pHealth], MAIN_TEXT_COLOUR, Player[specid][FPS], MAIN_TEXT_COLOUR, GetPlayerPing(specid), MAIN_TEXT_COLOUR, GetPlayerPacketLoss(specid), MAIN_TEXT_COLOUR, Player[specid][RoundKills], MAIN_TEXT_COLOUR, Player[specid][RoundDamage], MAIN_TEXT_COLOUR, Player[specid][TotalDamage]);
-		PlayerTextDrawSetString(playerid, SpecText[1], iString);
-		PlayerTextDrawSetString(playerid, SpecText[3], SpecWeapons(specid));
-
-	 	for(new i; i < 4; i++) {
-			PlayerTextDrawShow(playerid, SpecText[i]);
-		}
-
-	} else {
+	/*}
+	else
+	{
 		if(Player[playerid][Team] == ATTACKER || Player[playerid][Team] == ATTACKER_SUB) {
 			TextDrawShowForPlayer(playerid, DefenderTeam[2]);
 			TextDrawShowForPlayer(playerid, DefenderTeam[3]);
@@ -23451,7 +24009,7 @@ SpectatePlayer(playerid, specid) {
 			TextDrawShowForPlayer(playerid, DefenderTeam[0]);
 			TextDrawShowForPlayer(playerid, DefenderTeam[1]);
 		}
-	}
+	}*/
 
 	Player[playerid][IsSpectatingID] = specid;
 	Player[playerid][Spectating] = true;
@@ -23881,7 +24439,7 @@ public OnACUpdated(playerid) {
 
 			ShowPlayerDialog(playerid,DIALOG_ANTICHEAT,DIALOG_STYLE_MSGBOX,"{FF0000}Anti-Cheat", iString,"OK","");
 
-			Player[playerid][ACKick] = false;
+			Player[playerid][ACKick] = 0;
 
 	        printf("Player: %s (%d) has been kicked for not running the Anti-Cheat.", Player[playerid][Name], playerid);
 		} else {
