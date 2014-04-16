@@ -9,15 +9,11 @@
 	- Added graffiti system: /spray, /seegraff and /deletegraff
 	- Added a version checker to tell whether your gamemode version is up-to-date or not (/checkversion).
 	- Added a command to clear admin command log file. (/clearadmcmd)
-<<<<<<< HEAD
-=======
 	- Added spectation player info textdraws. (not optional)
 	- Added team-chat for team referee.
 	- /ac should now work for admins level 3 and higher.
 	- Fixed: team-mate visibility on radar.
-	
 	- added /chatColor HEX
->>>>>>> 7dfb72b99d4a5f27122db7ddc3deb561be2be2c3
 
 	Note: I (Khalid) started to work on a match sync system, but it's still in EARLY BETA.
 
@@ -229,11 +225,9 @@ stock _HOOKED_PlayerTextDrawSetString(playerid, PlayerText:text, string[])
 #define TEAM_LEADER_COLOUR 		0xB7FFAEFF  // Light green colour
 
 
-<<<<<<< HEAD
-#define COL_PRIM    "{01A2F8}" // 0044FF   F36164
-=======
+
 #define COL_PRIM    "{01A2F8}" // 0044FF   F36164 /* Dont change value of COL_PRIM define */
->>>>>>> 7dfb72b99d4a5f27122db7ddc3deb561be2be2c3
+
 #define COL_SEC     "{FFFFFF}"
 
 new MAIN_BACKGROUND_COLOUR = (0xEEEEEE33);
@@ -1769,7 +1763,7 @@ stock MATCHSYNC_Init()
 {
 	mysql_close();
 	mysql_debug(1);
-	mysql_connect("sql2.freemysqlhosting.net", "sql232925", "sql232925", "tH9*vP4%");
+	mysql_connect("", "", "", "");
 	return 1;
 }
 
@@ -4590,7 +4584,10 @@ public OnPlayerEnterCheckpoint(playerid) {
 				format(iString, sizeof iString, "%sPlayers In CheckPoint", MAIN_TEXT_COLOUR);
 				foreach(new i : Player) {
 				    if(Player[i][WasInCP] == true) {
-				        format(iString, sizeof(iString), "%s~n~~r~~h~- %s%s", iString, MAIN_TEXT_COLOUR, Player[i][Name]);
+				        new Float:HP, Float:AP;
+				        GetPlayerHealth(i, HP);
+				        GetPlayerArmour(i, AP);
+				        format(iString, sizeof(iString), "%s~n~~r~~h~- %s%s (%.0f)", iString, MAIN_TEXT_COLOUR, Player[i][Name], (HP+AP));
 					}
 				}
 				TextDrawSetString(EN_CheckPoint, iString);
@@ -4638,7 +4635,10 @@ public OnPlayerLeaveCheckpoint(playerid) {
 		format(iString, sizeof iString, "%sPlayers In CheckPoint", MAIN_TEXT_COLOUR);
 		foreach(new i : Player) {
 		    if(Player[i][WasInCP] == true) {
-		        format(iString, sizeof(iString), "%s~n~~r~~h~- %s%s", iString, MAIN_TEXT_COLOUR, Player[i][Name]);
+		    	new Float:HP, Float:AP;
+		        GetPlayerHealth(i, HP);
+		        GetPlayerArmour(i, AP);
+		        format(iString, sizeof(iString), "%s~n~~r~~h~- %s%s (%0.f)", iString, MAIN_TEXT_COLOUR, Player[i][Name], (HP+AP));
 			}
 		}
 		TextDrawSetString(EN_CheckPoint, iString);
@@ -7353,15 +7353,11 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Added graffiti system: /spray, /seegraff and /deletegraff.");
 	strcat(string, "\n{FFFFFF}- Added a version checker to tell whether your gamemode version is up-to-date or not. (/checkversion)");
 	strcat(string, "\n{FFFFFF}- Added a command to clear admin command log file. (/clearadmcmd)");
-<<<<<<< HEAD
-	strcat(string, "\n{FFFFFF}");
-=======
 	strcat(string, "\n{FFFFFF}- Added spectation player info textdraws. (not optional)");
 	strcat(string, "\n{FFFFFF}- Added team-chat for team referee.");
 	strcat(string, "\n{FFFFFF}- Fixed: team-mate visibility on radar.");
 	strcat(string, "\n{FFFFFF}- /ac should now work for admins level 3 and higher.");
->>>>>>> 7dfb72b99d4a5f27122db7ddc3deb561be2be2c3
-	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}- Added /chatcolor");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -9738,6 +9734,7 @@ CMD:war(playerid, params[])
 	if(strcmp(TeamAName, "end", true) == 0 && isnull(TeamBName) && WarMode == true) {
 
 		SetTimer("WarEnded", 5000, 0);
+		SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has set the match to end!", Player[playerid][Name]));
 		SendClientMessageToAll(-1, ""COL_PRIM"Preparing End Match Results..");
 		SendClientMessageToAll(-1, ""COL_PRIM"If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
 
@@ -17097,6 +17094,7 @@ stock PlayerNoLeadTeam(playerid)
 			}
 	    }
 	}
+	RadarFix();
 	return 1;
 }
 
@@ -17125,6 +17123,7 @@ stock ResetTeamLeaders()
 	    TeamLeader[team] = INVALID_PLAYER_ID;
 		TeamHasLeader[team] = false;
 	}
+	RadarFix();
 	return 1;
 }
 
@@ -20161,7 +20160,7 @@ stock GetPlayerFPS(playerid) {
 	}else{
 	    if(Player[playerid][DLlast] != drunk2){
 	        new fps = Player[playerid][DLlast] - drunk2;
-	        if((fps > 0) && (fps < 200))
+	        //if((fps > 0) && (fps < 200))
    			Player[playerid][FPS] = fps;
 			Player[playerid][DLlast] = drunk2;
 		}
@@ -20787,7 +20786,7 @@ public OnScriptUpdate()
 		}
 
 
-		if(Player[i][Spectating] == true && Player[i][IsSpectatingID] != INVALID_PLAYER_ID && TeamHPDamage == false) {
+		if(Player[i][Spectating] == true && Player[i][IsSpectatingID] != INVALID_PLAYER_ID) {
 			new specid = Player[i][IsSpectatingID];
 /*			new Float:Angle; GetPlayerFacingAngle(specid, Angle);
 
@@ -23982,17 +23981,17 @@ SpectatePlayer(playerid, specid) {
 	}
 	if(Player[playerid][Team] == ATTACKER || Player[playerid][Team] == ATTACKER_SUB)
 	{
-		TextDrawHideForPlayer(playerid, DefenderTeam[2]);
-		TextDrawHideForPlayer(playerid, DefenderTeam[3]);
-		TextDrawHideForPlayer(playerid, AttackerTeam[0]);
-		TextDrawHideForPlayer(playerid, AttackerTeam[1]);
+		TextDrawShowForPlayer(playerid, DefenderTeam[2]);
+		TextDrawShowForPlayer(playerid, DefenderTeam[3]);
+		TextDrawShowForPlayer(playerid, AttackerTeam[0]);
+		TextDrawShowForPlayer(playerid, AttackerTeam[1]);
 	}
 	else if(Player[playerid][Team] == DEFENDER || Player[playerid][Team] == DEFENDER_SUB)
 	{
-		TextDrawHideForPlayer(playerid, AttackerTeam[2]);
-		TextDrawHideForPlayer(playerid, AttackerTeam[3]);
-		TextDrawHideForPlayer(playerid, DefenderTeam[0]);
-		TextDrawHideForPlayer(playerid, DefenderTeam[1]);
+		TextDrawShowForPlayer(playerid, AttackerTeam[2]);
+		TextDrawShowForPlayer(playerid, AttackerTeam[3]);
+		TextDrawShowForPlayer(playerid, DefenderTeam[0]);
+		TextDrawShowForPlayer(playerid, DefenderTeam[1]);
 	}
 
 	/*}
@@ -24174,10 +24173,10 @@ StopSpectate(playerid) {
 		PlayerTextDrawHide(playerid, SpecText[i]);
 	}
 
-	TextDrawHideForPlayer(playerid, AttackerTeam[2]);
+	/*TextDrawHideForPlayer(playerid, AttackerTeam[2]);
 	TextDrawHideForPlayer(playerid, AttackerTeam[3]);
 	TextDrawHideForPlayer(playerid, DefenderTeam[2]);
-	TextDrawHideForPlayer(playerid, DefenderTeam[3]);
+	TextDrawHideForPlayer(playerid, DefenderTeam[3]);*/
 
 	PlayerTextDrawSetString(playerid, WhoSpec[0], " ");
 	PlayerTextDrawSetString(playerid, WhoSpec[1], " ");
