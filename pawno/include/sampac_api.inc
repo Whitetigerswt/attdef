@@ -380,7 +380,7 @@ stock AC_GetInfo(playerid) {
 }
 
 stock AC_GetAllInfo() {
-	new IP[MAX_PLAYER_NAME], postdata[1000];
+	new IP[MAX_PLAYER_NAME], postdata[256];
 	
 	for(new i=0; i < MAX_PLAYERS; ++i) {
 	    if(!IsPlayerConnected(i)) continue;
@@ -395,7 +395,7 @@ stock AC_GetAllInfo() {
 		if(strlen(postdata) > 0) format(postdata, sizeof(postdata), "%s&IP%d=%s", postdata, i, IP);
 		else format(postdata, sizeof(postdata), "IP%d=%s", i, IP);
 		
-		if(i % 10 == 0) {
+		if(i % 5 == 0) {
 		    HTTP(THREAD_OFFSET, HTTP_POST, ALL_QUERY_URL, postdata, "AllACResponse");
 		    postdata = "";
 		}
