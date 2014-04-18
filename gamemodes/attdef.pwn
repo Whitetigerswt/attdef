@@ -1647,7 +1647,7 @@ stock format_fix_color(string[])
 	l = strfind(string,COL_PRIM,true,l+len);
 	if( l != -1 )
 	{
-	    printf("%s string // %d // %d", string, l, len );
+	    //printf("%s string // %d // %d", string, l, len );
 		len = strlen(COL_PRIM);
 		strdel(string,l,l+len);
 		strins(string,ColScheme,l, strlen(string) + 10);
