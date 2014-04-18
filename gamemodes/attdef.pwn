@@ -13,7 +13,9 @@
 	- Added team-chat for team referee.
 	- /ac should now work for admins level 3 and higher.
 	- Fixed: team-mate visibility on radar.
-	- added /chatColor HEX
+	- Added /chatcolor command
+	- Players on CP HPs are shown.
+	- FPS counter shows above 200 FPS
 
 	Note: I (Khalid) started to work on a match sync system, but it's still in EARLY BETA.
 
@@ -7357,7 +7359,12 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Added team-chat for team referee.");
 	strcat(string, "\n{FFFFFF}- Fixed: team-mate visibility on radar.");
 	strcat(string, "\n{FFFFFF}- /ac should now work for admins level 3 and higher.");
-	strcat(string, "\n{FFFFFF}- Added /chatcolor");
+	strcat(string, "\n{FFFFFF}- Added /chatcolor command");
+	strcat(string, "\n{FFFFFF}- Players on CP HPs are shown.");
+	strcat(string, "\n{FFFFFF}- FPS counter shows above 200 FPS");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -15856,7 +15863,7 @@ LoadPlayerTextDraws(playerid)
 */
 
 
-	SpecText[0] = CreatePlayerTextDraw(playerid, 4.333333, 354.251831, "LD_POKE:cd9s");
+	SpecText[0] = CreatePlayerTextDraw(playerid, 4.333333, 354.251831 - 70.0, "LD_POKE:cd9s");
 	PlayerTextDrawLetterSize(playerid, SpecText[0], 0.000000, 0.000000);
 	PlayerTextDrawTextSize(playerid, SpecText[0], 72.000000, 75);
 	PlayerTextDrawAlignment(playerid, SpecText[0], 1);
@@ -15865,7 +15872,7 @@ LoadPlayerTextDraws(playerid)
 	PlayerTextDrawSetOutline(playerid, SpecText[0], 0);
 	PlayerTextDrawFont(playerid, SpecText[0], 4);
 
-    SpecText[1] = CreatePlayerTextDraw(playerid, 40, 350, "_");
+    SpecText[1] = CreatePlayerTextDraw(playerid, 40, 350 - 70.0, "_");
 	PlayerTextDrawFont(playerid, SpecText[1], 1);
 	PlayerTextDrawLetterSize(playerid, SpecText[1], 0.20000, 1.000000);
 	PlayerTextDrawColor(playerid, SpecText[1], -65281);
@@ -15874,7 +15881,7 @@ LoadPlayerTextDraws(playerid)
 	PlayerTextDrawSetShadow(playerid, SpecText[1], 0);
 	PlayerTextDrawAlignment(playerid, SpecText[1], 2);
 
-	SpecText[2] = CreatePlayerTextDraw(playerid, 80.333333, 354.251831, "LD_POKE:cd9s");
+	SpecText[2] = CreatePlayerTextDraw(playerid, 80.333333, 354.251831 - 70.0, "LD_POKE:cd9s");
 	PlayerTextDrawLetterSize(playerid, SpecText[2], 0.000000, 0.000000);
 	PlayerTextDrawTextSize(playerid, SpecText[2], 58.000000, 75);
 	PlayerTextDrawAlignment(playerid, SpecText[2], 1);
@@ -15883,7 +15890,7 @@ LoadPlayerTextDraws(playerid)
 	PlayerTextDrawSetOutline(playerid, SpecText[2], 0);
 	PlayerTextDrawFont(playerid, SpecText[2], 4);
 
-    SpecText[3] = CreatePlayerTextDraw(playerid, 85, 350, "_");
+    SpecText[3] = CreatePlayerTextDraw(playerid, 85, 350 - 70.0, "_");
 	PlayerTextDrawFont(playerid, SpecText[3], 1);
 	PlayerTextDrawLetterSize(playerid, SpecText[3], 0.20000, 1.000000);
 	PlayerTextDrawColor(playerid, SpecText[3], -65281);
@@ -17060,6 +17067,11 @@ stock PlayerLeadTeam(playerid, bool:force, bool:message = true)
 		    {
 				SendClientMessage(i, -1, sprintf("%s%s {FFFFFF}is now leading the team.", TextColor[team], Player[playerid][Name]));
 		    }
+		    if(i == playerid)
+				continue;
+				
+			if(GetPlayerColor(i) == TEAM_LEADER_COLOUR)
+				ColorFix(i);
 		}
 	}
 	SetPlayerColor(playerid, TEAM_LEADER_COLOUR);
@@ -17094,6 +17106,7 @@ stock PlayerNoLeadTeam(playerid)
 			}
 	    }
 	}
+	ColorFix(playerid);
 	RadarFix();
 	return 1;
 }
@@ -23940,7 +23953,6 @@ public WarEnded()
 
 	return 1;
 }
-
 
 SpectatePlayer(playerid, specid) {
 	if(Player[playerid][InDM] == true) {
