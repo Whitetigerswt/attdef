@@ -1,29 +1,17 @@
 /*
 
-	v2.4
+	v2.4.1
 
-	- Fixed a few minor bugs which appeared in the previous version.
-	- Feature: you can now lead your team by pressing the key 'H' while being in round.
-	- Fixed: players' net stats were checked in duels even if they got netcheck status disabled.
-	- Added /changename command to change your in-game name.
-	- Added graffiti system: /spray, /seegraff and /deletegraff
-	- Added a version checker to tell whether your gamemode version is up-to-date or not (/checkversion).
-	- Added a command to clear admin command log file. (/clearadmcmd)
-	- Added spectation player info textdraws. (not optional)
-	- Added team-chat for team referee.
-	- /ac should now work for admins level 3 and higher.
-	- Fixed: team-mate visibility on radar.
-	- Added /chatcolor command
-	- Players on CP HPs are shown.
-	- FPS counter shows above 200 FPS
+	- Several players can be spraying graffiti at the same time with no problem.
+	- Players are auto-given knives now on round start. (/knife to remove it)
+    - Fixed: when you timed out on base start countdown, you would not see CP when you got re-added.
 
-	Note: I (Khalid) started to work on a match sync system, but it's still in EARLY BETA.
 
 */
 
 
-new 	GM_VERSION[6] =		"2.4.0"; // Don't forget to change the length
-#define GM_NAME				"Attack-Defend v2.4"
+new 	GM_VERSION[6] =		"2.4.1"; // Don't forget to change the length
+#define GM_NAME				"Attack-Defend v2.4.1"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -1690,7 +1678,7 @@ stock _reformat(string[], const iLen, const szFormat[], { Float, _ }: ...) {
         #emit ADD.C 4
         #emit ADD
         #emit SCTRL 4
-        
+
         //strcat(string,s_szBuf,iLen);
 		//printf("INSIDE reformat1 : %s",string);
 		format_fix_color(string);
@@ -2151,14 +2139,14 @@ new GRAFFObject[MAX_PLAYERS],
 	BackgColor[MAX_PLAYERS],
 	OName[MAX_PLAYERS][30],
 	ObjectID[MAX_PLAYERS] = 19353,
-	Float:GRAFFPos[4], Float:GRAFFRot[3];
+	Float:GRAFFPos[MAX_PLAYERS][4], Float:GRAFFRot[MAX_PLAYERS][3];
 
-new bool:IsGraffBeingCreated = false,
+new
 	bool:CreatingTextO[MAX_PLAYERS] = false;
 
 #define GRAFF_Grey              "{C4C4C4}"
 
-#define MAX_GRAFFS 150
+#define MAX_GRAFFS 200
 
 enum GRAFFITI_DATA
 {
@@ -2268,7 +2256,7 @@ stock PlayerSaveNewGraff(playerid)
     db_free_result(res);
 
 	format(iString, sizeof(iString), "INSERT INTO Graffs (ID, Text, MaterialSize, FontSize, Bold, TextAlignment, FontFace, TextColor, BackColor, ObjectModel, X, Y, Z, rX, rY, rZ) VALUES (%d, '%s', %d, %d, %d, %d, '%s', %d, %d, %d, %f, %f, %f, %f, %f, %f)",
-													GraffID, DB_Escape(Text[playerid]), Size[playerid], FontSize[playerid], UseBold[playerid], TextAlign[playerid], DB_Escape(FontName[playerid]), GRAFFTextColor[playerid], BackgColor[playerid], ObjectID[playerid], GRAFFPos[0], GRAFFPos[1], GRAFFPos[2], GRAFFRot[0], GRAFFRot[1], GRAFFRot[2]);
+													GraffID, DB_Escape(Text[playerid]), Size[playerid], FontSize[playerid], UseBold[playerid], TextAlign[playerid], DB_Escape(FontName[playerid]), GRAFFTextColor[playerid], BackgColor[playerid], ObjectID[playerid], GRAFFPos[playerid][0], GRAFFPos[playerid][1], GRAFFPos[playerid][2], GRAFFRot[playerid][0], GRAFFRot[playerid][1], GRAFFRot[playerid][2]);
 
 	db_free_result(db_query(sqliteconnection, iString));
 
@@ -2314,10 +2302,10 @@ CMD:seegraff(playerid, params[])
 
 	if(!GraffExists[gid])
 		return SendErrorMessage(playerid,"Invalid ID");
-		
+
 	if(Player[playerid][Playing] || Player[playerid][Spectating])
 	    return 1;
-		
+
 	SetPlayerPos(playerid, GraffData[gid][G_pos][0], GraffData[gid][G_pos][1], GraffData[gid][G_pos][2] + 5.0);
 	return 1;
 }
@@ -2336,15 +2324,11 @@ CMD:spray(playerid, params[])
 {
     if(Player[playerid][Level] < 4) return SendErrorMessage(playerid,"Your admin level isn't high enough for this.");
 
-	if(IsGraffBeingCreated && !CreatingTextO[playerid])
-	{
-	    return SendErrorMessage(playerid, "Somebody is already spraying a graffito.");
-	}
+	
     if(CreatingTextO[playerid] == false)
     {
         if(Current != -1)
-						return SendErrorMessage(playerid, "You cannot spray a graffito while a round is in progress");
-        IsGraffBeingCreated = true;
+			return SendErrorMessage(playerid, "You cannot spray a graffito while a round is in progress");
 		TextAlign[playerid] = 1,
 		Index[playerid] = 0;
         Text[playerid] = "Blank",
@@ -2353,11 +2337,11 @@ CMD:spray(playerid, params[])
 		BackgColor[playerid] = HexToInt("0xFF000000");
 
     	CreatingTextO[playerid] = true, ShowGraffMainMenu(playerid);
-    	GetPlayerPos(playerid, GRAFFPos[0], GRAFFPos[1], GRAFFPos[2]), GetPlayerFacingAngle(playerid, GRAFFPos[3]);
-    	new Float:x = GRAFFPos[0] + (5.0 * floatsin(-GRAFFPos[3], degrees));
-		new Float:y = GRAFFPos[1] + (5.0 * floatcos(-GRAFFPos[3], degrees));
+    	GetPlayerPos(playerid, GRAFFPos[playerid][0], GRAFFPos[playerid][1], GRAFFPos[playerid][2]), GetPlayerFacingAngle(playerid, GRAFFPos[playerid][3]);
+    	new Float:x = GRAFFPos[playerid][0] + (5.0 * floatsin(-GRAFFPos[playerid][3], degrees));
+		new Float:y = GRAFFPos[playerid][1] + (5.0 * floatcos(-GRAFFPos[playerid][3], degrees));
 
-    	GRAFFObject[playerid] = CreatePlayerObject(playerid, ObjectID[playerid], x, y, GRAFFPos[2]+0.5, 0.0, 0.0, GRAFFPos[3] - 90.0);
+    	GRAFFObject[playerid] = CreatePlayerObject(playerid, ObjectID[playerid], x, y, GRAFFPos[playerid][2]+0.5, 0.0, 0.0, GRAFFPos[playerid][3] - 90.0);
 
     	SetPlayerObjectMaterialText(playerid, GRAFFObject[playerid], Text[playerid], Index[playerid], Size[playerid], FontName[playerid],
 		FontSize[playerid], UseBold[playerid], GRAFFTextColor[playerid], BackgColor[playerid], TextAlign[playerid]);
@@ -2464,7 +2448,6 @@ public OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext
 					Size[playerid] = 50, Index[playerid] = 0, UseBold[playerid] = 0,
 					FontSize[playerid] = 24, OName[playerid] = "0", ObjectID[playerid] = 19353;
 					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"INFO: {FFFFFF}All settings have been reset.");
-					IsGraffBeingCreated = false;
 					ShowPlayerDialog(playerid, -1, 0, " ", " ", " ", " ");
 				}
 	        }
@@ -2732,7 +2715,6 @@ public OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext
 
 			SendClientMessage(playerid,-1,"Graffiti has been sprayed and saved into the database successfully");
 			SendClientMessage(playerid,-1,"All settings have been reset so you can spray a new one");
-            IsGraffBeingCreated = false;
 		}
 		else { ShowGraffMainMenu(playerid); }
 	    return 1;
@@ -2754,9 +2736,9 @@ ShowGraffMainMenu(playerid)
 
 UpdateGraffObject(playerid)
 {
-    GetPlayerObjectPos(playerid, GRAFFObject[playerid], GRAFFPos[0], GRAFFPos[1], GRAFFPos[2]);
-    GetPlayerObjectRot(playerid, GRAFFObject[playerid], GRAFFRot[0], GRAFFRot[1], GRAFFRot[2]); DestroyPlayerObject(playerid, GRAFFObject[playerid]);
-	GRAFFObject[playerid] = CreatePlayerObject(playerid, ObjectID[playerid], GRAFFPos[0], GRAFFPos[1], GRAFFPos[2], GRAFFRot[0], GRAFFRot[1], GRAFFRot[2]);
+    GetPlayerObjectPos(playerid, GRAFFObject[playerid], GRAFFPos[playerid][0], GRAFFPos[playerid][1], GRAFFPos[playerid][2]);
+    GetPlayerObjectRot(playerid, GRAFFObject[playerid], GRAFFRot[playerid][0], GRAFFRot[playerid][1], GRAFFRot[playerid][2]); DestroyPlayerObject(playerid, GRAFFObject[playerid]);
+	GRAFFObject[playerid] = CreatePlayerObject(playerid, ObjectID[playerid], GRAFFPos[playerid][0], GRAFFPos[playerid][1], GRAFFPos[playerid][2], GRAFFRot[playerid][0], GRAFFRot[playerid][1], GRAFFRot[playerid][2]);
 
 	SetPlayerObjectMaterialText(playerid, GRAFFObject[playerid], Text[playerid], Index[playerid], Size[playerid], FontName[playerid],
 	FontSize[playerid], UseBold[playerid], GRAFFTextColor[playerid], BackgColor[playerid], TextAlign[playerid]);
@@ -2775,12 +2757,12 @@ public OnPlayerEditGraffObject(playerid, playerobject, objectid, response, Float
 			SetPlayerObjectMaterialText(playerid, GRAFFObject[playerid], Text[playerid], Index[playerid], Size[playerid], FontName[playerid],
 			FontSize[playerid], UseBold[playerid], GRAFFTextColor[playerid], BackgColor[playerid], TextAlign[playerid]);
 			ShowGraffMainMenu(playerid);
-			GRAFFPos[0] = fX;
-			GRAFFPos[1] = fY;
-			GRAFFPos[2] = fZ;
-			GRAFFRot[0] = fRotX;
-			GRAFFRot[1] = fRotY;
-			GRAFFRot[2] = fRotZ;
+			GRAFFPos[playerid][0] = fX;
+			GRAFFPos[playerid][1] = fY;
+			GRAFFPos[playerid][2] = fZ;
+			GRAFFRot[playerid][0] = fRotX;
+			GRAFFRot[playerid][1] = fRotY;
+			GRAFFRot[playerid][2] = fRotZ;
 		}
 		else if(response == EDIT_RESPONSE_CANCEL)
 		{
@@ -2994,7 +2976,7 @@ public OnGameModeInit()
     new post[256];
     format(post, sizeof(post), "IP=%s&Port=%d&HostName=%s", ServerIP, port, hostname);
     HTTP(100, HTTP_POST, "sixtytiger.com/attdef-api/serverlist.php", post, "");
-    
+
  	format(post, sizeof(post), "Port=%d", port);
 	HTTP(0, HTTP_POST, "jagat.freeiz.com/postserver.php", post, "checkResponse");
 
@@ -3759,7 +3741,6 @@ public OnPlayerDisconnect(playerid, reason)
 	if(CreatingTextO[playerid])
 	{
 	    PlayerSaveNewGraff(playerid);
-	    IsGraffBeingCreated = false;
 	}
 
 	if(Player[playerid][Spectating] == true && IsPlayerConnected(Player[playerid][IsSpectatingID])) StopSpectate(playerid);
@@ -5808,6 +5789,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			{
 			    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][0], 9999);
 			    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][1], 9999);
+			    GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
 
 			    format(iString, sizeof(iString), "%s%s{FFFFFF} has selected (%s%s{FFFFFF} and %s%s{FFFFFF}).", TextColor[Player[playerid][Team]], Player[playerid][Name], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][0]], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][1]]);
 			}
@@ -5973,6 +5955,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 			GivePlayerWeapon(playerid, ArenaWeapons[0][playerid], 9999);
 			GivePlayerWeapon(playerid, ArenaWeapons[1][playerid], 9999);
+			GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
 
 			if(Player[playerid][Team] == ATTACKER) {
 			    format(iString, sizeof(iString), "{FF0033}%s{FFFFFF} has selected ({FF0033}%s{FFFFFF} and {FF0033}%s{FFFFFF}).", Player[playerid][Name], WeaponNames[ArenaWeapons[0][playerid]], WeaponNames[ArenaWeapons[1][playerid]]);
@@ -7346,7 +7329,19 @@ CMD:updates(playerid, params[])
 
 	string = "";
 
-    strcat(string, "{00FF00}Attack-Defend v2.4 updates:\n");
+    strcat(string, "{00FF00}Attack-Defend v2.4.1 updates:\n");
+
+	strcat(string, "\n{FFFFFF}- Several players can be spraying graffiti at the same time with no problem.");
+	strcat(string, "\n{FFFFFF}- Players are auto-given knifes now on round start. (/knife to remove it)");
+	strcat(string, "\n{FFFFFF}- Fixed: when you timed out on base start countdown, you would not see CP when you got re-added.");
+	strcat(string, "\n{FFFFFF}- ");
+	strcat(string, "\n{FFFFFF}- ");
+	strcat(string, "\n{FFFFFF}- ");
+	strcat(string, "\n{FFFFFF}- ");
+	strcat(string, "\n{FFFFFF}- ");
+
+
+    strcat(string, "\n{00FF00}Attack-Defend v2.4 updates:\n");
 
 	strcat(string, "\n{FFFFFF}- Fixed a few minor bugs which appeared in the previous version.");
 	strcat(string, "\n{FFFFFF}- Feature: you can now lead your team by pressing the key 'H' while being in round.");
@@ -7363,11 +7358,7 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Players on CP HPs are shown.");
 	strcat(string, "\n{FFFFFF}- FPS counter shows above 200 FPS");
 	strcat(string, "\n{FFFFFF}");
-	strcat(string, "\n{FFFFFF}");
-	strcat(string, "\n{FFFFFF}");
-	strcat(string, "\n{FFFFFF}");
-	strcat(string, "\n{FFFFFF}");
-	strcat(string, "\n{FFFFFF}");
+
 
 
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
@@ -7396,7 +7387,7 @@ CMD:cmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/duel   /yes   /no   /rq");
 
 	strcat(string, "\n\n"COL_PRIM"Base commands:");
-	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr   /fix   /para   /vote   /voteint");
+	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr   /fix   /para  /knife  /vote   /voteint");
 
 	strcat(string, "\n\n"COL_PRIM"Player profile commands:");
 	strcat(string, "\n{FFFFFF}/changename  /weather (/w)   /time (/t)   /changepass   /sound   /testsound   /textdraw   /togspec(all)   /shortcuts");
@@ -10775,6 +10766,21 @@ CMD:para(playerid, params[])
 	return 1;
 }
 
+CMD:knife(playerid, params[])
+{
+	RemovePlayerWeapon(playerid, WEAPON_KNIFE);
+	return 1;
+}
+
+CMD:fixcp(playerid, params[])
+{
+	if(GameType == BASE && Player[playerid][Playing])
+	{
+        SetTimerEx("ReshowCPForPlayer", 1000, false, "i", playerid);
+	}
+	return 1;
+}
+
 //blockpm
 CMD:pm(playerid,params[])
 {
@@ -11338,7 +11344,7 @@ CMD:help(playerid, params[])
 CMD:chatcolor(playerid,params[])
 {
 	new col[7];
-	
+
 	if( !isnull(params) && !strcmp(params,"01A2F8",true) )
 	{
 		params[0] = '\0';
@@ -16489,7 +16495,7 @@ LoadConfig()
 	MaxTDMKills = strval(iString);
 	if( MaxTDMKills <= 0 ) MaxTDMKills = 10;
 	db_next_row(res);
-	
+
 	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Color Scheme ID
  	format( ColScheme, 10, "{%s}", iString );
  	db_next_row(res);
@@ -17069,7 +17075,7 @@ stock PlayerLeadTeam(playerid, bool:force, bool:message = true)
 		    }
 		    if(i == playerid)
 				continue;
-				
+
 			if(GetPlayerColor(i) == TEAM_LEADER_COLOUR)
 				ColorFix(i);
 		}
@@ -19551,6 +19557,15 @@ stock StorePlayerVariables(playerid) {
 	}
 }
 
+forward ReshowCPForPlayer(playerid);
+public ReshowCPForPlayer(playerid)
+{
+    SetPlayerCheckpoint(playerid, BCPSpawn[Current][0], BCPSpawn[Current][1], BCPSpawn[Current][2], 2);
+	GangZoneShowForPlayer(playerid, CPZone, 0xFF000044);
+	SendClientMessage(playerid, -1, ""COL_PRIM"If you still have problems with reaching CP and its gangzone, try {FFFFFF}/fixcp");
+	return 1;
+}
+
 stock LoadPlayerVariables(playerid)
 {
  	new iString[160];
@@ -19706,6 +19721,7 @@ stock LoadPlayerVariables(playerid)
 					{
 					    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][0], 9999);
 					    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][1], 9999);
+					    GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
 
 					    format(iString, sizeof(iString), "%s%s{FFFFFF} has selected (%s%s{FFFFFF} and %s%s{FFFFFF}).", TextColor[Player[playerid][Team]], Player[playerid][Name], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][0]], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][1]]);
 					}
@@ -19740,12 +19756,15 @@ stock LoadPlayerVariables(playerid)
 			        else
 						TogglePlayerControllableEx(playerid, true);
 
-				} else {
+				}
+				else
+				{
 				    ShowPlayerWeaponMenu(playerid, Player[playerid][Team]);
                 }
 				//ShowPlayerWeaponMenu(playerid, Player[playerid][Team]);
 				SetPlayerCheckpoint(playerid, BCPSpawn[Current][0], BCPSpawn[Current][1], BCPSpawn[Current][2], 2);
 				GangZoneShowForPlayer(playerid, CPZone, 0xFF000044);
+				SetTimerEx("ReshowCPForPlayer", 1000, false, "i", playerid);
 			}
 			else if(GameType == ARENA || GameType == TDM )
 			{

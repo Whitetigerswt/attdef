@@ -1,0 +1,5 @@
+[18/04/2014][20:08:34] [KHK]Khalid [0] has used the command (/freecam). 
+[18/04/2014][20:08:41] [KHK]Khalid [0] has used the command (/cc). 
+[18/04/2014][20:12:32] [KHK]Khalid [0] has used the command (/freecam). 
+[19/04/2014][00:52:05] [KHK]Khalid [0] has used the command (/ac). 
+[19/04/2014][00:55:41] [KHK]Khalid [0] has used the command (/ac). 
