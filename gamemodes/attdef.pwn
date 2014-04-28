@@ -3,9 +3,9 @@
 	v2.4.1
 
 	- Several players can be spraying graffiti at the same time with no problem.
-	- Players are auto-given knives now on round start. (/knife to remove it)
+	- Players are auto-given knives now on round start. (/knife to remove it and disable from /config)
     - Fixed: when you timed out on base start countdown, you would not see CP when you got re-added.
-
+	- Heli-killing and car-ramming protection should now work during bases only
 
 */
 
@@ -822,6 +822,7 @@ new link10[128]; //radio10
 new bool:TeamHPDamage = true; //If "true", hides the spectate information and enables the textdraws on the left and right hand sid of the screen for player HP and Damage in round.
 new bool:ToggleTargetInfo = false; //Shows target player information.
 new bool:ServerAntiLag = false; //Enalbe/Disable AntiLag in the whole script.
+new bool:GiveKnife = true; // Auto-gives knives to players in round
 
 
 //1=Hardcore NL, 2=ChartHits, 3=MUSIK.MAIN, 4=idobi, 5=DEFJAY US
@@ -3997,6 +3998,12 @@ stock ShowConfigDialog(playerid) {
 	} else {
 		strcat(string, "\n{FF6666}Server Anti-lag");
 	}
+	
+	if(GiveKnife == true) {
+		strcat(string, "\n{66FF66}Auto-give knife");
+	} else {
+		strcat(string, "\n{FF6666}Auto-give knife");
+	}
 
 #if SKINICONS == 1
 	if(ShowIcons == true) {
@@ -5016,26 +5023,29 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		if(Player[issuerid][Playing] == true && Player[playerid][Playing] == false) return 1;
 		if(Player[issuerid][Playing] == true && (Player[issuerid][Team] == REFEREE || Player[playerid][Team] == REFEREE)) return 1;
 
-		if(weaponid == 49) {
-			SetPlayerHealthEx(playerid, Health[0]);
-			SetPlayerArmourEx(playerid, Health[1]);
-			SendClientMessage(issuerid,-1,"{FF0000}WARNING! "COL_PRIM"Do not ram others with your vehicle");
-
-
+		if(weaponid == 49)
+		{
+		    if(Player[playerid][Playing] == true && Player[issuerid][Playing] == true)
+		    {
+				SetPlayerHealthEx(playerid, Health[0]);
+				SetPlayerArmourEx(playerid, Health[1]);
+				SendClientMessage(issuerid,-1,"{FF0000}WARNING! "COL_PRIM"Do not ram others with your vehicle");
+			}
 		}
 
-		if(weaponid == 50) {
-			SetPlayerHealthEx(playerid, Health[0]);
-			SetPlayerArmourEx(playerid, Health[1]);
+		if(weaponid == 50)
+		{
+		    if(Player[playerid][Playing] == true && Player[issuerid][Playing] == true)
+		    {
+				SetPlayerHealthEx(playerid, Health[0]);
+				SetPlayerArmourEx(playerid, Health[1]);
 
+		       	format(iString, sizeof(iString),"{FFFFFF}%s (%d) "COL_PRIM"has been auto-kicked for heli-killing", Player[issuerid][Name], issuerid);
+		        SendClientMessageToAll(-1,iString);
 
-
-
-	       	format(iString, sizeof(iString),"{FFFFFF}%s (%d) "COL_PRIM"has been auto-kicked for heli-killing", Player[issuerid][Name], issuerid);
-	        SendClientMessageToAll(-1,iString);
-
-			Player[issuerid][DontPause] = true;
-	        SetTimerEx("OnPlayerKicked", 50, false, "i", issuerid);
+				Player[issuerid][DontPause] = true;
+		        SetTimerEx("OnPlayerKicked", 50, false, "i", issuerid);
+			}
 		}
 
 	    if(GotHit[playerid] == 0) {
@@ -6531,8 +6541,43 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 				    ShowConfigDialog(playerid);
 				}
-				#if SKINICONS == 1
 				case 16: {
+				    new iStringg[180];
+					if(GiveKnife == false)
+					{
+					    GiveKnife = true;
+
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"auto-give knife in rounds.", Player[playerid][Name]);
+						SendClientMessageToAll(-1, iStringg);
+						foreach(new i : Player)
+						{
+						    if(Player[i][Playing])
+						    {
+						        GivePlayerWeapon(i, WEAPON_KNIFE, 9999);
+						    }
+						}
+					}
+					else
+					{
+					    GiveKnife = false;
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}disabled "COL_PRIM"auto-give knife in rounds.", Player[playerid][Name]);
+						SendClientMessageToAll(-1, iStringg);
+						foreach(new i : Player)
+						{
+						    if(Player[i][Playing])
+						    {
+						        RemovePlayerWeapon(i, WEAPON_KNIFE);
+						    }
+						}
+					}
+
+					format(iStringg, sizeof(iStringg), "UPDATE Configs SET Value = %d WHERE Option = 'UseKnife'", (GiveKnife == false ? 0 : 1));
+				    db_free_result(db_query(sqliteconnection, iStringg));
+
+				    ShowConfigDialog(playerid);
+				}
+				#if SKINICONS == 1
+				case 17: {
 				    if(ShowIcons == false) {
 					    ShowIcons = true;
 	    				format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"skin icons in round stats.", Player[playerid][Name]);
@@ -7332,9 +7377,9 @@ CMD:updates(playerid, params[])
     strcat(string, "{00FF00}Attack-Defend v2.4.1 updates:\n");
 
 	strcat(string, "\n{FFFFFF}- Several players can be spraying graffiti at the same time with no problem.");
-	strcat(string, "\n{FFFFFF}- Players are auto-given knifes now on round start. (/knife to remove it)");
+	strcat(string, "\n{FFFFFF}- Players are auto-given knifes now on round start. (/knife to remove it and disable from /config)");
 	strcat(string, "\n{FFFFFF}- Fixed: when you timed out on base start countdown, you would not see CP when you got re-added.");
-	strcat(string, "\n{FFFFFF}- ");
+	strcat(string, "\n{FFFFFF}- Heli-killing and car-ramming protection should now work during rounds only.");
 	strcat(string, "\n{FFFFFF}- ");
 	strcat(string, "\n{FFFFFF}- ");
 	strcat(string, "\n{FFFFFF}- ");
@@ -16499,6 +16544,10 @@ LoadConfig()
 	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Color Scheme ID
  	format( ColScheme, 10, "{%s}", iString );
  	db_next_row(res);
+ 	
+ 	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Knives
+    GiveKnife = (strval(iString) == 1 ? true : false);
+    db_next_row(res);
 
 	db_free_result(res);
 
@@ -19708,6 +19757,7 @@ stock LoadPlayerVariables(playerid)
 						{
 			                ShowPlayerWeaponMenu(playerid, Player[playerid][Team]);
 			                SendErrorMessage(playerid,"This Weapon Set Is Currently Full.");
+			                SetTimerEx("ReshowCPForPlayer", 1000, false, "i", playerid);
 							return 1;
 				        }
 					}
@@ -19715,6 +19765,7 @@ stock LoadPlayerVariables(playerid)
 					if(!listitem)
 					{
 					    ShowPlayerWeaponMenu(playerid, Player[playerid][Team]);
+					    SetTimerEx("ReshowCPForPlayer", 1000, false, "i", playerid);
 						return 1;
 					}
 					else
