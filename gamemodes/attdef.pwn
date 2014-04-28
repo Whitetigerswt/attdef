@@ -4049,13 +4049,13 @@ public OnPlayerDeath(playerid, killerid, reason)
 			Player[playerid][HitBy] = -1;
 			Player[playerid][HitWith] = -1;
 		}
-
-		if(Player[playerid][HitBy] != -1 && Player[playerid][HitWith]) {
-			killerid = Player[playerid][HitBy];
-			reason = Player[playerid][HitWith];
-			Player[playerid][HitBy] = -1;
-			Player[playerid][HitWith] = -1;
-		}
+	}
+	
+	if(Player[playerid][HitBy] != -1 && Player[playerid][HitWith]) {
+		killerid = Player[playerid][HitBy];
+		reason = Player[playerid][HitWith];
+		Player[playerid][HitBy] = -1;
+		Player[playerid][HitWith] = -1;
 	}
 
 
@@ -4871,6 +4871,14 @@ public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY
 public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart)
 {
     if(ToggleTargetInfo == true) ShowTargetInfo(playerid, damagedid);
+    
+    if(amount > 1800 && weaponid == 4 && GetPlayerAnimationIndex(playerid) == 747) {
+
+		SetPlayerHealth(damagedid, 0);
+		Player[damagedid][HitBy] = playerid;
+		Player[damagedid][HitWith] = weaponid;
+		
+	}
 
 	if(ServerAntiLag == false) {
 		if(Player[damagedid][AntiLag] == false) return 1;
