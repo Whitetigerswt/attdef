@@ -6,6 +6,7 @@
 	- Players are auto-given knives now on round start. (/knife to remove it and disable from /config)
     - Fixed: when you timed out on base start countdown, you would not see CP when you got re-added.
 	- Heli-killing and car-ramming protection should now work during bases only
+	- Fixed: Players-in-cp textdraw interfered with spec info textdraws
 
 */
 
@@ -4571,7 +4572,7 @@ public OnPlayerEnterCheckpoint(playerid) {
 				Player[playerid][WasInCP] = true;
 
 				new iString[256];
-				format(iString, sizeof iString, "%sPlayers In CheckPoint", MAIN_TEXT_COLOUR);
+				format(iString, sizeof iString, "%sPlayers In CP", MAIN_TEXT_COLOUR);
 				foreach(new i : Player) {
 				    if(Player[i][WasInCP] == true) {
 				        new Float:HP, Float:AP;
@@ -4622,7 +4623,7 @@ public OnPlayerLeaveCheckpoint(playerid) {
 	 	Player[playerid][WasInCP] = false;
 
 		new iString[256];
-		format(iString, sizeof iString, "%sPlayers In CheckPoint", MAIN_TEXT_COLOUR);
+		format(iString, sizeof iString, "%sPlayers In CP", MAIN_TEXT_COLOUR);
 		foreach(new i : Player) {
 		    if(Player[i][WasInCP] == true) {
 		    	new Float:HP, Float:AP;
@@ -5799,7 +5800,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			{
 			    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][0], 9999);
 			    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][1], 9999);
-			    GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
+			    if(GiveKnife)
+			    	GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
 
 			    format(iString, sizeof(iString), "%s%s{FFFFFF} has selected (%s%s{FFFFFF} and %s%s{FFFFFF}).", TextColor[Player[playerid][Team]], Player[playerid][Name], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][0]], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][1]]);
 			}
@@ -5965,7 +5967,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 			GivePlayerWeapon(playerid, ArenaWeapons[0][playerid], 9999);
 			GivePlayerWeapon(playerid, ArenaWeapons[1][playerid], 9999);
-			GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
+			if(GiveKnife)
+			    	GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
 
 			if(Player[playerid][Team] == ATTACKER) {
 			    format(iString, sizeof(iString), "{FF0033}%s{FFFFFF} has selected ({FF0033}%s{FFFFFF} and {FF0033}%s{FFFFFF}).", Player[playerid][Name], WeaponNames[ArenaWeapons[0][playerid]], WeaponNames[ArenaWeapons[1][playerid]]);
@@ -7380,11 +7383,8 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Players are auto-given knifes now on round start. (/knife to remove it and disable from /config)");
 	strcat(string, "\n{FFFFFF}- Fixed: when you timed out on base start countdown, you would not see CP when you got re-added.");
 	strcat(string, "\n{FFFFFF}- Heli-killing and car-ramming protection should now work during rounds only.");
-	strcat(string, "\n{FFFFFF}- ");
-	strcat(string, "\n{FFFFFF}- ");
-	strcat(string, "\n{FFFFFF}- ");
-	strcat(string, "\n{FFFFFF}- ");
-
+	strcat(string, "\n{FFFFFF}- Fixed: Players-in-cp textdraw interfered with spec info textdraws");
+	strcat(string, "\n{FFFFFF}");
 
     strcat(string, "\n{00FF00}Attack-Defend v2.4 updates:\n");
 
@@ -15126,7 +15126,8 @@ new Position = 10;
     TextDrawSetShadow(EN_TDefenderDamage,0);
 */
 //	EN_CheckPoint = TextDrawCreate(323.000000, 366.000000, "_");
-	EN_CheckPoint = TextDrawCreate(50.000000, 280.000000, "_");
+//  EN_CheckPoint = TextDrawCreate(50.000000, 280.000000, "_");
+	EN_CheckPoint = TextDrawCreate(182.000000, 280.000000, "_");
 	TextDrawAlignment(EN_CheckPoint, 1);
 	TextDrawBackgroundColor(EN_CheckPoint, MAIN_BACKGROUND_COLOUR);
 	TextDrawFont(EN_CheckPoint, 1);
@@ -19772,7 +19773,8 @@ stock LoadPlayerVariables(playerid)
 					{
 					    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][0], 9999);
 					    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][1], 9999);
-					    GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
+					    if(GiveKnife)
+			    			GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
 
 					    format(iString, sizeof(iString), "%s%s{FFFFFF} has selected (%s%s{FFFFFF} and %s%s{FFFFFF}).", TextColor[Player[playerid][Team]], Player[playerid][Name], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][0]], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][1]]);
 					}
