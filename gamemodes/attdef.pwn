@@ -10,6 +10,13 @@
 	- You can now disable/enable player body labels (ping, fps ..etc) from /config.
 	- Added a command /togspecs to hide/show spectators textdraws.
 
+
+	-Niko_boy:
+		-i made a little change with RemovePlayerWeapon
+	    	-so that it give player the last weapon he was arming , if it was (weaponid i.e to be removed) set him Fist.
+	    	    -i am not sure if it bug player when he is fighting and anything related to remove weapon is used..
+	    	        -by bug i mean fail switches/ cbug fail etc.. But giving new weapon could make it more failing tbh.
+	    -fixed low fps warning for negative fps e.e
 */
 
 
@@ -2984,8 +2991,8 @@ public OnGameModeInit()
     format(post, sizeof(post), "IP=%s&Port=%d&HostName=%s", ServerIP, port, hostname);
     HTTP(100, HTTP_POST, "sixtytiger.com/attdef-api/serverlist.php", post, "");
 
- 	format(post, sizeof(post), "Port=%d", port);
-	HTTP(0, HTTP_POST, "jagat.freeiz.com/postserver.php", post, "checkResponse");
+// 	format(post, sizeof(post), "Port=%d", port);
+//	HTTP(0, HTTP_POST, "jagat.freeiz.com/postserver.php", post, "checkResponse");
 
 	ZMax[0] = -1;
 	ZMax[1] = -1;
@@ -18851,7 +18858,7 @@ stock ShowTDMWeaponMenu(playerid, team) {
 
 stock RemovePlayerWeapon(playerid, weaponid) {
 	new plyWeapons[12];
-	new plyAmmo[12];
+	new plyAmmo[12], armedID;
 
 	for(new slot = 0; slot != 12; slot++)
 	{
@@ -18864,11 +18871,16 @@ stock RemovePlayerWeapon(playerid, weaponid) {
 		}
 	}
 
+	armedID = GetPlayerWeapon(playerid);
+
 	ResetPlayerWeapons(playerid);
 	for(new slot = 0; slot != 12; slot++)
 	{
 		GivePlayerWeapon(playerid, plyWeapons[slot], plyAmmo[slot]);
 	}
+	
+	if( armedID != weaponid ) SetPlayerArmedWeapon(playerid,armedID); //give last armedweapon
+	else SetPlayerArmedWeapon(playerid,0);//give fist if player armed weapon was knife
 }
 
 stock GetCardinalPoint(Float:degree)
@@ -20387,8 +20399,8 @@ stock GetPlayerFPS(playerid) {
 	}else{
 	    if(Player[playerid][DLlast] != drunk2){
 	        new fps = Player[playerid][DLlast] - drunk2;
-	        //if((fps > 0) && (fps < 200))
-   			Player[playerid][FPS] = fps;
+	        if((fps > 0) )// && (fps < 200))
+   				Player[playerid][FPS] = fps;
 			Player[playerid][DLlast] = drunk2;
 		}
 	}
