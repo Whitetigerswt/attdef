@@ -1982,8 +1982,8 @@ stock MATCHSYNC_InsertMatchStats()
 // version checker <start>
 #define VERSION_CHAR_LENGTH     		4
 
-#define VERSION_CHECKER_VERSION_URL		"sixtytiger.com/khalid/AttDef_API/VersionChecker/version.php"
-#define VERSION_CHECKER_CHANGELOG_URL	"sixtytiger.com/khalid/AttDef_API/VersionChecker/changelog.php"
+#define VERSION_CHECKER_VERSION_URL		"gator3016.hostgator.com/~maarij94/khalid/AttDef_API/VersionChecker/version.php"
+#define VERSION_CHECKER_CHANGELOG_URL	"gator3016.hostgator.com/~maarij94/khalid/AttDef_API/VersionChecker/changelog.php"
 
 #define VERSION_IS_BEHIND       		0
 #define VERSION_IS_UPTODATE     		1
@@ -2989,7 +2989,7 @@ public OnGameModeInit()
 
     new post[256];
     format(post, sizeof(post), "IP=%s&Port=%d&HostName=%s", ServerIP, port, hostname);
-    HTTP(100, HTTP_POST, "sixtytiger.com/attdef-api/serverlist.php", post, "");
+    HTTP(100, HTTP_POST, "gator3016.hostgator.com/~maarij94/attdef-api/serverlist.php", post, "");
 
 // 	format(post, sizeof(post), "Port=%d", port);
 //	HTTP(0, HTTP_POST, "jagat.freeiz.com/postserver.php", post, "checkResponse");
@@ -3403,7 +3403,7 @@ public OnPlayerConnect(playerid)
 		new post[128], gpci_string[128];
 		gpci(playerid, gpci_string, sizeof(gpci_string));
 		format(post, sizeof(post), "IP=%s&Name=%s&Serial=%s", IP, Player[playerid][Name], gpci_string);
-		HTTP(playerid + aka_thread_offset, HTTP_POST, "sixtytiger.com/attdef-api/aka.php", post, "akaResponse");
+		HTTP(playerid + aka_thread_offset, HTTP_POST, "gator3016.hostgator.com/~maarij94/attdef-api/aka.php", post, "akaResponse");
 	}
 
 
@@ -31473,7 +31473,7 @@ stock AddAimbotBan(playerid) {
     new post[128], IP[MAX_PLAYER_NAME];
     GetPlayerIp(playerid, IP, sizeof(IP));
 	format(post, sizeof(post), "IP=%s&Name=%s", IP, Player[playerid][Name]);
-	HTTP(playerid + AIMBOT_BAN_OFFSET, HTTP_POST, "sixtytiger.com/attdef-api/aimbot_bans.php", post, "OnAimbotResponse");
+	HTTP(playerid + AIMBOT_BAN_OFFSET, HTTP_POST, "gator3016.hostgator.com/~maarij94/attdef-api/aimbot_bans.php", post, "OnAimbotResponse");
 }
 
 forward OnAimbotResponse(index, response_code, data[]);
