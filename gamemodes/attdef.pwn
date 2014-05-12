@@ -1,18 +1,20 @@
 /*
 
-	v2.4.1
+	v2.4.2
 
-	- Several players can be spraying graffiti at the same time with no problem.
-	- Players are auto-given knives now on round start. (/knife to remove it and disable from /config)
-    - Fixed: when you timed out on base start countdown, you would not see CP when you got re-added.
-	- Heli-killing and car-ramming protection should now work during bases only
-	- Fixed: Players-in-cp textdraw interfered with spec info textdraws
+	- Fixed /back command: players could use it even if they weren't in AFK mode.
+	- Fixed a minor bug with Players on CP HP: HP is no longer displayed as a float number.
+	- Fixed: Players on CP's HP textdraw wasn't updated (even if they lost HP) until they re-entered CP.
+	- Fixed: target-info textdraws might get stuck on screen.
+	- Now if you shoot someone and they're in a vehicle, you see their vehicle HP on target-info textdraw.
+	- You can now disable/enable player body labels (ping, fps ..etc) from /config.
+	- Added a command /togspecs to hide/show spectators textdraws.
 
 */
 
 
-new 	GM_VERSION[6] =		"2.4.1"; // Don't forget to change the length
-#define GM_NAME				"Attack-Defend v2.4.1"
+new 	GM_VERSION[6] =		"2.4.2"; // Don't forget to change the length
+#define GM_NAME				"Attack-Defend v2.4.2"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -573,6 +575,7 @@ enum PlayerVariables {
 	bool:AntiLag,
 	bool:InHeadShot,
 	bool:TextPos,
+	bool:ShowSpecs,
 	bool:blockedall,    //blockpm
 	RadioID,    		//radio
 	NetCheck,
@@ -824,6 +827,7 @@ new bool:TeamHPDamage = true; //If "true", hides the spectate information and en
 new bool:ToggleTargetInfo = false; //Shows target player information.
 new bool:ServerAntiLag = false; //Enalbe/Disable AntiLag in the whole script.
 new bool:GiveKnife = true; // Auto-gives knives to players in round
+new bool:ShowBodyLabels = true; // Enable/Disable show 3d text labels on body (ping fps etc)
 
 
 //1=Hardcore NL, 2=ChartHits, 3=MUSIK.MAIN, 4=idobi, 5=DEFJAY US
@@ -1990,6 +1994,7 @@ stock InitVersionChecker()
 forward ReportServerVersion();
 public ReportServerVersion()
 {
+    HTTP(0, HTTP_GET, VERSION_CHECKER_VERSION_URL, "", "SaveVersionInStr");
 	if(VersionReport == VERSION_IS_BEHIND)
  	{
      	SendClientMessageToAll(-1, ""COL_PRIM"Version checker: {FFFFFF}the version used in this server is out-dated. You can visit "COL_PRIM"www.sixtytiger.com {FFFFFF}to get the latest version");
@@ -3339,6 +3344,7 @@ public OnPlayerConnect(playerid)
 	Player[playerid][AntiLag] = false;
 	Player[playerid][InHeadShot] = false;
 	Player[playerid][TextPos] = false;
+	Player[playerid][ShowSpecs] = true;
 	Player[playerid][blockedall] = false;
 
 	noclipdata[playerid][cameramode] 	= 	CAMERA_MODE_NONE;
@@ -3375,11 +3381,13 @@ public OnPlayerConnect(playerid)
 	}
 
 
-
-	PingFPS[playerid] = Create3DTextLabel("_", 0x00FF00FF, 0, 0, 0, DRAW_DISTANCE, 0, 1);
-    Attach3DTextLabelToPlayer(PingFPS[playerid], playerid, 0.0, 0.0, -0.745);
-	DmgLabel[playerid] = Create3DTextLabel(" ", -1, 0, 0, 0, 40.0, 0, 1);
-	Attach3DTextLabelToPlayer(DmgLabel[playerid], playerid, 0.0, 0.0, 0.8);
+	if(ShowBodyLabels)
+	{
+		PingFPS[playerid] = Create3DTextLabel("_", 0x00FF00FF, 0, 0, 0, DRAW_DISTANCE, 0, 1);
+		Attach3DTextLabelToPlayer(PingFPS[playerid], playerid, 0.0, 0.0, -0.745);
+		DmgLabel[playerid] = Create3DTextLabel(" ", -1, 0, 0, 0, 40.0, 0, 1);
+		Attach3DTextLabelToPlayer(DmgLabel[playerid], playerid, 0.0, 0.0, 0.8);
+	}
 
 	#if MYSQL == 1
 	new IP[60];
@@ -4005,6 +4013,12 @@ stock ShowConfigDialog(playerid) {
 	} else {
 		strcat(string, "\n{FF6666}Auto-give knife");
 	}
+	
+	if(ShowBodyLabels == true) {
+		strcat(string, "\n{66FF66}Show Body Labels");
+	} else {
+		strcat(string, "\n{FF6666}Show Body Labels");
+	}
 
 #if SKINICONS == 1
 	if(ShowIcons == true) {
@@ -4572,10 +4586,10 @@ public OnPlayerEnterCheckpoint(playerid) {
 				Player[playerid][WasInCP] = true;
 
 				new iString[256];
+				new Float:HP, Float:AP;
 				format(iString, sizeof iString, "%sPlayers In CP", MAIN_TEXT_COLOUR);
 				foreach(new i : Player) {
 				    if(Player[i][WasInCP] == true) {
-				        new Float:HP, Float:AP;
 				        GetPlayerHealth(i, HP);
 				        GetPlayerArmour(i, AP);
 				        format(iString, sizeof(iString), "%s~n~~r~~h~- %s%s (%.0f)", iString, MAIN_TEXT_COLOUR, Player[i][Name], (HP+AP));
@@ -4623,13 +4637,13 @@ public OnPlayerLeaveCheckpoint(playerid) {
 	 	Player[playerid][WasInCP] = false;
 
 		new iString[256];
+		new Float:HP, Float:AP;
 		format(iString, sizeof iString, "%sPlayers In CP", MAIN_TEXT_COLOUR);
 		foreach(new i : Player) {
 		    if(Player[i][WasInCP] == true) {
-		    	new Float:HP, Float:AP;
 		        GetPlayerHealth(i, HP);
 		        GetPlayerArmour(i, AP);
-		        format(iString, sizeof(iString), "%s~n~~r~~h~- %s%s (%0.f)", iString, MAIN_TEXT_COLOUR, Player[i][Name], (HP+AP));
+		        format(iString, sizeof(iString), "%s~n~~r~~h~- %s%s (%.0f)", iString, MAIN_TEXT_COLOUR, Player[i][Name], (HP+AP));
 			}
 		}
 		TextDrawSetString(EN_CheckPoint, iString);
@@ -5703,6 +5717,10 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				db_get_field_assoc(res, "DLost", iString, sizeof(iString));
 	    		Player[playerid][DuelsLost] = strval(iString);
 	    		//duel
+	    		
+	    		db_get_field_assoc(res, "ShowSpecs", iString, sizeof(iString));
+	    		Player[playerid][ShowSpecs] = (strval(iString) == 0 ? false : true);
+	    		
 		        Player[playerid][Logged] = true;
 
 //            	ClearPlayerChat(playerid);
@@ -6587,8 +6605,43 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 				    ShowConfigDialog(playerid);
 				}
-				#if SKINICONS == 1
 				case 17: {
+				    new iStringg[180];
+					if(ShowBodyLabels == false)
+					{
+					    ShowBodyLabels = true;
+
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"show body labels option.", Player[playerid][Name]);
+						SendClientMessageToAll(-1, iStringg);
+						foreach(new i : Player)
+						{
+						    Delete3DTextLabel(PingFPS[i]);
+						    Delete3DTextLabel(DmgLabel[i]);
+						    PingFPS[i] = Create3DTextLabel("_", 0x00FF00FF, 0, 0, 0, DRAW_DISTANCE, 0, 1);
+						    Attach3DTextLabelToPlayer(PingFPS[i], i, 0.0, 0.0, -0.745);
+							DmgLabel[i] = Create3DTextLabel(" ", -1, 0, 0, 0, 40.0, 0, 1);
+							Attach3DTextLabelToPlayer(DmgLabel[i], i, 0.0, 0.0, 0.8);
+						}
+					}
+					else
+					{
+					    ShowBodyLabels = false;
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}disabled "COL_PRIM"show body labels option.", Player[playerid][Name]);
+						SendClientMessageToAll(-1, iStringg);
+						foreach(new i : Player)
+						{
+						    Delete3DTextLabel(PingFPS[i]);
+						    Delete3DTextLabel(DmgLabel[i]);
+						}
+					}
+
+					format(iStringg, sizeof(iStringg), "UPDATE Configs SET Value = %d WHERE Option = 'ShowBodyLabels'", (ShowBodyLabels == false ? 0 : 1));
+				    db_free_result(db_query(sqliteconnection, iStringg));
+
+				    ShowConfigDialog(playerid);
+				}
+				#if SKINICONS == 1
+				case 18: {
 				    if(ShowIcons == false) {
 					    ShowIcons = true;
 	    				format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"skin icons in round stats.", Player[playerid][Name]);
@@ -6937,8 +6990,16 @@ public OnPlayerClickTextDraw(playerid, Text:clickedid)
 // 				TextDrawShowForPlayer(playerid, RoundStats);
 				ShowRoundStats(playerid);
 			}
-			PlayerTextDrawShow(playerid, WhoSpec[0]);
-			PlayerTextDrawShow(playerid, WhoSpec[1]);
+			if(Player[playerid][ShowSpecs])
+			{
+				PlayerTextDrawShow(playerid, WhoSpec[0]);
+				PlayerTextDrawShow(playerid, WhoSpec[1]);
+			}
+			else
+			{
+			    PlayerTextDrawHide(playerid, WhoSpec[0]);
+				PlayerTextDrawHide(playerid, WhoSpec[1]);
+			}
 
             if(AntiCheat == true) TextDrawShowForPlayer(playerid, ACText);   //actxt
 			TextDrawSetString(WebText, WebString);  //webtxt
@@ -7384,6 +7445,16 @@ CMD:updates(playerid, params[])
 	new string[2048];
 
 	string = "";
+	
+	strcat(string, "{00FF00}Attack-Defend v2.4.2 updates:\n");
+
+	strcat(string, "\n{FFFFFF}- Fixed a minor bug with Players on CP HP: HP is no longer displayed as a float number.");
+	strcat(string, "\n{FFFFFF}- Fixed: Players on CP's HP textdraw wasn't updated (even if they lost HP) until they re-entered CP.");
+	strcat(string, "\n{FFFFFF}- Fixed: target-info textdraws might get stuck on screen.");
+	strcat(string, "\n{FFFFFF}- Now if you shoot someone and they're in a vehicle, you see their vehicle HP on target-info textdraw.");
+	strcat(string, "\n{FFFFFF}- You can now disable/enable player body labels (ping, fps ..etc) from /config.");
+	strcat(string, "\n{FFFFFF}- Added a command /togspecs to hide/show spectators textdraws.");
+	strcat(string, "\n{FFFFFF}");
 
     strcat(string, "{00FF00}Attack-Defend v2.4.1 updates:\n");
 
@@ -7392,12 +7463,11 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Fixed: when you timed out on base start countdown, you would not see CP when you got re-added.");
 	strcat(string, "\n{FFFFFF}- Heli-killing and car-ramming protection should now work during rounds only.");
 	strcat(string, "\n{FFFFFF}- Fixed: Players-in-cp textdraw interfered with spec info textdraws");
-	strcat(string, "\n{FFFFFF}");
 
     strcat(string, "\n{00FF00}Attack-Defend v2.4 updates:\n");
 
 	strcat(string, "\n{FFFFFF}- Fixed a few minor bugs which appeared in the previous version.");
-	strcat(string, "\n{FFFFFF}- Feature: you can now lead your team by pressing the key 'H' while being in round.");
+ 	strcat(string, "\n{FFFFFF}- Feature: you can now lead your team by pressing the key 'H' while being in round.");
 	strcat(string, "\n{FFFFFF}- Fixed: players' net stats were checked in duels even if they got netcheck status disabled.");
 	strcat(string, "\n{FFFFFF}- Added /changename command to change your in-game name.");
 	strcat(string, "\n{FFFFFF}- Added graffiti system: /spray, /seegraff and /deletegraff.");
@@ -7410,7 +7480,6 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Added /chatcolor command");
 	strcat(string, "\n{FFFFFF}- Players on CP HPs are shown.");
 	strcat(string, "\n{FFFFFF}- FPS counter shows above 200 FPS");
-	strcat(string, "\n{FFFFFF}");
 
 
 
@@ -7443,7 +7512,7 @@ CMD:cmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr   /fix   /para  /knife  /vote   /voteint");
 
 	strcat(string, "\n\n"COL_PRIM"Player profile commands:");
-	strcat(string, "\n{FFFFFF}/changename  /weather (/w)   /time (/t)   /changepass   /sound   /testsound   /textdraw   /togspec(all)   /shortcuts");
+	strcat(string, "\n{FFFFFF}/togspecs  /changename  /weather (/w)   /time (/t)   /changepass   /sound   /testsound   /textdraw   /togspec(all)   /shortcuts");
 
 	strcat(string, "\n\n"COL_PRIM"Chat-related commands:");
 	strcat(string, "\n{FFFFFF}/pm   /r   /blockpm(all)   /nopm(all)   /cchannel   /pchannel   Use "COL_PRIM"# {FFFFFF}to talk in chat channel");
@@ -7493,6 +7562,44 @@ CMD:acmds(playerid, params[])
 	}
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Admin Commands", string, "OK","");
+	return 1;
+}
+
+CMD:togspec(playerid, params[])
+{
+	return cmd_togspecs(playerid, params);
+}
+
+CMD:togspecs(playerid, params[])
+{
+	if(Player[playerid][ShowSpecs])
+	{
+	    Player[playerid][ShowSpecs] = false;
+	    PlayerTextDrawHide(playerid, WhoSpec[0]);
+		PlayerTextDrawHide(playerid, WhoSpec[1]);
+		SendClientMessage(playerid, -1, "{FFFFFF}Spectators textdraw "COL_PRIM"is now hidden!");
+	}
+	else
+	{
+	    Player[playerid][ShowSpecs] = true;
+	    PlayerTextDrawShow(playerid, WhoSpec[0]);
+		PlayerTextDrawShow(playerid, WhoSpec[1]);
+		SendClientMessage(playerid, -1, "{FFFFFF}Spectators textdraw "COL_PRIM"is now shown!");
+	}
+	new iString[128];
+	#if MYSQL == 0
+
+	format(iString, sizeof(iString), "UPDATE Players SET ShowSpecs = %d WHERE Name = '%s'", (Player[playerid][ShowSpecs] == true ? 1 : 0), DB_Escape(Player[playerid][Name]));
+    db_free_result(db_query(sqliteconnection, iString));
+
+	#else
+	new EscapedName[MAX_PLAYER_NAME];
+	sql_escape_string(sqlconnection, Player[playerid][Name], EscapedName);
+
+	format(iString, sizeof(iString), "UPDATE `Players` SET `ShowSpecs` = %d WHERE `Name` = '%s'", (Player[playerid][ShowSpecs] == true ? 1 : 0), EscapedName);
+	sql_query(sqlconnection, iString, QUERY_THREADED);
+
+	#endif
 	return 1;
 }
 
@@ -11910,6 +12017,8 @@ CMD:setafk(playerid, params[])
 
 CMD:back(playerid, params[])
 {
+	if(Player[playerid][IsAFK] != true)
+	    return SendErrorMessage(playerid,"You are not AFK?");
 	Player[playerid][Team] = REFEREE;
     TogglePlayerControllableEx(playerid, true);
     Player[playerid][IsAFK] = false;
@@ -16557,6 +16666,10 @@ LoadConfig()
  	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Knives
     GiveKnife = (strval(iString) == 1 ? true : false);
     db_next_row(res);
+    
+    db_get_field_assoc(res, "Value", iString, sizeof(iString)); // ShowBodyLabels
+    ShowBodyLabels = (strval(iString) == 1 ? true : false);
+    db_next_row(res);
 
 	db_free_result(res);
 
@@ -16984,8 +17097,16 @@ stock SpawnConnectedPlayer(playerid, team)
 #endif
 		}
 
-		PlayerTextDrawShow(playerid, WhoSpec[0]);
-		PlayerTextDrawShow(playerid, WhoSpec[1]);
+		if(Player[playerid][ShowSpecs])
+		{
+			PlayerTextDrawShow(playerid, WhoSpec[0]);
+			PlayerTextDrawShow(playerid, WhoSpec[1]);
+		}
+		else
+		{
+		    PlayerTextDrawHide(playerid, WhoSpec[0]);
+			PlayerTextDrawHide(playerid, WhoSpec[1]);
+		}
 
 
 		TextDrawShowForPlayer(playerid, TeamHpLose[0]);
@@ -17569,9 +17690,22 @@ stock ShowTargetInfo(playerid, targetid)
 
 //	if(TargetInfoShown[playerid] != true)
 
-	new str[150];
-	format(str, sizeof str, "~n~~n~%sName: %s%s~n~%sPing: %s%d   %sFPS: %s%d~n~%sPL: %s%.1f   %sHP: %s%.0f",
-		MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], Player[targetid][NameWithoutTag], MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], GetPlayerPing(targetid), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], Player[targetid][FPS], MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], GetPlayerPacketLoss(targetid), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], (Player[targetid][pHealth] + Player[targetid][pArmour]));
+	new str[170];
+	new vid = GetPlayerVehicleID(targetid);
+	if(vid == 0)
+	{
+		format(str, sizeof str, "~n~~n~%sName: %s%s~n~%sPing: %s%d   %sFPS: %s%d~n~%sPL: %s%.1f   %sHP: %s%.0f",
+			MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], Player[targetid][NameWithoutTag], MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]],
+			GetPlayerPing(targetid), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], Player[targetid][FPS], MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], GetPlayerPacketLoss(targetid), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], (Player[targetid][pHealth] + Player[targetid][pArmour]));
+	}
+	else
+	{
+	    new Float:vHP;
+	    GetVehicleHealth(vid, vHP);
+        format(str, sizeof str, "~n~~n~%sName: %s%s~n~%sPing: %s%d   %sFPS: %s%d~n~%sPL: %s%.1f   %sHP: %s%.0f~n~%sPL: %s%.1f",
+			MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], Player[targetid][NameWithoutTag], MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]],
+			GetPlayerPing(targetid), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], Player[targetid][FPS], MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], GetPlayerPacketLoss(targetid), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], (Player[targetid][pHealth] + Player[targetid][pArmour]), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], vHP);
+	}
 	PlayerTextDrawSetString(playerid, TargetInfoTD, str);
 	PlayerTextDrawShow(playerid, TargetInfoTD);
 
@@ -21253,10 +21387,26 @@ public OnScriptUpdate()
 			TextDrawSetString(DefenderTeam[3], ScoreString[3]);
 		}
 
-		if(RoundPaused == false) {
-			if(PlayersInCP > 0) {
+		if(RoundPaused == false)
+		{
+			if(PlayersInCP > 0)
+			{
 			    CurrentCPTime--;
-		    	if(CurrentCPTime == 0) return EndRound(0); // Attackers Win
+			    
+			    iString = "";
+			    new Float:HP, Float:AP;
+				format(iString, sizeof iString, "%sPlayers In CP", MAIN_TEXT_COLOUR);
+				foreach(new i : Player) {
+				    if(Player[i][WasInCP] == true) {
+				        GetPlayerHealth(i, HP);
+				        GetPlayerArmour(i, AP);
+				        format(iString, sizeof(iString), "%s~n~~r~~h~- %s%s (%.0f)", iString, MAIN_TEXT_COLOUR, Player[i][Name], (HP+AP));
+					}
+				}
+				TextDrawSetString(EN_CheckPoint, iString);
+			    
+		    	if(CurrentCPTime == 0)
+					return EndRound(0); // Attackers Win
 			}
 
 
@@ -24225,6 +24375,8 @@ SpectatePlayer(playerid, specid) {
 	}
 
 	RadarFix();
+	KillTimer(TargetInfoTimer[playerid]);
+	TargetInfoTimer[playerid] = SetTimerEx("HideTargetInfo", 2000, false, "i", playerid);
 
     return 1;
 }
