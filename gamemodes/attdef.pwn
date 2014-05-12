@@ -7680,7 +7680,7 @@ CMD:credits(playerid, params[])
 	strcat(string, "\n{00BBFF}Dev Team: {FFFFFF}062_, Whitetiger, [KHK]Khalid, X.K, and Niko_boy");
 	strcat(string, "\n{00BBFF}Most of textdraws by: {FFFFFF}Insanity & Niko_boy");
 	strcat(string, "\n{00BBFF}Allowed By: {FFFFFF}Deloera");
-	strcat(string, "\n\n{FFFFFF}For suggestions and bug reports, visit: {00BBFF}https://sixtytiger.com/forum/index.php?board=15.0");
+	strcat(string, "\n\n{FFFFFF}For suggestions and bug reports, visit: {00BBFF}http://sixtytiger.com/forum/index.php?board=15.0");
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Credits", string, "OK","");
 	return 1;
@@ -10758,10 +10758,10 @@ CMD:kiss(playerid, params[])
 
 		foreach(new i : Player) {
 			switch(kID) {
-				case 0: PlayAudioStreamForPlayer(i, "https://sixtytiger.com/tiger/mp3/kiss2.mp3");
-				case 1: PlayAudioStreamForPlayer(i, "https://sixtytiger.com/tiger/mp3/kiss1.mp3");
-				case 2: PlayAudioStreamForPlayer(i, "https://sixtytiger.com/tiger/mp3/kiss3.mp3");
-				case 3: PlayAudioStreamForPlayer(i, "https://sixtytiger.com/tiger/mp3/kiss4.mp3");
+				case 0: PlayAudioStreamForPlayer(i, "http://sixtytiger.com/tiger/mp3/kiss2.mp3");
+				case 1: PlayAudioStreamForPlayer(i, "http://sixtytiger.com/tiger/mp3/kiss1.mp3");
+				case 2: PlayAudioStreamForPlayer(i, "http://sixtytiger.com/tiger/mp3/kiss3.mp3");
+				case 3: PlayAudioStreamForPlayer(i, "http://sixtytiger.com/tiger/mp3/kiss4.mp3");
 			}
 		}
 
@@ -24682,14 +24682,14 @@ public OnACUpdated(playerid) {
 			SendClientMessageToAll(-1, iString);
 
 			SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-		    SendClientMessage(playerid, -1, ""COL_PRIM"You can get the Anti-Cheat from: {FFFFFF}https://sixtytiger.com/tiger/ac_files/");
+		    SendClientMessage(playerid, -1, ""COL_PRIM"You can get the Anti-Cheat from: {FFFFFF}http://sixtytiger.com/tiger/ac_files/");
 	        SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 	        Player[playerid][IsGettingKicked] = true;
 			SetTimerEx("KickForAC", 1000, false, "i", playerid);
 
 			iString = "";
-			strcat(iString, "{FFFFFF}>>{FF3333}Anti-Cheat{FFFFFF}<<\n\nYou were kicked for not running the Whitetiger's Anti-Cheat.\n\nDownload Link: "COL_PRIM"https://sixtytiger.com/tiger/ac_files/");
+			strcat(iString, "{FFFFFF}>>{FF3333}Anti-Cheat{FFFFFF}<<\n\nYou were kicked for not running the Whitetiger's Anti-Cheat.\n\nDownload Link: "COL_PRIM"http://sixtytiger.com/tiger/ac_files/");
 			strcat(iString, "{FFFFFF}\n\nInstall and run the AC, wait for it to say \"You are ready to play now.\"\nMake sure it is up to date (Latest Version).");
 
 			ShowPlayerDialog(playerid,DIALOG_ANTICHEAT,DIALOG_STYLE_MSGBOX,"{FF0000}Anti-Cheat", iString,"OK","");
@@ -24758,12 +24758,12 @@ public OnACFileModified(playerid, file[]) {
 	SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 	format(iString, sizeof(iString), ""COL_PRIM"Once you replaced your modified {FFFFFF}%s "COL_PRIM"by the original one, please {FFFFFF}RESTART "COL_PRIM"the Anti-Cheat.", file);
 	SendClientMessage(playerid, -1, iString);
-    SendClientMessage(playerid, -1, ""COL_PRIM"You can get original files from: {FFFFFF}https://sixtytiger.com/tiger/ac_files/unmodded_files/");
+    SendClientMessage(playerid, -1, ""COL_PRIM"You can get original files from: {FFFFFF}http://sixtytiger.com/tiger/ac_files/unmodded_files/");
     SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 	iString = "";
 	strcat(iString, "{FFFFFF}You are either kicked for running mods that are not allowed or your Anti-Cheat is not ready yet.\nIf your Anti-Cheat didn't say \"You are ready to play now\" then please wait for it.");
-	strcat(iString, "\n\nDownload Link for AC:\n\nhttps://sixtytiger.com/tiger/ac_files/\n\n Install and run the AC, wait for it to say \"You are ready to play now.\"\nMake sure its up to date (Latest Version).");
+	strcat(iString, "\n\nDownload Link for AC:\n\nhttp://sixtytiger.com/tiger/ac_files/\n\n Install and run the AC, wait for it to say \"You are ready to play now.\"\nMake sure its up to date (Latest Version).");
     ShowPlayerDialog(playerid,DIALOG_ANTICHEAT,DIALOG_STYLE_MSGBOX,"{FF0000}Anti-Cheat", iString,"OK","");
 
     printf("Player: %s (%d) has been kicked for using modified %s", Player[playerid][Name], playerid, file);

@@ -1,6 +1,6 @@
 /*
 
-	Example usage: https://sixtytiger.com/tiger/script/ac2.txt
+	Example usage: gator3016.hostgator.com/~maarij94/tiger/script/ac2.txt
 
 */
 
@@ -29,19 +29,20 @@
 #if _sampac_PLUGINS == 1
 
 #include <sscanf2>
-#define QUERY_URL 			"sixtytiger.com/AC_API/pInfo1.8.php"
-#define UPDATE_URL          "sixtytiger.com/AC_API/update.php"
+#define QUERY_URL 			"gator3016.hostgator.com/~maarij94/AC_API/pInfo1.8.php"
+#define UPDATE_URL          "gator3016.hostgator.com/~maarij94/AC_API/update.php"
 
 #else
 
 #include <strlib>
-#define QUERY_URL 			"sixtytiger.com/AC_API/pInfo_1.8.php"
-#define UPDATE_URL          "sixtytiger.com/AC_API/update_.php"
-#define ALL_QUERY_URL       "sixtytiger.com/AC_API/allpInfo.php"
+#define QUERY_URL 			"gator3016.hostgator.com/~maarij94/AC_API/pInfo_1.8.php"
+#define UPDATE_URL          "gator3016.hostgator.com/~maarij94/AC_API/update_.php"
+#define ALL_QUERY_URL       "gator3016.hostgator.com/~maarij94/AC_API/allpInfo_.php"
 
 #endif
 
-#define BAN_URL             "sixtytiger.com/AC_API/ban.php"
+#define THREAD_WAIT_URL     "gator3016.hostgator.com/~maarij94/AC_API/query_bug_thread_wait.php"
+#define BAN_URL             "gator3016.hostgator.com/~maarij94/AC_API/ban.php"
 
 // in hindsight, pretty stupid to have different PHP scripts for with and without plugin, have to keep them now compatibility, can't be FUCKED to change it either.
 // (why is there even options for with and without plugin, anyway?)
@@ -186,7 +187,8 @@ forward samp_ac_OnFilterScriptExit();
 forward UpdateResponse(index, code, data[]);
 public UpdateResponse(index, code, data[]) {
     if(code != 200) {
-        //HTTP(THREAD_OFFSET, HTTP_GET, UPDATE_URL, "", "UpdateResponse");
+        HTTP(THREAD_OFFSET, HTTP_GET, UPDATE_URL, "", "UpdateResponse");
+        printf("ERROR CODE: %d", code);
 	    return printf("Whitetiger's Anti-cheat error: Failed to connect to website API");
 	}
 	#pragma unused index
@@ -241,19 +243,18 @@ public UpdateResponse(index, code, data[]) {
 	    printf("");
 	    printf("__________________________________________________");
 	}
-	
-	HTTP(THREAD_OFFSET + THREAD_OFFSET, HTTP_GET, "sixtytiger.com/AC_API/query_bug_thread_wait.php", "", "ThreadWaitTime");
+
+	HTTP(THREAD_OFFSET + THREAD_OFFSET, HTTP_GET, THREAD_WAIT_URL, "", "ThreadWaitTime");
 	return 1;
 }
 
-/*public OnPlayerConnect(playerid)
+#if _sampac_TIMERMODE == 1
+public OnPlayerConnect(playerid)
 {
  	//HTTP(playerid + THREAD_OFFSET + THREAD_OFFSET, HTTP_POST, BAN_URL, postdata, "BanResponse");
    	if(ACOn == true) {
 		//AC_GetInfo(playerid);
-		#if _sampac_TIMERMODE == 1
 		ac_Timers[playerid] = SetTimerEx("AC_GetInfoTimer", AC_TIME_OFFSET, 0, "d", playerid);
-		#endif
 	}
    	return CallLocalFunction("samp_ac_OnPlayerConnect", "i", playerid);
 }
@@ -265,10 +266,11 @@ public UpdateResponse(index, code, data[]) {
 #endif
 #define OnPlayerConnect samp_ac_OnPlayerConnect
 
-forward samp_ac_OnPlayerConnect(playerid);*/
+forward samp_ac_OnPlayerConnect(playerid);
+#endif
 
 public OnPlayerDisconnect(playerid, reason) {
-	
+
 	ACRunning[playerid] 		= false;
 	HasASI[playerid] 			= false;
 	HasTrainer[playerid] 		= false;
@@ -278,7 +280,7 @@ public OnPlayerDisconnect(playerid, reason) {
 	for(new i=0; i < FILES; ++i) {
 	    Files[playerid][i] = true;
 	}
-	
+
 	#if _sampac_TIMERMODE == 1
 	KillTimer(ac_Timers[playerid]);
 	ac_Timers[playerid] = -1;
@@ -316,11 +318,11 @@ stock samp_ac_Controllable(playerid, frozen) {
 
 	samp_ac_Frozen[playerid] = frozen == 0 ? true : false;
 	ignoreNext[playerid] = true;
-	
+
 	SetPlayerVelocity(playerid, 0.0, 0.0, 0.0);
 	if(IsPlayerInAnyVehicle(playerid)) SetVehicleVelocity(GetPlayerVehicleID(playerid), 0.0, 0.0, 0.0);
 	else ClearAnimations(playerid);
-	
+
 	TogglePlayerControllable(playerid, frozen);
 }
 
@@ -345,10 +347,10 @@ public AC_MainUpdate() {
 forward AC_GetInfoTimer(playerid);
 public AC_GetInfoTimer(playerid) {
 	if(!IsPlayerConnected(playerid)) return 1;
-	
+
     AC_GetInfo(playerid);
 	ac_Timers[playerid] = SetTimerEx("AC_GetInfoTimer", AC_TIME_OFFSET, 0, "d", playerid);
-		
+
 	return 1;
 }
 
@@ -365,9 +367,9 @@ stock AC_GetInfo(playerid) {
 
     new IP[MAX_PLAYER_NAME], url[128], postdata[50];
 	GetPlayerIp(playerid, IP, sizeof(IP));
-	
+
 	#if _sampac_DEBUG == 1
-	if(!strcmp(IP, "127.0.0.1", true) || !strcmp(IP, "192.168.1.67", true)) {
+	if(!strcmp(IP, "127.0.0.1", true)) {
 		IP = "";
 	}
 	#endif
@@ -375,32 +377,31 @@ stock AC_GetInfo(playerid) {
  	format(url, sizeof(url), QUERY_URL);
  	format(postdata, sizeof(postdata), "IP=%s", IP);
 	HTTP(playerid + THREAD_OFFSET, HTTP_POST, url, postdata, "ACResponse");
-	
+
 	return 1;
 }
 
 stock AC_GetAllInfo() {
-	new IP[MAX_PLAYER_NAME], postdata[1000];
-	
-	for(new i=0; i < MAX_PLAYERS; ++i) {
-	    if(!IsPlayerConnected(i)) continue;
+	new IP[MAX_PLAYER_NAME], postdata[256];
+
+	foreach(new i : Player) {
 		GetPlayerIp(i, IP, sizeof(IP));
 
 		#if _sampac_DEBUG == 1
-		if(!strcmp(IP, "127.0.0.1", true) || !strcmp(IP, "192.168.1.67", true)) {
+		if(!strcmp(IP, "127.0.0.1", true)) {
 			IP = "";
 		}
 		#endif
-		
+
 		if(strlen(postdata) > 0) format(postdata, sizeof(postdata), "%s&IP%d=%s", postdata, i, IP);
 		else format(postdata, sizeof(postdata), "IP%d=%s", i, IP);
-		
-		if(i % 10 == 0) {
+
+		if(i % 5 == 0) {
 		    HTTP(THREAD_OFFSET, HTTP_POST, ALL_QUERY_URL, postdata, "AllACResponse");
-		    postdata = "";
+		    postdata[0] = '\0';
 		}
 	}
-	if(strlen(postdata) > 0) {
+	if(postdata[0] != '\0') {
 	    HTTP(THREAD_OFFSET, HTTP_POST, ALL_QUERY_URL, postdata, "AllACResponse");
 	}
 }
@@ -422,7 +423,7 @@ public BanResponse(index, code, data[]) {
 		HTTP(playerid + THREAD_OFFSET + THREAD_OFFSET, HTTP_POST, BAN_URL, postdata, "BanResponse");
 		return printf("Whitetiger's Anti-cheat error: Failed to connect to website API");
 	}
-	
+
 	if(!strcmp(data, "1", true)) {
 	    SetTimerEx("KickPlayer", 1, 0, "d", playerid); // 1 ms timer fix so player who gets kicked actually recieves this message
 	    new str[128], name[MAX_PLAYER_NAME];
@@ -445,9 +446,12 @@ public ACResponse(index, code, data[]) {
         //AC_GetInfo(index - THREAD_OFFSET);
 	    return printf("Whitetiger's Anti-cheat error: Failed to connect to website API");
 	}
+	
+	new playerid = index - THREAD_OFFSET;
+	new fileid, Float:X, Float:Y, Float:Z;
 
 	if(strlen(data) > 1) {
-		
+
 		if(!strcmp(data, "Under Maintenance")) {
 		    printf("__________________________________________________");
 		    printf("");
@@ -457,60 +461,67 @@ public ACResponse(index, code, data[]) {
 		    AC_Toggle(false);
 		    return 1;
 		}
-		
+
 		#if _sampac_DEBUG == 1
-		//printf(data);
+		printf(data);
 		#endif
-		
-		new Float:X, Float:Y, Float:Z;
-		
+
 	    #if _sampac_PLUGINS == 1
-	    
-		new bool:acrunning, bool:hasasi, bool:hastrainer;
-		sscanf(data, "p< >lllA<l>(false)["#FILES"]fff", acrunning, hasasi, hastrainer, Files[index - THREAD_OFFSET], X, Y, Z);
-		
-		ACRunning[index - THREAD_OFFSET] 		= acrunning;
-		HasASI[index - THREAD_OFFSET] 			= hasasi;
-		HasTrainer[index - THREAD_OFFSET] 		= hastrainer;
+
+		sscanf(data, "p< >ddddfff", ACRunning[playerid], HasASI[playerid] , HasTrainer[playerid], fileid, X, Y, Z);
 
 		#else
 
-		new str[38][20];
+		new str[7][20];
 		strexplode(str, data, ",");
-		
-		ACRunning[index - THREAD_OFFSET] 			= strcmp(str[0], "false") == 0 ? false : strcmp(str[0], "0") == 0 ? false : true;
-		HasASI[index - THREAD_OFFSET] 				= strcmp(str[1], "false") == 0 ? false : strcmp(str[1], "0") == 0 ? false : true;
-		HasTrainer[index - THREAD_OFFSET] 			= strcmp(str[2], "false") == 0 ? false : strcmp(str[2], "0") == 0 ? false : true;
-		
-		for(new i=0; i < FILES; ++i) {
+
+		ACRunning[playerid] 			= strcmp(str[0], "false") == 0 ? false : strcmp(str[0], "0") == 0 ? false : true;
+
+		if(ACRunning[index - THREAD_OFFSET] == false) {
+		    CallLocalFunction("OnACUpdated", "d", playerid);
+
+			printf("FIRST CHECK!!! Called On AC Updated. on %d", playerid);
+			printf("Results: ACRunning(): %d", ACRunning[playerid]);
+			printf("Trainer: %d", HasTrainer[playerid]);
+			printf("ASI: %d", HasASI[playerid]);
+
+			return 1;
+		}
+
+		HasASI[playerid] 				= strcmp(str[1], "false") == 0 ? false : strcmp(str[1], "0") == 0 ? false : true;
+		HasTrainer[playerid] 			= strcmp(str[2], "false") == 0 ? false : strcmp(str[2], "0") == 0 ? false : true;
+
+		/*for(new i=0; i < FILES; ++i) {
 
 		    if(!strcmp(str[i+3], "0")) { // prevent anim/ped.ifp false kicks
 				Files[index - THREAD_OFFSET][i] 	= true;
 				continue;
 			}
 			Files[index - THREAD_OFFSET][i] 		= strcmp(str[i+3], "false") == 0 ? false : true;
-		}
-		X = floatstr(str[3+FILES]);
-		Y = floatstr(str[3+FILES+1]);
-		Z = floatstr(str[3+FILES+2]);
+		}*/
+
+		fileid = strval(str[3]);
+		X = floatstr(str[4]);
+		Y = floatstr(str[5]);
+		Z = floatstr(str[6]);
 
 		#endif
-		
-		if(samp_ac_Frozen[index - THREAD_OFFSET] == true && ignoreNext[index - THREAD_OFFSET] == false && ACRunning[index - THREAD_OFFSET] == true && IsPlayerConnected(index - THREAD_OFFSET) && OnPlayerUpdate(index - THREAD_OFFSET) != 0) {
+
+		if(samp_ac_Frozen[playerid] == true && ignoreNext[playerid] == false && ACRunning[playerid] == true && IsPlayerConnected(playerid) && CallLocalFunction("OnPlayerUpdate", "d", playerid) != 0) {
 
 			new Float:X2, Float:Y2, Float:Z2;
-			GetPlayerPos(index - THREAD_OFFSET, X2, Y2, Z2);
+			GetPlayerPos(playerid, X2, Y2, Z2);
 
 			new string[128];
 			new string2[128];
 			new maxcharacters_mismatchable = 1;
-			if(!IsPlayerInAnyVehicle(index - THREAD_OFFSET)) {
+			if(!IsPlayerInAnyVehicle(playerid)) {
 				format(string, sizeof(string), "%0.5f %0.5f %0.5f", X, Y, Z);
 				format(string2, sizeof(string2), "%0.5f %0.5f %0.5f", X2, Y2, Z2);
 			} else {
 
 			    new Float:X3, Float:Y3, Float:Z3;
-				GetVehicleVelocity(GetPlayerVehicleID(index - THREAD_OFFSET), X3, Y3, Z3);
+				GetVehicleVelocity(GetPlayerVehicleID(playerid), X3, Y3, Z3);
 
 				if(X3 == 0.0 || Y3 == 0.0 || Z3 == 0.0) { // prevent while in heli or vehicle is moving somehow
 
@@ -519,34 +530,38 @@ public ACResponse(index, code, data[]) {
 					maxcharacters_mismatchable = 3;
 				}
 			}
-			
+
 
 			if(proper_strcmp(string, string2) > maxcharacters_mismatchable && strlen(string) > 0 && strlen(string2) > 0) {
 			    // 2 PC trick
-			    CallLocalFunction("OnUsingAnotherPC", "d", index - THREAD_OFFSET);
-			    samp_ac_Frozen[index - THREAD_OFFSET] = false; // don't call again unless frozen again to avoid spam
+			    CallLocalFunction("OnUsingAnotherPC", "d", playerid);
+			    samp_ac_Frozen[playerid] = false; // don't call again unless frozen again to avoid spam
 			}
 		}
 
-		if(ignoreNext[index - THREAD_OFFSET] == true) {
-		    ignoreNext[index - THREAD_OFFSET] = false;
+		if(ignoreNext[playerid] == true) {
+		    ignoreNext[playerid] = false;
 		}
 	} else {
-	    ACRunning[index - THREAD_OFFSET] 			= false;
+	    ACRunning[playerid] 			= false;
 	}
 
 	// check if they're still connected when the HTTP thread finished.
-	if(IsPlayerConnected(index - THREAD_OFFSET)) {
-		CallLocalFunction("OnACUpdated", "d", index - THREAD_OFFSET);
+	if(IsPlayerConnected(playerid)) {
+		CallLocalFunction("OnACUpdated", "d", playerid);
 
+		#if _sampac_DEBUG == 1
+		
+		printf("Called On AC Updated. on %d", playerid);
+		printf("Results: ACRunning(): %d", ACRunning[playerid]);
+		printf("Trainer: %d", HasTrainer[playerid]);
+		printf("ASI: %d", HasASI[playerid]);
+		printf("fileid: %d", fileid);
+		
+		#endif
 
-		for(new i=0; i < FILES; ++i) {
-			if(Files[index - THREAD_OFFSET][i] == false && ACRunning[index - THREAD_OFFSET] == true) {
-			    // check if player is connected again (yes, in the loop), in case they got kicked or banned when OnACUpdated got called.
-			    if(IsPlayerConnected(index - THREAD_OFFSET)) {
-			    	CallLocalFunction("OnACFileModified", "ds", index - THREAD_OFFSET, fileNames[i]);
-				}
-    		}
+		if(IsPlayerConnected(playerid) && ACRunning[playerid] == true && fileid != -1) {
+	    	CallLocalFunction("OnACFileModified", "ds", playerid, fileNames[fileid]);
 		}
 	}
 	return 0;
@@ -606,7 +621,7 @@ stock bool:AC_Toggle(bool:set) {
 		}
 		#endif
 	}
-	
+
 	CallLocalFunction("OnACToggled", "d", set);
 }
 
@@ -617,7 +632,7 @@ public ThreadWaitTime(index, code, data[]) {
     {
         if (data[i] > '9' || data[i] < '0') return 0;
     }
-    
+
     AC_TIME_OFFSET = strval(data) + 2500;
 	return 1;
 }
@@ -626,3 +641,4 @@ forward OnACToggled(bool:set);
 forward OnACUpdated(playerid);
 forward OnUsingAnotherPC(playerid);
 forward OnACFileModified(playerid, file[]);
+
