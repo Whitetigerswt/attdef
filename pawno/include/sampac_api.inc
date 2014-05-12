@@ -49,7 +49,7 @@
 
 #include <YSI\y_iterate>
 
-#define VERSION 2.0
+#define VERSION 2.1
 
 new AC_TIME_OFFSET = 30000;
 

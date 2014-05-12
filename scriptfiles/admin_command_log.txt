@@ -1,8 +1,0 @@
-[11/05/2014][10:59:08] Niko_boy [0] has used the command (/unfreeze) at Niko_boy [0]. 
-[11/05/2014][10:59:12] Niko_boy [0] has used the command (/config). 
-[11/05/2014][10:59:31] Niko_boy [0] has used the command (/config). 
-[11/05/2014][10:59:49] Niko_boy [0] has used the command (/end). 
-[11/05/2014][11:04:56] Niko_boy [0] has used the command (/unfreeze) at Niko_boy [0]. 
-[11/05/2014][11:05:01] Niko_boy [0] has used the command (/config). 
-[11/05/2014][11:05:07] Niko_boy [0] has used the command (/config). 
-[11/05/2014][11:05:18] Niko_boy [0] has used the command (/config). 
