@@ -1977,8 +1977,8 @@ stock MATCHSYNC_InsertMatchStats()
 // version checker <start>
 #define VERSION_CHAR_LENGTH     		4
 
-#define VERSION_CHECKER_VERSION_URL		"sixtytiger.com/khalid/AttDef_API/VersionChecker/version.php"
-#define VERSION_CHECKER_CHANGELOG_URL	"sixtytiger.com/khalid/AttDef_API/VersionChecker/changelog.php"
+#define VERSION_CHECKER_VERSION_URL		"gator3016.hostgator.com/~maarij94/khalid/AttDef_API/VersionChecker/version.php"
+#define VERSION_CHECKER_CHANGELOG_URL	"gator3016.hostgator.com/~maarij94/khalid/AttDef_API/VersionChecker/changelog.php"
 
 #define VERSION_IS_BEHIND       		0
 #define VERSION_IS_UPTODATE     		1
@@ -2984,7 +2984,7 @@ public OnGameModeInit()
 
     new post[256];
     format(post, sizeof(post), "IP=%s&Port=%d&HostName=%s", ServerIP, port, hostname);
-    HTTP(100, HTTP_POST, "sixtytiger.com/attdef-api/serverlist.php", post, "");
+    HTTP(100, HTTP_POST, "gator3016.hostgator.com/~maarij94/attdef-api/serverlist.php", post, "");
 
 // 	format(post, sizeof(post), "Port=%d", port);
 //	HTTP(0, HTTP_POST, "jagat.freeiz.com/postserver.php", post, "checkResponse");
@@ -3017,11 +3017,30 @@ public OnGameModeInit()
     db_close(sqliteconnection);
 	sqliteconnection = db_open("AAD.db");
 
-	db_free_result(db_query(sqliteconnection, "DELETE FROM Bases WHERE ID = 67"));
-	db_free_result(db_query(sqliteconnection, "DELETE FROM Bases WHERE ID = 69"));
-	db_free_result(db_query(sqliteconnection, "DELETE FROM Bases WHERE ID = 70"));
-	db_free_result(db_query(sqliteconnection, "DELETE FROM Bases WHERE ID = 89"));
-	db_free_result(db_query(sqliteconnection, "DELETE FROM Bases WHERE ID = 76"));
+	// Get info about our columns in the Players table
+	new DBResult:res = db_query(sqliteconnection, "PRAGMA table_info(Players)");
+	
+	new bool:found = false;
+	// Loop to check and see if our IP column already exists
+	do {
+	    new column[50];
+	    db_get_field_assoc(res, "name", column, sizeof(column));
+	    if(!strcmp(column, "IP", true) && strlen(column) > 0) {
+	        // It does exist, so exit loop.
+	        found = true;
+	        break;
+	    }
+	} while(db_next_row(res));
+	
+	db_free_result(res);
+	
+	// If column wasn't found, add it to our db
+	if(!found) {
+	    db_free_result(db_query(sqliteconnection, "ALTER TABLE `Players` ADD COLUMN IP CHAR(" #MAX_PLAYER_NAME ") NOT NULL DEFAULT 0"));
+	}
+	
+	// Vacuum SQL database
+	db_free_result(db_query(sqliteconnection, "VACUUM"));
 
     format(MAIN_TEXT_COLOUR, sizeof MAIN_TEXT_COLOUR, "~l~");
     MAIN_BACKGROUND_COLOUR = 0xEEEEEE33;
@@ -3379,7 +3398,7 @@ public OnPlayerConnect(playerid)
 		new post[128], gpci_string[128];
 		gpci(playerid, gpci_string, sizeof(gpci_string));
 		format(post, sizeof(post), "IP=%s&Name=%s&Serial=%s", IP, Player[playerid][Name], gpci_string);
-		HTTP(playerid + aka_thread_offset, HTTP_POST, "sixtytiger.com/attdef-api/aka.php", post, "akaResponse");
+		HTTP(playerid + aka_thread_offset, HTTP_POST, "gator3016.hostgator.com/~maarij94/attdef-api/aka.php", post, "akaResponse");
 	}
 
 
@@ -3443,6 +3462,14 @@ public OnPlayerRequestClass(playerid, classid)
 
 	if(ServerAntiLag == true) TextDrawShowForPlayer(playerid, AntiLagTD);
 	else TextDrawHideForPlayer(playerid, AntiLagTD);
+	
+	SetPlayerPos(playerid, 1524,-43,100);
+	SetPlayerFacingAngle(playerid, 174);
+	SetPlayerCameraPos(playerid, 1524,-50,1004);
+	SetPlayerCameraLookAt(playerid, 1524,-43,1002);
+	SetPlayerInterior(playerid, 2);
+	
+	//SetPlayerVirtualWorld(playerid, playerid+50);
 
 	if(Player[playerid][Logged] == false) {
 
@@ -3457,13 +3484,6 @@ public OnPlayerRequestClass(playerid, classid)
 		SetPlayerTime(playerid, 324, 0);
 */
 
-		SetPlayerPos(playerid, 1524,-43,100);
-		SetPlayerFacingAngle(playerid, 174);
-		SetPlayerCameraPos(playerid, 1524,-50,1004);
-		SetPlayerCameraLookAt(playerid, 1524,-43,1002);
-		SetPlayerInterior(playerid, 2);
-
-
 		#if MYSQL == 0
 
 		new Query[150];
@@ -3472,8 +3492,27 @@ public OnPlayerRequestClass(playerid, classid)
 
 		if(!db_num_rows(result)) {
 		    ShowPlayerDialog(playerid, DIALOG_REGISTER, DIALOG_STYLE_PASSWORD,"{FFFFFF}Registration Dialog","{FFFFFF}Type your password below to register:","Register","Leave");
-		} else ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD,"{FFFFFF}Login Dialog","{FFFFFF}Type your password below to log in:","Login","Leave");
-
+		} else {
+		    // Get IP
+		    new IP[MAX_PLAYER_NAME];
+		    GetPlayerIp(playerid, IP, sizeof(IP));
+		    
+		    // Construct query to check if the player with the same name and IP has connected before to this server
+		    format(Query, sizeof(Query), "SELECT * FROM `Players` WHERE `Name` = '%s' AND `IP` = '%s'", Player[playerid][Name], IP);
+		    
+		    // execute
+			new DBResult:res = db_query(sqliteconnection, Query);
+			
+			// If result returns any registered users with the same name and IP that have connected to this server before, log them in
+			if(db_num_rows(res)) {
+			    SendClientMessage(playerid, -1, "{3377FF}You've been automatically logged in {FFFFFF}(IP is the same as last login)");
+			    LoginPlayer(playerid, res);
+			    //ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD,"{FFFFFF}Login Dialog","{FFFFFF}Type your password below to log in:","Login","Leave");
+			// else show login dialog
+			} else ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD,"{FFFFFF}Login Dialog","{FFFFFF}Type your password below to log in:","Login","Leave");
+			db_free_result(res);
+		}
+		
         db_free_result(result);
 
 		#else
@@ -3498,17 +3537,7 @@ public OnPlayerRequestClass(playerid, classid)
 //	SetPlayerPos(playerid, MainSpawn[0], MainSpawn[1], MainSpawn[2]);
 //	SetPlayerFacingAngle(playerid, MainSpawn[3]);
 //	SetPlayerInterior(playerid, MainInterior);
-	SetPlayerVirtualWorld(playerid, playerid+50);
-
-
-//	SetPlayerCameraPos(playerid, 2021, 1544.8, 14);
-//	SetPlayerCameraLookAt(playerid, 2004,1544.8,13);
-
-	SetPlayerPos(playerid, 1524,-43,100);
-	SetPlayerFacingAngle(playerid, 174);
-	SetPlayerCameraPos(playerid, 1524,-50,1004);
-	SetPlayerCameraLookAt(playerid, 1524,-43,1002);
-	SetPlayerInterior(playerid, 2);
+	
 
 	SelectTextDraw(playerid, 0xFF0000BB);
     TextDrawShowForPlayer( playerid, introBg1 );
@@ -3532,7 +3561,15 @@ public OnPlayerRequestClass(playerid, classid)
 	return 1;
 }
 
-public OnPlayerRequestSpawn(playerid) { return 0; }
+
+public OnPlayerRequestSpawn(playerid) {
+	if(Player[playerid][Logged] == true) {
+		SpawnConnectedPlayer(playerid, 0);
+		return 1;
+	}
+	else return 0;
+}
+
 
 //antisob
 /*PUB:HackCheck(playerid)
@@ -5572,7 +5609,9 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			    format(HashPass, sizeof(HashPass), "%d", udb_hash(inputtext));
 
 				new query[356];
-			    format(query, sizeof(query), "INSERT INTO Players (Name, Password, Level, Weather, Time, ChatChannel, NetCheck, Widescreen, HitSound, GetHitSound, RadID, DWon, DLost) VALUES('%s', '%s', 0, 0, 12, -1, 1, 0, 17802, 1135, 0, 0, 0)", DB_Escape(Player[playerid][Name]), HashPass);
+				new IP[MAX_PLAYER_NAME];
+				GetPlayerIp(playerid, IP, sizeof(IP));
+			    format(query, sizeof(query), "INSERT INTO Players (Name, Password, Level, Weather, Time, ChatChannel, NetCheck, Widescreen, HitSound, GetHitSound, RadID, DWon, DLost, IP) VALUES('%s', '%s', 0, 0, 12, -1, 1, 0, 17802, 1135, 0, 0, 0, '%s')", DB_Escape(Player[playerid][Name]), HashPass, IP);
 				db_free_result(db_query(sqliteconnection, query));
 //				SendClientMessage(playerid, -1, "Level: 0 | Weather: 0 | Time: 12 | Chat Channel: -1 | Net Check: 1 | HitSound: 17802 | Get HitSound: 1131");
 
@@ -5685,67 +5724,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 			if(db_num_rows(res)) {
 
-				db_get_field_assoc(res, "Level", iString, sizeof(iString));
-	    		Player[playerid][Level] = strval(iString);
-
-				db_get_field_assoc(res, "Weather", iString, sizeof(iString));
-	    		Player[playerid][Weather] = strval(iString);
-
-				db_get_field_assoc(res, "Time", iString, sizeof(iString));
-	    		Player[playerid][Time] = strval(iString);
-
-				db_get_field_assoc(res, "ChatChannel", iString, sizeof(iString));
-	    		Player[playerid][ChatChannel] = strval(iString);
-
-	 			db_get_field_assoc(res, "NetCheck", iString, sizeof(iString));
-	    		Player[playerid][NetCheck] = strval(iString);
-
-	 			db_get_field_assoc(res, "Widescreen", iString, sizeof(iString));
-	    		Player[playerid][TextPos] = (strval(iString) == 0 ? false : true);
-
-	 			db_get_field_assoc(res, "HitSound", iString, sizeof(iString));
-	    		Player[playerid][HitSound] = strval(iString);
-
-	 			db_get_field_assoc(res, "GetHitSound", iString, sizeof(iString));
-	    		Player[playerid][GetHitSound] = strval(iString);
-	    		//radio
-	    		db_get_field_assoc(res, "RadID", iString, sizeof(iString));
-	    		Player[playerid][RadioID] = strval(iString);
-	    		//radio
-				//duel
-				db_get_field_assoc(res, "DWon", iString, sizeof(iString));
-	    		Player[playerid][DuelsWon] = strval(iString);
-
-				db_get_field_assoc(res, "DLost", iString, sizeof(iString));
-	    		Player[playerid][DuelsLost] = strval(iString);
-	    		//duel
-	    		
-	    		db_get_field_assoc(res, "ShowSpecs", iString, sizeof(iString));
-	    		Player[playerid][ShowSpecs] = (strval(iString) == 0 ? false : true);
-	    		
-		        Player[playerid][Logged] = true;
-
-//            	ClearPlayerChat(playerid);
-//               SendClientMessage(playerid,-1, "You have successfully logged in.");
-//		        //radio //duel
-//				format(Query, sizeof(Query), "Level: %d | Weather: %d | Time: %d | Chat Channel: %d | HitSound: %d | Get HitSound: %d", Player[playerid][Level], Player[playerid][Weather], Player[playerid][Time], Player[playerid][ChatChannel], Player[playerid][HitSound], Player[playerid][GetHitSound]);
-//		        SendClientMessage(playerid, -1, Query);
-//				format(Query, sizeof(Query), "Duels Won: %d | Duels Lost: %d | Radio ID: %d | Net Check: %d", Player[playerid][DuelsWon], Player[playerid][DuelsLost], Player[playerid][RadioID], Player[playerid][NetCheck]);
-//		        SendClientMessage(playerid, -1, Query);
-//
-		        //radio duel
-
-				#if INTROTEXT == 0
-				if(ESLMode == false)
-					SpawnConnectedPlayer(playerid, 0);
-				else
-				{
-					SetTimerEx("ShowESLHelpDiag", 2000, false, "i", playerid);
-				}
-				//SpawnConnectedPlayer(playerid, 0);
-				#else
-			    OnPlayerRequestClass(playerid, 0);
-				#endif
+				LoginPlayer(playerid, res);
 
 			} else {
 		 		SendErrorMessage(playerid,"Wrong Password. Please try again.");
@@ -7676,7 +7655,7 @@ CMD:credits(playerid, params[])
 	strcat(string, "\n{00BBFF}Dev Team: {FFFFFF}062_, Whitetiger, [KHK]Khalid, X.K, and Niko_boy");
 	strcat(string, "\n{00BBFF}Most of textdraws by: {FFFFFF}Insanity & Niko_boy");
 	strcat(string, "\n{00BBFF}Allowed By: {FFFFFF}Deloera");
-	strcat(string, "\n\n{FFFFFF}For suggestions and bug reports, visit: {00BBFF}https://sixtytiger.com/forum/index.php?board=15.0");
+	strcat(string, "\n\n{FFFFFF}For suggestions and bug reports, visit: {00BBFF}http://sixtytiger.com/forum/index.php?board=15.0");
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Credits", string, "OK","");
 	return 1;
@@ -10754,10 +10733,10 @@ CMD:kiss(playerid, params[])
 
 		foreach(new i : Player) {
 			switch(kID) {
-				case 0: PlayAudioStreamForPlayer(i, "https://sixtytiger.com/tiger/mp3/kiss2.mp3");
-				case 1: PlayAudioStreamForPlayer(i, "https://sixtytiger.com/tiger/mp3/kiss1.mp3");
-				case 2: PlayAudioStreamForPlayer(i, "https://sixtytiger.com/tiger/mp3/kiss3.mp3");
-				case 3: PlayAudioStreamForPlayer(i, "https://sixtytiger.com/tiger/mp3/kiss4.mp3");
+				case 0: PlayAudioStreamForPlayer(i, "http://sixtytiger.com/tiger/mp3/kiss2.mp3");
+				case 1: PlayAudioStreamForPlayer(i, "http://sixtytiger.com/tiger/mp3/kiss1.mp3");
+				case 2: PlayAudioStreamForPlayer(i, "http://sixtytiger.com/tiger/mp3/kiss3.mp3");
+				case 3: PlayAudioStreamForPlayer(i, "http://sixtytiger.com/tiger/mp3/kiss4.mp3");
 			}
 		}
 
@@ -16989,7 +16968,8 @@ public OnPlayerDuelStats(Result:res, playerid) {
 // Other Functions
 //------------------------------------------------------------------------------
 
-stock SpawnConnectedPlayer(playerid, team)
+forward SpawnConnectedPlayer(playerid, team);
+public SpawnConnectedPlayer(playerid, team)
 {
     if(Player[playerid][Spawned] == false)
 	{
@@ -17131,7 +17111,7 @@ stock SpawnConnectedPlayer(playerid, team)
 		}
 
 		Player[playerid][Spawned] = true;
-		SpawnPlayerEx(playerid);
+		SpawnPlayer(playerid);
 
 		LoadPlayerVariables(playerid);
 		RadarFix();
@@ -23281,6 +23261,8 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 					dhpleft = dhpleft + (HP[0] + HP[1]);
 					dalive++;
 				}
+				
+    			PlayerNoLeadTeam(i);
 			}
 
 			playerScores[index][player_Score] = floatround(Player[i][RoundDamage], floatround_round);
@@ -24690,14 +24672,14 @@ public OnACUpdated(playerid) {
 			SendClientMessageToAll(-1, iString);
 
 			SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-		    SendClientMessage(playerid, -1, ""COL_PRIM"You can get the Anti-Cheat from: {FFFFFF}https://sixtytiger.com/tiger/ac_files/");
+		    SendClientMessage(playerid, -1, ""COL_PRIM"You can get the Anti-Cheat from: {FFFFFF}http://sixtytiger.com/tiger/ac_files/");
 	        SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 	        Player[playerid][IsGettingKicked] = true;
 			SetTimerEx("KickForAC", 1000, false, "i", playerid);
 
 			iString = "";
-			strcat(iString, "{FFFFFF}>>{FF3333}Anti-Cheat{FFFFFF}<<\n\nYou were kicked for not running the Whitetiger's Anti-Cheat.\n\nDownload Link: "COL_PRIM"https://sixtytiger.com/tiger/ac_files/");
+			strcat(iString, "{FFFFFF}>>{FF3333}Anti-Cheat{FFFFFF}<<\n\nYou were kicked for not running the Whitetiger's Anti-Cheat.\n\nDownload Link: "COL_PRIM"http://sixtytiger.com/tiger/ac_files/");
 			strcat(iString, "{FFFFFF}\n\nInstall and run the AC, wait for it to say \"You are ready to play now.\"\nMake sure it is up to date (Latest Version).");
 
 			ShowPlayerDialog(playerid,DIALOG_ANTICHEAT,DIALOG_STYLE_MSGBOX,"{FF0000}Anti-Cheat", iString,"OK","");
@@ -24766,12 +24748,12 @@ public OnACFileModified(playerid, file[]) {
 	SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 	format(iString, sizeof(iString), ""COL_PRIM"Once you replaced your modified {FFFFFF}%s "COL_PRIM"by the original one, please {FFFFFF}RESTART "COL_PRIM"the Anti-Cheat.", file);
 	SendClientMessage(playerid, -1, iString);
-    SendClientMessage(playerid, -1, ""COL_PRIM"You can get original files from: {FFFFFF}https://sixtytiger.com/tiger/ac_files/unmodded_files/");
+    SendClientMessage(playerid, -1, ""COL_PRIM"You can get original files from: {FFFFFF}http://sixtytiger.com/tiger/ac_files/unmodded_files/");
     SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 	iString = "";
 	strcat(iString, "{FFFFFF}You are either kicked for running mods that are not allowed or your Anti-Cheat is not ready yet.\nIf your Anti-Cheat didn't say \"You are ready to play now\" then please wait for it.");
-	strcat(iString, "\n\nDownload Link for AC:\n\nhttps://sixtytiger.com/tiger/ac_files/\n\n Install and run the AC, wait for it to say \"You are ready to play now.\"\nMake sure its up to date (Latest Version).");
+	strcat(iString, "\n\nDownload Link for AC:\n\nhttp://sixtytiger.com/tiger/ac_files/\n\n Install and run the AC, wait for it to say \"You are ready to play now.\"\nMake sure its up to date (Latest Version).");
     ShowPlayerDialog(playerid,DIALOG_ANTICHEAT,DIALOG_STYLE_MSGBOX,"{FF0000}Anti-Cheat", iString,"OK","");
 
     printf("Player: %s (%d) has been kicked for using modified %s", Player[playerid][Name], playerid, file);
@@ -24859,7 +24841,7 @@ public OnPlayerLogin(Result:result, playerid) {
 */
 	#if INTROTEXT == 0
 	if(ESLMode == false)
-		SpawnConnectedPlayer(playerid, 0);
+		SetTimerEx("SpawnConnectedPlayer", 250, 0, "dd", playerid, 0);
 	else
 	{
 		SetTimerEx("ShowESLHelpDiag", 2000, false, "i", playerid);
@@ -24882,6 +24864,85 @@ public OnPlayerRegistered(Result:result, playerid, pw[]) {
 //	SendClientMessage(playerid, -1, "Level: 0 | Weather: 0 | Time: 12 | Chat Channel: -1 | Net Check: 1 | HitSound: 17802 | Get HitSound: 1131");
 }
 
+
+#else
+
+LoginPlayer(playerid, DBResult:res) {
+
+    new iString[256];
+    
+    // Load level
+    db_get_field_assoc(res, "Level", iString, sizeof(iString));
+    Player[playerid][Level] = strval(iString);
+
+	// Load Weather
+	db_get_field_assoc(res, "Weather", iString, sizeof(iString));
+	Player[playerid][Weather] = strval(iString);
+
+	// Load time
+	db_get_field_assoc(res, "Time", iString, sizeof(iString));
+	Player[playerid][Time] = strval(iString);
+
+	// Load ChatChannel
+	db_get_field_assoc(res, "ChatChannel", iString, sizeof(iString));
+	Player[playerid][ChatChannel] = strval(iString);
+
+	// Load NetCheck
+	db_get_field_assoc(res, "NetCheck", iString, sizeof(iString));
+	Player[playerid][NetCheck] = strval(iString);
+
+	// Load WideScreen
+	db_get_field_assoc(res, "Widescreen", iString, sizeof(iString));
+	Player[playerid][TextPos] = (strval(iString) == 0 ? false : true);
+
+	// Load HitSound
+	db_get_field_assoc(res, "HitSound", iString, sizeof(iString));
+	Player[playerid][HitSound] = strval(iString);
+
+	// Load GetHitSound
+	db_get_field_assoc(res, "GetHitSound", iString, sizeof(iString));
+	Player[playerid][GetHitSound] = strval(iString);
+	
+	// Load Radio ID
+	db_get_field_assoc(res, "RadID", iString, sizeof(iString));
+	Player[playerid][RadioID] = strval(iString);
+
+	// Load Duels won
+	db_get_field_assoc(res, "DWon", iString, sizeof(iString));
+	Player[playerid][DuelsWon] = strval(iString);
+
+	// Load Duels Lost
+	db_get_field_assoc(res, "DLost", iString, sizeof(iString));
+	Player[playerid][DuelsLost] = strval(iString);
+
+	// Load ShowSpecs
+	db_get_field_assoc(res, "ShowSpecs", iString, sizeof(iString));
+	Player[playerid][ShowSpecs] = (strval(iString) == 0 ? false : true);
+	
+	// Get current IP address
+	new IP[MAX_PLAYER_NAME];
+	GetPlayerIp(playerid, IP, sizeof(IP));
+	
+	// Update players table with new IP address for auto login if they reconnect.
+	format(iString, sizeof(iString), "UPDATE `Players` SET `IP` = '%s' WHERE `Name` = '%s'", IP, Player[playerid][Name]);
+	db_free_result(db_query(sqliteconnection, iString));
+
+
+    Player[playerid][Logged] = true;
+
+	#if INTROTEXT == 0
+	if(ESLMode == false) {
+		SetTimerEx("SpawnConnectedPlayer", 250, 0, "dd", playerid, 0);
+	}
+	else
+	{
+		SetTimerEx("ShowESLHelpDiag", 2000, false, "i", playerid);
+	}
+	//SpawnConnectedPlayer(playerid, 0);
+	#else
+    //OnPlayerRequestClass(playerid, 0);
+	#endif
+}
 
 #endif
 
@@ -31422,7 +31483,7 @@ stock AddAimbotBan(playerid) {
     new post[128], IP[MAX_PLAYER_NAME];
     GetPlayerIp(playerid, IP, sizeof(IP));
 	format(post, sizeof(post), "IP=%s&Name=%s", IP, Player[playerid][Name]);
-	HTTP(playerid + AIMBOT_BAN_OFFSET, HTTP_POST, "sixtytiger.com/attdef-api/aimbot_bans.php", post, "OnAimbotResponse");
+	HTTP(playerid + AIMBOT_BAN_OFFSET, HTTP_POST, "gator3016.hostgator.com/~maarij94/attdef-api/aimbot_bans.php", post, "OnAimbotResponse");
 }
 
 forward OnAimbotResponse(index, response_code, data[]);
