@@ -415,7 +415,7 @@ public ACResponse(index, code, data[]) {
         //AC_GetInfo(index - THREAD_OFFSET);
 	    return printf("Whitetiger's Anti-cheat error: Failed to connect to website API");
 	}
-	
+
 	new playerid = index - THREAD_OFFSET;
 	new fileid, Float:X, Float:Y, Float:Z;
 
@@ -512,13 +512,13 @@ public ACResponse(index, code, data[]) {
 		CallLocalFunction("OnACUpdated", "d", playerid);
 
 		#if _sampac_DEBUG == 1
-		
+
 		printf("Called On AC Updated. on %d", playerid);
 		printf("Results: ACRunning(): %d", ACRunning[playerid]);
 		printf("Trainer: %d", HasTrainer[playerid]);
 		printf("ASI: %d", HasASI[playerid]);
 		printf("fileid: %d", fileid);
-		
+
 		#endif
 
 		if(IsPlayerConnected(playerid) && ACRunning[playerid] == true && fileid != -1) {
@@ -535,25 +535,25 @@ public AllACResponse(index, code, data[]) {
 	do {
 	    // Extract all params between last | and the next |
 		strmid(strOut, data, lastidx + 1, idx);
-		
+
 		// set lastidx = to position of next |
 		lastidx = idx;
-		
-		// extract playerid 
+
+		// extract playerid
 		new str[2];
-		new playerid_idx = strfind(strOut, " ");
+		new playerid_idx = strfind(strOut, ",");
 		strmid(str, strOut, 0, playerid_idx);
 		playerid = strval(str);
-		
+
 		// find next |
 		idx = strfind(data, "|", false, lastidx+1);
-		
+
 		// check if player is still connected (they should be unless they disconnected between HTTP function and this function getting called)
 		if(!IsPlayerConnected(playerid)) continue;
-		
+
 		// trim out playerid
 		strdel(strOut, 0, 3);
-		
+
 		// call like a normal AC_GetInfo
 		ACResponse(index + playerid, code, strOut);
 	} while(idx != -1);
