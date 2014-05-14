@@ -12,12 +12,6 @@
 #endif
 #define _sampac_api_included
 
-#if !defined _sampac_PLUGINS
-
-	#define _sampac_PLUGINS 0
-
-#endif
-
 #if !defined _sampac_TIMERMODE
 
 	#define _sampac_TIMERMODE 0
@@ -26,26 +20,12 @@
 
 #define _sampac_DEBUG 0
 
-#if _sampac_PLUGINS == 1
-
-#include <sscanf2>
-#define QUERY_URL 			"gator3016.hostgator.com/~maarij94/AC_API/pInfo1.8.php"
-#define UPDATE_URL          "gator3016.hostgator.com/~maarij94/AC_API/update.php"
-
-#else
-
 #include <strlib>
-#define QUERY_URL 			"gator3016.hostgator.com/~maarij94/AC_API/pInfo_1.8.php"
-#define UPDATE_URL          "gator3016.hostgator.com/~maarij94/AC_API/update_.php"
-#define ALL_QUERY_URL       "gator3016.hostgator.com/~maarij94/AC_API/allpInfo_.php"
-
-#endif
-
+#define QUERY_URL 			"gator3016.hostgator.com/~maarij94/AC_API/pInfo.php"
+#define UPDATE_URL          "gator3016.hostgator.com/~maarij94/AC_API/update.php"
+#define ALL_QUERY_URL       "gator3016.hostgator.com/~maarij94/AC_API/allpInfo.php"
 #define THREAD_WAIT_URL     "gator3016.hostgator.com/~maarij94/AC_API/query_bug_thread_wait.php"
 #define BAN_URL             "gator3016.hostgator.com/~maarij94/AC_API/ban.php"
-
-// in hindsight, pretty stupid to have different PHP scripts for with and without plugin, have to keep them now compatibility, can't be FUCKED to change it either.
-// (why is there even options for with and without plugin, anyway?)
 
 #include <YSI\y_iterate>
 
@@ -188,14 +168,11 @@ forward UpdateResponse(index, code, data[]);
 public UpdateResponse(index, code, data[]) {
     if(code != 200) {
         HTTP(THREAD_OFFSET, HTTP_GET, UPDATE_URL, "", "UpdateResponse");
-        printf("ERROR CODE: %d", code);
 	    return printf("Whitetiger's Anti-cheat error: Failed to connect to website API");
 	}
 	#pragma unused index
 
 	new Float:version = 0.0, url[128];
-
-	#if _sampac_PLUGINS == 0
 
 	new str[5][128];
 	strexplode(str, data, ",");
@@ -205,14 +182,6 @@ public UpdateResponse(index, code, data[]) {
 	if(!strlen(url) || version == 0.0) {
 	    return printf("Whitetiger's AC Error: Failed to check for an update.");
 	}
-
-	#else
-
-	if(sscanf(data, "fs[128]", version, url)) {
-	    return printf("Whitetiger's AC Error: Failed to check for an update.");
-	}
-
-	#endif
 
 	if(version > VERSION) {
 	    printf("__________________________________________________");
@@ -248,13 +217,14 @@ public UpdateResponse(index, code, data[]) {
 	return 1;
 }
 
-#if _sampac_TIMERMODE == 1
 public OnPlayerConnect(playerid)
 {
  	//HTTP(playerid + THREAD_OFFSET + THREAD_OFFSET, HTTP_POST, BAN_URL, postdata, "BanResponse");
    	if(ACOn == true) {
-		//AC_GetInfo(playerid);
+		AC_GetInfo(playerid);
+		#if _sampac_TIMERMODE == 1
 		ac_Timers[playerid] = SetTimerEx("AC_GetInfoTimer", AC_TIME_OFFSET, 0, "d", playerid);
+		#endif
 	}
    	return CallLocalFunction("samp_ac_OnPlayerConnect", "i", playerid);
 }
@@ -267,7 +237,6 @@ public OnPlayerConnect(playerid)
 #define OnPlayerConnect samp_ac_OnPlayerConnect
 
 forward samp_ac_OnPlayerConnect(playerid);
-#endif
 
 public OnPlayerDisconnect(playerid, reason) {
 
@@ -466,12 +435,6 @@ public ACResponse(index, code, data[]) {
 		printf(data);
 		#endif
 
-	    #if _sampac_PLUGINS == 1
-
-		sscanf(data, "p< >ddddfff", ACRunning[playerid], HasASI[playerid] , HasTrainer[playerid], fileid, X, Y, Z);
-
-		#else
-
 		new str[7][20];
 		strexplode(str, data, ",");
 
@@ -504,8 +467,6 @@ public ACResponse(index, code, data[]) {
 		X = floatstr(str[4]);
 		Y = floatstr(str[5]);
 		Z = floatstr(str[6]);
-
-		#endif
 
 		if(samp_ac_Frozen[playerid] == true && ignoreNext[playerid] == false && ACRunning[playerid] == true && IsPlayerConnected(playerid) && CallLocalFunction("OnPlayerUpdate", "d", playerid) != 0) {
 
@@ -563,6 +524,7 @@ public ACResponse(index, code, data[]) {
 		if(IsPlayerConnected(playerid) && ACRunning[playerid] == true && fileid != -1) {
 	    	CallLocalFunction("OnACFileModified", "ds", playerid, fileNames[fileid]);
 		}
+		return 1;
 	}
 	return 0;
 }
@@ -571,14 +533,28 @@ forward AllACResponse(index, code, data[]);
 public AllACResponse(index, code, data[]) {
 	new idx = strfind(data, "|"), lastidx = -1, strOut[256], playerid;
 	do {
+	    // Extract all params between last | and the next |
 		strmid(strOut, data, lastidx + 1, idx);
+		
+		// set lastidx = to position of next |
 		lastidx = idx;
+		
+		// extract playerid 
 		new str[2];
-		strmid(str, strOut, 0, 1);
+		new playerid_idx = strfind(strOut, " ");
+		strmid(str, strOut, 0, playerid_idx);
 		playerid = strval(str);
+		
+		// find next |
 		idx = strfind(data, "|", false, lastidx+1);
+		
+		// check if player is still connected (they should be unless they disconnected between HTTP function and this function getting called)
 		if(!IsPlayerConnected(playerid)) continue;
+		
+		// trim out playerid
 		strdel(strOut, 0, 3);
+		
+		// call like a normal AC_GetInfo
 		ACResponse(index + playerid, code, strOut);
 	} while(idx != -1);
 }
