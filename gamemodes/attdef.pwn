@@ -6,17 +6,12 @@
 	- Fixed a minor bug with Players on CP HP: HP is no longer displayed as a float number.
 	- Fixed: Players on CP's HP textdraw wasn't updated (even if they lost HP) until they re-entered CP.
 	- Fixed: target-info textdraws might get stuck on screen.
+	- Fixed negative FPS warning messages.
 	- Now if you shoot someone and they're in a vehicle, you see their vehicle HP on target-info textdraw.
 	- You can now disable/enable player body labels (ping, fps ..etc) from /config.
 	- Added a command /togspecs to hide/show spectators textdraws.
-
-
-	-Niko_boy:
-		-i made a little change with RemovePlayerWeapon
-	    	-so that it give player the last weapon he was arming , if it was (weaponid i.e to be removed) set him Fist.
-	    	    -i am not sure if it bug player when he is fighting and anything related to remove weapon is used..
-	    	        -by bug i mean fail switches/ cbug fail etc.. But giving new weapon could make it more failing tbh.
-	    -fixed low fps warning for negative fps e.e
+	- Fixed a few problems with team leading system: most of the times you couldn't lead your team while no one was leading it.
+	
 */
 
 
@@ -7458,12 +7453,13 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Fixed a minor bug with Players on CP HP: HP is no longer displayed as a float number.");
 	strcat(string, "\n{FFFFFF}- Fixed: Players on CP's HP textdraw wasn't updated (even if they lost HP) until they re-entered CP.");
 	strcat(string, "\n{FFFFFF}- Fixed: target-info textdraws might get stuck on screen.");
+    strcat(string, "\n{FFFFFF}- Fixed negative FPS warning messages.");
 	strcat(string, "\n{FFFFFF}- Now if you shoot someone and they're in a vehicle, you see their vehicle HP on target-info textdraw.");
 	strcat(string, "\n{FFFFFF}- You can now disable/enable player body labels (ping, fps ..etc) from /config.");
 	strcat(string, "\n{FFFFFF}- Added a command /togspecs to hide/show spectators textdraws.");
-	strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}- Fixed a few problems with team leading system: most of the times you couldn't lead your team while no one was leading it.");
 
-    strcat(string, "{00FF00}Attack-Defend v2.4.1 updates:\n");
+    strcat(string, "\n{00FF00}Attack-Defend v2.4.1 updates:\n");
 
 	strcat(string, "\n{FFFFFF}- Several players can be spraying graffiti at the same time with no problem.");
 	strcat(string, "\n{FFFFFF}- Players are auto-given knifes now on round start. (/knife to remove it and disable from /config)");
@@ -17305,15 +17301,27 @@ stock PlayerNoLeadTeam(playerid)
 
 stock ResetTeamLeaders()
 {
-	new team;
+	for(new team = 0; team < MAX_TEAMS; team ++)
+	{
+	    if(TeamHasLeader[team] == true)
+		{
+			if(IsPlayerConnected(TeamLeader[team]))
+			{
+				ColorFix(TeamLeader[team]);
+			}
+		    TeamLeader[team] = INVALID_PLAYER_ID;
+			TeamHasLeader[team] = false;
+		}
+	}
+	/*new team;
 
 	team = 0;
 	if(TeamHasLeader[team] == true)
 	{
-	    if(IsPlayerConnected(TeamLeader[team]))
-	    {
+		if(IsPlayerConnected(TeamLeader[team]))
+		{
 			ColorFix(TeamLeader[team]);
-	    }
+		}
 	    TeamLeader[team] = INVALID_PLAYER_ID;
 		TeamHasLeader[team] = false;
 	}
@@ -17328,7 +17336,7 @@ stock ResetTeamLeaders()
 	    TeamLeader[team] = INVALID_PLAYER_ID;
 		TeamHasLeader[team] = false;
 	}
-	RadarFix();
+	RadarFix();*/
 	return 1;
 }
 
@@ -17709,9 +17717,9 @@ stock ShowTargetInfo(playerid, targetid)
 	{
 	    new Float:vHP;
 	    GetVehicleHealth(vid, vHP);
-        format(str, sizeof str, "~n~~n~%sName: %s%s~n~%sPing: %s%d   %sFPS: %s%d~n~%sPL: %s%.1f   %sHP: %s%.0f~n~%sPL: %s%.1f",
+        format(str, sizeof str, "~n~~n~%sName: %s%s~n~%sPing: %s%d   %sFPS: %s%d~n~%sPL: %s%.1f   %sHP: %s%.0f~n~%sVehicle HP: %s%.1f",
 			MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], Player[targetid][NameWithoutTag], MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]],
-			GetPlayerPing(targetid), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], Player[targetid][FPS], MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], GetPlayerPacketLoss(targetid), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], (Player[targetid][pHealth] + Player[targetid][pArmour]), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], vHP);
+			GetPlayerPing(targetid), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], Player[targetid][FPS], MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], GetPlayerPacketLoss(targetid), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], (Player[targetid][pHealth] + Player[targetid][pArmour]), MAIN_TEXT_COLOUR, TDC[Player[targetid][Team]], vHP / 100);
 	}
 	PlayerTextDrawSetString(playerid, TargetInfoTD, str);
 	PlayerTextDrawShow(playerid, TargetInfoTD);
