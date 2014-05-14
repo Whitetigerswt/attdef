@@ -23254,7 +23254,7 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 					dalive++;
 				}
 				
-    			PlayerNoLeadTeam(playerid);
+    			PlayerNoLeadTeam(i);
 			}
 
 			playerScores[index][player_Score] = floatround(Player[i][RoundDamage], floatround_round);
