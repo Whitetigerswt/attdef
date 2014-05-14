@@ -17293,6 +17293,7 @@ stock ResetTeamLeaders()
 			TeamHasLeader[team] = false;
 		}
 	}
+	RadarFix();
 	/*new team;
 
 	team = 0;
@@ -17316,7 +17317,7 @@ stock ResetTeamLeaders()
 	    TeamLeader[team] = INVALID_PLAYER_ID;
 		TeamHasLeader[team] = false;
 	}
-	RadarFix();*/
+	*/
 	return 1;
 }
 
