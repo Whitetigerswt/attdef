@@ -443,10 +443,12 @@ public ACResponse(index, code, data[]) {
 		if(ACRunning[index - THREAD_OFFSET] == false) {
 		    CallLocalFunction("OnACUpdated", "d", playerid);
 
+			#if _sampac_DEBUG == 1
 			printf("FIRST CHECK!!! Called On AC Updated. on %d", playerid);
 			printf("Results: ACRunning(): %d", ACRunning[playerid]);
 			printf("Trainer: %d", HasTrainer[playerid]);
 			printf("ASI: %d", HasASI[playerid]);
+			#endif
 
 			return 1;
 		}
@@ -540,7 +542,7 @@ public AllACResponse(index, code, data[]) {
 		lastidx = idx;
 
 		// extract playerid
-		new str[2];
+		new str[5];
 		new playerid_idx = strfind(strOut, ",");
 		strmid(str, strOut, 0, playerid_idx);
 		playerid = strval(str);
@@ -552,7 +554,7 @@ public AllACResponse(index, code, data[]) {
 		if(!IsPlayerConnected(playerid)) continue;
 
 		// trim out playerid
-		strdel(strOut, 0, 3);
+		strdel(strOut, 0, playerid_idx+2);
 
 		// call like a normal AC_GetInfo
 		ACResponse(index + playerid, code, strOut);
