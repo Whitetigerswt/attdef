@@ -11,6 +11,7 @@
 	- You can now disable/enable player body labels (ping, fps ..etc) from /config.
 	- Added a command /togspecs to hide/show spectators textdraws.
 	- Fixed a few problems with team leading system: most of the times you couldn't lead your team while no one was leading it.
+	- Fixed a bug with /specoff: team damage textdraws got stuck on your screen.
 	
 */
 
@@ -7437,7 +7438,12 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- You can now disable/enable player body labels (ping, fps ..etc) from /config.");
 	strcat(string, "\n{FFFFFF}- Added a command /togspecs to hide/show spectators textdraws.");
     strcat(string, "\n{FFFFFF}- Fixed a few problems with team leading system: most of the times you couldn't lead your team while no one was leading it.");
-
+	strcat(string, "\n{FFFFFF}- Fixed a bug with /specoff: team damage textdraws got stuck on your screen.");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
+	
+	
     strcat(string, "\n{00FF00}Attack-Defend v2.4.1 updates:\n");
 
 	strcat(string, "\n{FFFFFF}- Several players can be spraying graffiti at the same time with no problem.");
@@ -17231,9 +17237,19 @@ stock PlayerLeadTeam(playerid, bool:force, bool:message = true)
 	{
 	 	foreach(new i : Player)
 		{
-		    if(GetPlayerTeam(i) == GetPlayerTeam(playerid))
+		    if(team == ATTACKER)
 		    {
-				SendClientMessage(i, -1, sprintf("%s%s {FFFFFF}is now leading the team.", TextColor[team], Player[playerid][Name]));
+		        if(Player[i][Team] == ATTACKER || Player[i][Team] == ATTACKER_SUB)
+		        {
+		            SendClientMessage(i, -1, sprintf("%s%s {FFFFFF}is now leading the team.", TextColor[team], Player[playerid][Name]));
+		        }
+		    }
+		    else if(team == DEFENDER)
+		    {
+		        if(Player[i][Team] == DEFENDER || Player[i][Team] == DEFENDER_SUB)
+		        {
+		            SendClientMessage(i, -1, sprintf("%s%s {FFFFFF}is now leading the team.", TextColor[team], Player[playerid][Name]));
+		        }
 		    }
 		    if(i == playerid)
 				continue;
@@ -17257,9 +17273,19 @@ stock PlayerNoLeadTeam(playerid)
 		TeamHasLeader[team] = false;
 		foreach(new i : Player)
 		{
-			if(GetPlayerTeam(i) == GetPlayerTeam(playerid))
+		    if(team == ATTACKER)
 		    {
-				SendClientMessage(i, -1, sprintf("%s%s {FFFFFF}is no longer leading the team.", TextColor[team], Player[playerid][Name]));
+		        if(Player[i][Team] == ATTACKER || Player[i][Team] == ATTACKER_SUB)
+		        {
+		            SendClientMessage(i, -1, sprintf("%s%s {FFFFFF}is no longer leading the team.", TextColor[team], Player[playerid][Name]));
+		        }
+		    }
+		    else if(team == DEFENDER)
+		    {
+		        if(Player[i][Team] == DEFENDER || Player[i][Team] == DEFENDER_SUB)
+		        {
+		            SendClientMessage(i, -1, sprintf("%s%s {FFFFFF}is no longer leading the team.", TextColor[team], Player[playerid][Name]));
+		        }
 		    }
 		}
 	    switch(team)
@@ -24420,10 +24446,10 @@ StopSpectate(playerid) {
 		PlayerTextDrawHide(playerid, SpecText[i]);
 	}
 
-	/*TextDrawHideForPlayer(playerid, AttackerTeam[2]);
+	TextDrawHideForPlayer(playerid, AttackerTeam[2]);
 	TextDrawHideForPlayer(playerid, AttackerTeam[3]);
 	TextDrawHideForPlayer(playerid, DefenderTeam[2]);
-	TextDrawHideForPlayer(playerid, DefenderTeam[3]);*/
+	TextDrawHideForPlayer(playerid, DefenderTeam[3]);
 
 	PlayerTextDrawSetString(playerid, WhoSpec[0], " ");
 	PlayerTextDrawSetString(playerid, WhoSpec[1], " ");
