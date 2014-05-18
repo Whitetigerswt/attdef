@@ -4932,8 +4932,13 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
         Player[damagedid][HitBy] = playerid;
 		Player[damagedid][HitWith] = weaponid;
 		
-        CallLocalFunction("OnPlayerTakeDamage", "ddfdd", damagedid, playerid, amount, weaponid, bodypart);
+		if(!ServerAntiLag) {
+		    CallLocalFunction("OnPlayerTakeDamage", "ddfdd", damagedid, playerid, amount, weaponid, bodypart);
+		}
+		
 		SetPlayerHealth(damagedid, 0);
+		
+		if(!ServerAntiLag) return 1;
 	}
 
 	if(ServerAntiLag == false) {
