@@ -4929,10 +4929,11 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
     
     if(amount > 1800 && weaponid == 4 && GetPlayerAnimationIndex(playerid) == 747) {
 
-		SetPlayerHealth(damagedid, 0);
-		Player[damagedid][HitBy] = playerid;
+        Player[damagedid][HitBy] = playerid;
 		Player[damagedid][HitWith] = weaponid;
 		
+        CallLocalFunction("OnPlayerTakeDamage", "ddfdd", damagedid, playerid, amount, weaponid, bodypart);
+		SetPlayerHealth(damagedid, 0);
 	}
 
 	if(ServerAntiLag == false) {
