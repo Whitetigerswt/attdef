@@ -5018,7 +5018,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 				return 1;
 			}
 		}
-		else if(GetPlayerTeam(playerid) != NO_TEAM && GetPlayerTeam(playerid) == GetPlayerTeam(issuerid))
+		else if(GetPlayerTeam(playerid) != GetPlayerTeam(issuerid) && GetPlayerTeam(playerid) != NO_TEAM)
 		{
 			new wepName[32], bool: nan_weapon = false;
 			switch(weaponid)
