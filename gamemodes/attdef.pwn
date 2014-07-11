@@ -541,6 +541,9 @@ new LowPlayers[MAX_TEAMS];
 #endif
 new MaxTDMKills = 10;
 
+// object sign var's
+new g_oSignText[4];
+
 // - Player Variables -
 
 enum PlayerVariables {
@@ -3055,6 +3058,7 @@ public OnGameModeInit()
 	LoadDMs(); // Loads DMs
 	LoadDuels(); // Loads Duels
     LoadGraffs(); // Loads Graffs
+    CreateDuelArena();
 
 
 	#if OBJECTS == 1
@@ -4174,6 +4178,8 @@ public OnPlayerDeath(playerid, killerid, reason)
 			Player[playerid][duelweap2] = 0;
 			Player[killerid][duelweap1] = 0;
 			Player[killerid][duelweap2] = 0;
+			Player[playerid][ToAddInRound] = true;
+			Player[killerid][ToAddInRound] = true;
             Player[playerid][DuelsLost]++;
             Player[killerid][DuelsWon]++;
             dl = Player[playerid][DuelsLost];
@@ -4927,6 +4933,7 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 {
     if(ToggleTargetInfo == true) ShowTargetInfo(playerid, damagedid);
     
+    // slit throat with a knife
     if(amount > 1800 && weaponid == 4 && GetPlayerAnimationIndex(playerid) == 747) {
 
         Player[damagedid][HitBy] = playerid;
@@ -5011,10 +5018,8 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 				return 1;
 			}
 		}
-		else
+		else if(GetPlayerTeam(playerid) != NO_TEAM && GetPlayerTeam(playerid) == GetPlayerTeam(issuerid))
 		{
-		    if(GetPlayerTeam(playerid) != NO_TEAM && GetPlayerTeam(playerid) == GetPlayerTeam(issuerid))
-				goto skipped;
 			new wepName[32], bool: nan_weapon = false;
 			switch(weaponid)
 			{
@@ -5033,7 +5038,6 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 				GetPlayerName(issuerid, shootername, sizeof shootername);
 				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has just head-shot {FFFFFF}%s "COL_PRIM"({FFFFFF}%s"COL_PRIM")", shootername, shotname, wepName));
 			}
-			skipped:
 		}
 	}
 
@@ -7666,6 +7670,7 @@ CMD:credits(playerid, params[])
 	strcat(string, "{00BBFF}Creators: {FFFFFF}062_ & Whitetiger");
 	strcat(string, "\n{00BBFF}Dev Team: {FFFFFF}062_, Whitetiger, [KHK]Khalid, X.K, and Niko_boy");
 	strcat(string, "\n{00BBFF}Most of textdraws by: {FFFFFF}Insanity & Niko_boy");
+	strcat(string, "\n{00BBFF}Duel Arena by: {FFFFFF}Jeffy892");
 	strcat(string, "\n{00BBFF}Allowed By: {FFFFFF}Deloera");
 	strcat(string, "\n\n{FFFFFF}For suggestions and bug reports, visit: {00BBFF}http://sixtytiger.com/forum/index.php?board=15.0");
 
@@ -8125,7 +8130,7 @@ CMD:yes(playerid, params[])
 	if(Player[playerid][challengerid] == -1) return SendErrorMessage(playerid,"No one has invited you to a duel.");
 	if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player isn't connected.");
 	if(Player[pID][Playing] == true) return SendErrorMessage(playerid,"That player is in a round.");
-	if(Player[pID][InDuel] == true) return SendErrorMessage(playerid,"That player is already duelling someone else.");
+	if(Player[pID][InDuel] == true) return SendErrorMessage(playerid,"That player is already dueling someone else.");
 	if(Player[playerid][Playing] == true) return SendErrorMessage(playerid,"You can't duel while being in a round.");
 
 	format(iString, sizeof(iString), "%s%s {FFFFFF}accepted the duel challenge by %s%s", TextColor[Player[playerid][Team]], Player[playerid][Name], TextColor[Player[pID][Team]], Player[pID][Name]);
@@ -8143,7 +8148,7 @@ CMD:yes(playerid, params[])
 	SetPlayerArmourEx(pID, 100);
 
 
-	SetSpawnInfoEx(playerid, playerid, Skin[Player[playerid][Team]], 1359.9598, -21.5132, 1000.9219, 270.0, WeaponID1, 9999, WeaponID2, 9999, 0, 0);
+	SetSpawnInfoEx(playerid, playerid, Skin[Player[playerid][Team]], -2966.9707, 1768.2054, 12.6369, 270.0, WeaponID1, 9999, WeaponID2, 9999, 0, 0);
 	SendClientMessage(playerid,-1," ");
 	SendClientMessage(playerid,0xFF0000FF,"FIGHT!");
 	SendClientMessage(playerid,-1," ");
@@ -8157,8 +8162,9 @@ CMD:yes(playerid, params[])
 	SetPlayerColor(playerid, 0xFF880088);
 	SetPlayerSkin(playerid, Skin[Player[playerid][Team]]);
 	PlayerPlaySound(playerid,3200,0.0,0.0,0.0);
+	Player[playerid][ToAddInRound] = false;
 
-	SetSpawnInfoEx(pID, pID, Skin[Player[pID][Team]], 1418.1333, -21.5132, 1000.9271, 90.0, WeaponID1, 9999, WeaponID2, 9999, 0, 0);
+	SetSpawnInfoEx(pID, pID, Skin[Player[pID][Team]], -2888.6243, 1767.4994, 12.6369, 90.0, WeaponID1, 9999, WeaponID2, 9999, 0, 0);
 	SendClientMessage(pID,-1," ");
 	SendClientMessage(pID,0xFF0000FF,"FIGHT!");
 	SendClientMessage(pID,-1," ");
@@ -8172,6 +8178,9 @@ CMD:yes(playerid, params[])
 	SetPlayerColor(pID, 0xFF880088);
 	SetPlayerSkin(pID, Skin[Player[pID][Team]]);
 	PlayerPlaySound(pID,3200,0.0,0.0,0.0);
+	Player[pID][ToAddInRound] = false;
+
+	SetDuelSignText(playerid, pID);
 
     FixVsTextDraw();    //fixbyxk
 
@@ -22671,7 +22680,7 @@ public OnBaseStart(BaseID)
             HideEndRoundTextDraw(i);
 
 			if(Player[i][Spectating] == true) StopSpectate(i);
-			if(Player[i][InDM] == true) { //Make sure to remove player from DM, otherwise the player will have Player[playerid][Playing] = true and Player[playerid][InDM] = true, so you are saying that the player is both in Base and in DM.
+			if(Player[i][InDM] == true) { // Make sure to remove player from DM, otherwise the player will have Player[playerid][Playing] = true and Player[playerid][InDM] = true, so you are saying that the player is both in Base and in DM.
 			    Player[i][InDM] = false;
     			Player[i][DMReadd] = 0;
 			}
@@ -22680,7 +22689,7 @@ public OnBaseStart(BaseID)
 
 			Player[i][Playing] = true;
 
-	        SetPlayerVirtualWorld(i, 2); //Set player virtual world to something different that that for lobby and DM so that they don't collide with each other. e.g. You shouldn't be able to see players in lobby or DM while you are in base.
+	        SetPlayerVirtualWorld(i, 2); // Set player virtual world to something different that that for lobby and DM so that they don't collide with each other. e.g. You shouldn't be able to see players in lobby or DM while you are in base.
 	        SetPlayerInterior(i, BInterior[Current]);
 			TogglePlayerControllableEx(i, false); //Pause players.
 			SetPlayerCameraLookAt(i,BCPSpawn[Current][0],BCPSpawn[Current][1],BCPSpawn[Current][2]);
@@ -31551,5 +31560,302 @@ public akaResponse(index, response_code, data[]) {
 
 	if(!strcmp(data, "turnoff", true)) {
 		UpdateAKA = false;
+	}
+}
+
+CreateDuelArena() 
+{
+	new tmpobjid;
+
+	tmpobjid = CreateObject(13607,-2927.660,1767.998,15.176,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 3904, "libertyfar", "newtenmt1", 0);
+	SetObjectMaterial(tmpobjid, 1, 4003, "cityhall_tr_lan", "sl_griddyfence_sml", 0);
+	SetObjectMaterial(tmpobjid, 2, 9583, "bigshap_sfw", "shipfloor_sfw", 0);
+	tmpobjid = CreateObject(18981,-2880.877,1802.644,20.637,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2880.877,1777.644,20.637,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2880.877,1752.644,20.637,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2880.877,1732.644,20.637,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2973.877,1802.644,20.637,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2973.877,1777.644,20.637,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2973.877,1752.644,20.637,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2973.877,1732.644,20.637,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2960.877,1814.644,20.637,0.000,-0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2935.877,1814.644,20.637,0.000,-0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2910.877,1814.644,20.637,0.000,-0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2893.877,1814.644,20.637,0.000,-0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2960.877,1720.644,20.637,0.000,-0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2935.877,1720.644,20.637,0.000,-0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2910.877,1720.644,20.637,0.000,-0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2893.877,1720.644,20.637,0.000,-0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2961.889,1732.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2961.889,1757.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2961.889,1782.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2961.889,1802.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2936.889,1732.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2936.889,1757.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2936.889,1782.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2936.889,1802.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2911.889,1732.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2911.889,1757.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2911.889,1782.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2911.889,1802.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2892.888,1732.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2892.888,1757.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2892.888,1782.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2892.888,1802.635,33.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2961.889,1732.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2961.889,1757.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2961.889,1782.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2961.889,1802.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2936.889,1732.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2936.889,1757.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2936.889,1782.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2936.889,1802.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2911.889,1732.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2911.889,1757.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2911.889,1782.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2911.889,1802.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2892.888,1732.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2892.888,1757.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2892.888,1782.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(18981,-2892.888,1802.635,8.137,0.000,-90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 8399, "vgs_shops", "vgsclubwall08_256", -10066330);
+	tmpobjid = CreateObject(19458,-2922.751,1722.603,18.637,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2932.351,1722.603,18.637,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2922.751,1726.103,18.637,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2932.351,1726.103,18.637,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2922.751,1809.203,18.637,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2932.351,1809.203,18.637,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2922.751,1812.703,18.637,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2932.351,1812.703,18.637,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2968.201,1772.753,18.637,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2968.201,1763.153,18.637,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2971.701,1772.753,18.637,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2971.701,1763.153,18.637,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2883.201,1772.753,18.637,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2883.201,1763.153,18.637,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2886.701,1772.753,18.637,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2886.701,1763.153,18.637,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 14581, "ab_mafiasuitea", "walp45S", 0);
+	tmpobjid = CreateObject(19458,-2922.751,1722.603,22.137,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2932.351,1722.603,22.137,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2922.751,1726.103,22.137,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2932.351,1726.103,22.137,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2922.751,1809.203,22.137,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2932.351,1809.203,22.137,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2922.751,1812.703,22.137,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2932.351,1812.703,22.137,0.000,90.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2968.201,1772.753,22.137,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2968.201,1763.153,22.137,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2971.701,1772.753,22.137,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2971.701,1763.153,22.137,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2883.201,1772.753,22.137,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2883.201,1763.153,22.137,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2886.701,1772.753,22.137,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2886.701,1763.153,22.137,-0.000,90.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 2591, "ab_partition1", "ab_fabricCheck2", 0);
+	tmpobjid = CreateObject(19458,-2888.351,1772.739,20.423,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19458,-2888.351,1763.139,20.423,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19458,-2966.561,1772.739,20.423,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19458,-2966.561,1763.139,20.423,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19458,-2922.748,1807.547,20.323,0.000,0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19458,-2932.347,1807.547,20.323,0.000,0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19366,-2968.259,1758.453,20.323,0.000,0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19458,-2922.748,1727.747,20.323,0.000,0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19458,-2932.347,1727.747,20.323,0.000,0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19366,-2968.259,1777.483,20.323,0.000,0.000,90.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19366,-2886.858,1777.453,20.323,-0.000,0.000,-89.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19366,-2886.858,1758.423,20.323,-0.000,0.000,-89.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19366,-2937.079,1809.063,20.323,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19366,-2918.029,1809.063,20.323,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19366,-2918.029,1726.234,20.323,0.000,-0.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(19366,-2937.079,1726.234,20.323,0.000,-0.000,-179.999,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 0);
+	tmpobjid = CreateObject(13607,-2927.660,1767.998,3.976,0.000,180.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 16640, "a51", "a51_glass", 16711680);
+	SetObjectMaterial(tmpobjid, 1, 4003, "cityhall_tr_lan", "sl_griddyfence_sml", 16711680);
+	SetObjectMaterial(tmpobjid, 2, -1, "none", "none", 16711680);
+	tmpobjid = CreateObject(19377,-2924.969,1766.626,27.037,0.000,90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, -1, "none", "none", -10066330);
+	tmpobjid = CreateObject(19377,-2931.169,1766.626,27.037,0.000,90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, -1, "none", "none", -10066330);
+	tmpobjid = CreateObject(19377,-2924.969,1773.726,27.037,0.000,90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, -1, "none", "none", -10066330);
+	tmpobjid = CreateObject(19377,-2931.169,1773.726,27.037,0.000,90.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, -1, "none", "none", -10066330);
+	tmpobjid = CreateObject(13607,-2927.660,1767.998,15.176,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 3904, "libertyfar", "newtenmt1", 0);
+	SetObjectMaterial(tmpobjid, 1, 4003, "cityhall_tr_lan", "sl_griddyfence_sml", 0);
+	SetObjectMaterial(tmpobjid, 2, 9583, "bigshap_sfw", "shipfloor_sfw", 0);
+	tmpobjid = CreateObject(13607,-2927.660,1767.998,15.176,0.000,0.000,0.000,300.0000);
+	SetObjectMaterial(tmpobjid, 0, 3555, "comedhos1_la", "comptwindo1", 0);
+	SetObjectMaterial(tmpobjid, 1, 4003, "cityhall_tr_lan", "sl_griddyfence_sml", 0);
+	SetObjectMaterial(tmpobjid, 2, 9583, "bigshap_sfw", "shipfloor_sfw", 0);
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	tmpobjid = CreateObject(19366,-2971.458,1758.423,20.323,0.000,0.000,90.000,300.0000);
+	tmpobjid = CreateObject(19366,-2974.658,1758.423,20.323,0.000,0.000,90.000,300.0000);
+	tmpobjid = CreateObject(19366,-2971.458,1777.483,20.323,0.000,0.000,90.000,300.0000);
+	tmpobjid = CreateObject(19366,-2883.658,1777.483,20.323,-0.000,0.000,-89.999,300.0000);
+	tmpobjid = CreateObject(19366,-2974.658,1777.483,20.323,0.000,0.000,90.000,300.0000);
+	tmpobjid = CreateObject(19366,-2880.458,1777.483,20.323,-0.000,0.000,-89.999,300.0000);
+	tmpobjid = CreateObject(19366,-2883.658,1758.423,20.323,-0.000,0.000,-89.999,300.0000);
+	tmpobjid = CreateObject(19366,-2880.458,1758.423,20.323,-0.000,0.000,-89.999,300.0000);
+	tmpobjid = CreateObject(19366,-2937.079,1812.263,20.323,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(19366,-2937.079,1815.463,20.323,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(19366,-2918.029,1812.263,20.323,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(19366,-2918.029,1815.463,20.323,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(19366,-2918.029,1723.034,20.323,0.000,-0.000,-179.999,300.0000);
+	tmpobjid = CreateObject(19366,-2918.029,1719.834,20.323,0.000,-0.000,-179.999,300.0000);
+	tmpobjid = CreateObject(19366,-2937.079,1723.034,20.323,0.000,-0.000,-179.999,300.0000);
+	tmpobjid = CreateObject(19366,-2937.079,1719.834,20.323,0.000,-0.000,-179.999,300.0000);
+	tmpobjid = CreateObject(18980,-2969.200,1763.359,6.057,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(18980,-2969.200,1773.159,6.057,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(18980,-2886.100,1763.359,6.057,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(18980,-2886.100,1773.159,6.057,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(18980,-2922.304,1725.525,6.137,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(18980,-2932.304,1725.525,6.137,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(18980,-2922.804,1810.525,6.137,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(18980,-2932.804,1810.525,6.137,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(1723,-2922.851,1809.339,18.723,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(1723,-2929.051,1809.339,18.723,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(1723,-2934.851,1809.339,18.723,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(1775,-2918.581,1812.546,19.723,0.000,0.000,270.000,300.0000);
+	tmpobjid = CreateObject(1723,-2922.851,1811.439,18.723,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(1723,-2929.051,1811.439,18.723,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(1723,-2934.851,1811.439,18.723,0.000,0.000,0.000,300.0000);
+	tmpobjid = CreateObject(1723,-2932.381,1726.046,18.723,0.000,-0.000,-179.999,300.0000);
+	tmpobjid = CreateObject(1723,-2926.181,1726.046,18.723,0.000,-0.000,-179.999,300.0000);
+	tmpobjid = CreateObject(1723,-2920.381,1726.046,18.723,0.000,-0.000,-179.999,300.0000);
+	tmpobjid = CreateObject(1775,-2936.651,1722.839,19.723,0.000,0.000,90.000,300.0000);
+	tmpobjid = CreateObject(1723,-2932.381,1723.946,18.723,0.000,-0.000,-179.999,300.0000);
+	tmpobjid = CreateObject(1723,-2926.181,1723.946,18.723,0.000,-0.000,-179.999,300.0000);
+	tmpobjid = CreateObject(1723,-2920.381,1723.946,18.723,0.000,-0.000,-179.999,300.0000);
+	tmpobjid = CreateObject(1723,-2968.404,1772.996,18.723,0.000,0.000,90.000,300.0000);
+	tmpobjid = CreateObject(1723,-2968.404,1766.896,18.723,0.000,0.000,90.000,300.0000);
+	tmpobjid = CreateObject(1723,-2968.404,1760.996,18.723,0.000,0.000,90.000,300.0000);
+	tmpobjid = CreateObject(1723,-2970.904,1772.996,18.723,0.000,0.000,90.000,300.0000);
+	tmpobjid = CreateObject(1723,-2970.904,1766.896,18.723,0.000,0.000,90.000,300.0000);
+	tmpobjid = CreateObject(1723,-2970.904,1760.996,18.723,0.000,0.000,90.000,300.0000);
+	tmpobjid = CreateObject(955,-2971.947,1758.860,19.123,0.000,0.000,180.000,300.0000);
+	tmpobjid = CreateObject(1723,-2886.747,1762.860,18.723,-0.000,0.000,-89.999,300.0000);
+	tmpobjid = CreateObject(1723,-2886.747,1768.961,18.723,-0.000,0.000,-89.999,300.0000);
+	tmpobjid = CreateObject(1723,-2886.747,1774.861,18.723,-0.000,0.000,-89.999,300.0000);
+	tmpobjid = CreateObject(1723,-2884.247,1762.860,18.723,-0.000,0.000,-89.999,300.0000);
+	tmpobjid = CreateObject(1723,-2884.247,1768.961,18.723,-0.000,0.000,-89.999,300.0000);
+	tmpobjid = CreateObject(1723,-2884.247,1774.861,18.723,-0.000,0.000,-89.999,300.0000);
+	tmpobjid = CreateObject(955,-2883.203,1776.996,19.123,0.000,0.000,0.000,300.0000);
+	
+	//////////  Duelists names /////////
+	g_oSignText[0] = CreateObject(7301,-2928.018,1762.422,29.537,0.000,0.000,135.000,300.0000);
+	g_oSignText[1] = CreateObject(7301,-2920.318,1770.202,29.537,0.000,0.000,225.000,300.0000);
+	g_oSignText[2] = CreateObject(7301,-2935.819,1770.102,29.537,0.000,0.000,405.000,300.0000);
+	g_oSignText[3] = CreateObject(7301,-2928.138,1777.882,29.537,0.000,0.000,315.000,300.0000);
+}
+
+SetDuelSignText(playerid, duelerid)
+{
+	// create our string to tell who is fighting vs who.
+	new string[90];
+	// format it so it's not empty
+	format(string, sizeof(string), "%s vs %s", Player[playerid][Name], Player[duelerid][Name]);
+
+	// Set all the object text to our new formatted string.
+	for(new i = 0; i < sizeof(g_oSignText); ++i) 
+	{
+		SetObjectMaterialText(g_oSignText[i], string, 0, 110, "Ariel", 30, 1, -16711936, -10066330, 1);
 	}
 }
