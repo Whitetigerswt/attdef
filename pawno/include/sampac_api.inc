@@ -167,7 +167,7 @@ forward samp_ac_OnFilterScriptExit();
 forward UpdateResponse(index, code, data[]);
 public UpdateResponse(index, code, data[]) {
     if(code != 200) {
-        HTTP(THREAD_OFFSET, HTTP_GET, UPDATE_URL, "", "UpdateResponse");
+        //HTTP(THREAD_OFFSET, HTTP_GET, UPDATE_URL, "", "UpdateResponse");
 	    return printf("Whitetiger's Anti-cheat error: Failed to connect to website API");
 	}
 	#pragma unused index
