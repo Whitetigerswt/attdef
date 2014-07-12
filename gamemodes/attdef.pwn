@@ -1,23 +1,17 @@
 /*
 
-	v2.4.2
+	v2.5
 
-	- Fixed /back command: players could use it even if they weren't in AFK mode.
-	- Fixed a minor bug with Players on CP HP: HP is no longer displayed as a float number.
-	- Fixed: Players on CP's HP textdraw wasn't updated (even if they lost HP) until they re-entered CP.
-	- Fixed: target-info textdraws might get stuck on screen.
-	- Fixed negative FPS warning messages.
-	- Now if you shoot someone and they're in a vehicle, you see their vehicle HP on target-info textdraw.
-	- You can now disable/enable player body labels (ping, fps ..etc) from /config.
-	- Added a command /togspecs to hide/show spectators textdraws.
-	- Fixed a few problems with team leading system: most of the times you couldn't lead your team while no one was leading it.
-	- Fixed a bug with /specoff: team damage textdraws got stuck on your screen.
-	
+    - Added a public command (/alladmins) to bring a list of all server admins.
+    - Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.
+    - Fixed a bug that players would leave a blank graffito when they left the server.
+    - Fixed a bug that defenders could abuse some map bugs to stop CP unfairly.
+    
 */
 
 
-new 	GM_VERSION[6] =		"2.4.2"; // Don't forget to change the length
-#define GM_NAME				"Attack-Defend v2.4.2"
+new 	GM_VERSION[6] =		"2.5.0"; // Don't forget to change the length
+#define GM_NAME				"Attack-Defend v2.5"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -276,6 +270,7 @@ new ColScheme[10] = ""COL_PRIM"";
 #define MAX_INI_ENTRY_TEXT 	80
 
 
+#define DIALOG_NO_RESPONSE              0
 #define DIALOG_WEAPONS_TYPE     		1
 #define DIALOG_CURRENT_TOTAL    		2
 #define DIALOG_TEAM_SCORE       		3
@@ -3055,6 +3050,8 @@ public OnGameModeInit()
 	LoadDMs(); // Loads DMs
 	LoadDuels(); // Loads Duels
     LoadGraffs(); // Loads Graffs
+    
+    AddFoxGlitchFix(); // Fixes BASE 42 glitch
 
 
 	#if OBJECTS == 1
@@ -3790,7 +3787,7 @@ public OnPlayerDisconnect(playerid, reason)
 {
 	if(CreatingTextO[playerid])
 	{
-	    PlayerSaveNewGraff(playerid);
+	    //PlayerSaveNewGraff(playerid);
 	}
 
 	if(Player[playerid][Spectating] == true && IsPlayerConnected(Player[playerid][IsSpectatingID])) StopSpectate(playerid);
@@ -4640,7 +4637,12 @@ public OnPlayerEnterCheckpoint(playerid) {
 
 			} case DEFENDER: {
 			    //PlayersInCP = 0;
-			    CurrentCPTime = ConfigCPTime;
+			    new Float:defPos[3];
+			    GetPlayerPos(playerid, defPos[0], defPos[1], defPos[2]);
+			    if(defPos[2] >= BCPSpawn[Current][2])
+			    	CurrentCPTime = ConfigCPTime;
+				else
+				    SendClientMessageToAll(-1, sprintf(""COL_PRIM"Improper CP touch detected by {FFFFFF}%s", Player[playerid][Name]));
 
 			    /*foreach(new i : Player) {
 			        if(Player[i][WasInCP] == true) {
@@ -6120,8 +6122,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			TextDrawSetString(WarModeText, iString);
 
 			foreach(new i : Player) {
-			    for(new j = 0; j < 55; j ++)
-  					Player[i][WeaponStat][j] = 0;
+			    //for(new j = 0; j < 55; j ++)
+  				//	Player[i][WeaponStat][j] = 0;
    				Player[i][TotalKills] = 0;
 				Player[i][TotalDeaths] = 0;
 				Player[i][TotalDamage] = 0;
@@ -7434,49 +7436,17 @@ CMD:updates(playerid, params[])
 
 	string = "";
 	
-	strcat(string, "{00FF00}Attack-Defend v2.4.2 updates:\n");
+	strcat(string, "{00FF00}Attack-Defend v2.5 updates:\n");
 
-	strcat(string, "\n{FFFFFF}- Fixed a minor bug with Players on CP HP: HP is no longer displayed as a float number.");
-	strcat(string, "\n{FFFFFF}- Fixed: Players on CP's HP textdraw wasn't updated (even if they lost HP) until they re-entered CP.");
-	strcat(string, "\n{FFFFFF}- Fixed: target-info textdraws might get stuck on screen.");
-    strcat(string, "\n{FFFFFF}- Fixed negative FPS warning messages.");
-	strcat(string, "\n{FFFFFF}- Now if you shoot someone and they're in a vehicle, you see their vehicle HP on target-info textdraw.");
-	strcat(string, "\n{FFFFFF}- You can now disable/enable player body labels (ping, fps ..etc) from /config.");
-	strcat(string, "\n{FFFFFF}- Added a command /togspecs to hide/show spectators textdraws.");
-    strcat(string, "\n{FFFFFF}- Fixed a few problems with team leading system: most of the times you couldn't lead your team while no one was leading it.");
-	strcat(string, "\n{FFFFFF}- Fixed a bug with /specoff: team damage textdraws got stuck on your screen.");
-	strcat(string, "\n{FFFFFF}");
-	strcat(string, "\n{FFFFFF}");
-	strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}- Added a public command (/alladmins) to bring a list of all server admins.");
+    strcat(string, "\n{FFFFFF}- Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.");
+    strcat(string, "\n{FFFFFF}- Fixed a bug that player would leave a blank graffito when they left the server.");
+    strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could abuse some map bugs to stop CP unfairly.");
+    strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}");
 	
-	
-    strcat(string, "\n{00FF00}Attack-Defend v2.4.1 updates:\n");
-
-	strcat(string, "\n{FFFFFF}- Several players can be spraying graffiti at the same time with no problem.");
-	strcat(string, "\n{FFFFFF}- Players are auto-given knifes now on round start. (/knife to remove it and disable from /config)");
-	strcat(string, "\n{FFFFFF}- Fixed: when you timed out on base start countdown, you would not see CP when you got re-added.");
-	strcat(string, "\n{FFFFFF}- Heli-killing and car-ramming protection should now work during rounds only.");
-	strcat(string, "\n{FFFFFF}- Fixed: Players-in-cp textdraw interfered with spec info textdraws");
-
-    strcat(string, "\n{00FF00}Attack-Defend v2.4 updates:\n");
-
-	strcat(string, "\n{FFFFFF}- Fixed a few minor bugs which appeared in the previous version.");
- 	strcat(string, "\n{FFFFFF}- Feature: you can now lead your team by pressing the key 'H' while being in round.");
-	strcat(string, "\n{FFFFFF}- Fixed: players' net stats were checked in duels even if they got netcheck status disabled.");
-	strcat(string, "\n{FFFFFF}- Added /changename command to change your in-game name.");
-	strcat(string, "\n{FFFFFF}- Added graffiti system: /spray, /seegraff and /deletegraff.");
-	strcat(string, "\n{FFFFFF}- Added a version checker to tell whether your gamemode version is up-to-date or not. (/checkversion)");
-	strcat(string, "\n{FFFFFF}- Added a command to clear admin command log file. (/clearadmcmd)");
-	strcat(string, "\n{FFFFFF}- Added spectation player info textdraws. (not optional)");
-	strcat(string, "\n{FFFFFF}- Added team-chat for team referee.");
-	strcat(string, "\n{FFFFFF}- Fixed: team-mate visibility on radar.");
-	strcat(string, "\n{FFFFFF}- /ac should now work for admins level 3 and higher.");
-	strcat(string, "\n{FFFFFF}- Added /chatcolor command");
-	strcat(string, "\n{FFFFFF}- Players on CP HPs are shown.");
-	strcat(string, "\n{FFFFFF}- FPS counter shows above 200 FPS");
-
-
-
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
 	return 1;
 }
@@ -11494,6 +11464,27 @@ CMD:help(playerid, params[])
 
 	return 1;
 }
+
+CMD:alladmins(playerid, params[])
+{
+    new DBResult:res = db_query(sqliteconnection, "SELECT * FROM Players WHERE LEVEL < 6 AND LEVEL > 0 ORDER BY Level DESC");
+	new holdStr[64];
+	new bigStr[512];
+	
+	do
+	{
+	    db_get_field_assoc(res, "Name", holdStr, sizeof(holdStr));
+		printf("Name: %s", holdStr);
+		format(bigStr, sizeof bigStr, "%s%s", bigStr, holdStr);
+		db_get_field_assoc(res, "Level", holdStr, sizeof(holdStr));
+		format(bigStr, sizeof bigStr, "%s [%d]\n", bigStr, strval(holdStr));
+	}
+	while(db_next_row(res));
+	db_free_result(res);
+	ShowPlayerDialog(playerid, DIALOG_NO_RESPONSE, DIALOG_STYLE_MSGBOX, "All Server Admins", bigStr, "Okay", "");
+	return 1;
+}
+
 /* Changes Occurance of COL_PRIM to value contained in ColScheme */
 CMD:chatcolor(playerid,params[])
 {
@@ -17136,6 +17127,19 @@ public SpawnConnectedPlayer(playerid, team)
 // Stocks
 //------------------------------------------------------------------------------
 
+stock AddFoxGlitchFix()
+{
+    new obj = CreateObject(19353, 2487.883789, -1962.822143, 13.53077, 0, 0, -88.483413);
+   	SetObjectMaterialText(obj, "GG FOX", 0, 50);
+
+   	obj = CreateObject(19353, 2489.435302, -1961.161254, 13.538647, 0, 0, 0.368316);
+   	SetObjectMaterialText(obj, "FAIL", 0, 50);
+
+   	obj = CreateObject(19353, 2486.198486, -1961.272705, 13.537899, 0, 0, 183.032867);
+   	SetObjectMaterialText(obj, "FAIL", 0, 50);
+	return 1;
+}
+
 /*
 stock ShowHitArrow(playerid, hitterid)
 {
@@ -19677,7 +19681,7 @@ stock StorePlayerVariablesMin(playerid) {
 			SaveVariables[i][tshotsHit] =   Player[playerid][TotalshotsHit];
 			SaveVariables[i][tBulletsShot] = Player[playerid][TotalBulletsFired];
 
-			for(new j = 0; j < MAX_PLAYERS; j ++)
+			for(new j = 0; j < 55; j ++)
 		 		SaveVariables[i][WeaponStat][j] = Player[playerid][WeaponStat][j];
 
 			SaveVariables[i][gHealth]  =   0;
@@ -19758,7 +19762,7 @@ stock StorePlayerVariables(playerid) {
 			SaveVariables[i][tshotsHit] =   Player[playerid][TotalshotsHit];
 			SaveVariables[i][tBulletsShot] = Player[playerid][TotalBulletsFired];
 
-			for(new j = 0; j < MAX_PLAYERS; j ++)
+			for(new j = 0; j < 55; j ++)
 				 SaveVariables[i][WeaponStat][j] = Player[playerid][WeaponStat][j];
 
 			SaveVariables[i][WeaponsPicked] = Player[playerid][WeaponPicked];
@@ -19810,7 +19814,7 @@ stock LoadPlayerVariables(playerid)
 			 	Player[playerid][TotalshotsHit]		=	SaveVariables[i][tshotsHit];
 			 	Player[playerid][TotalBulletsFired] = 	SaveVariables[i][tBulletsShot];
 
-			 	for(new j = 0; j < MAX_PLAYERS; j ++)
+			 	for(new j = 0; j < 55; j ++)
     				Player[playerid][WeaponStat][j] = SaveVariables[i][WeaponStat][j];
 
                 ResetSaveVariables(i);
@@ -19837,7 +19841,7 @@ stock LoadPlayerVariables(playerid)
 				Player[playerid][RoundDeaths]       =	SaveVariables[i][RDeaths];
 				Player[playerid][RoundDamage]       =	SaveVariables[i][RDamage];
 
-                for(new j = 0; j < MAX_PLAYERS; j ++)
+                for(new j = 0; j < 55; j ++)
     				Player[playerid][WeaponStat][j] = SaveVariables[i][WeaponStat][j];
 
 
@@ -19875,7 +19879,7 @@ stock LoadPlayerVariables(playerid)
 		 	Player[playerid][TotalshotsHit]	=	SaveVariables[i][tshotsHit];
 		 	Player[playerid][TotalBulletsFired] = SaveVariables[i][tBulletsShot];
 
-		 	for(new j = 0; j < MAX_PLAYERS; j ++)
+		 	for(new j = 0; j < 55; j ++)
 				Player[playerid][WeaponStat][j] = SaveVariables[i][WeaponStat][j];
 
             if(SaveVariables[i][WasCrashedInStart] == false)
@@ -20117,7 +20121,7 @@ stock ResetSaveVariables(i) {
     SaveVariables[i][TDeaths] = 0;
     SaveVariables[i][TDamage] = 0;
     SaveVariables[i][RoundID] = -1;
-    for(new j = 0; j < MAX_PLAYERS; j ++)
+    for(new j = 0; j < 55; j ++)
     	SaveVariables[i][WeaponStat][j] = 0;
 
     SaveVariables[i][WasCrashedInStart] = false;
@@ -20240,6 +20244,17 @@ stock RadarFix() {
 			}
 		}
     }
+	switch(GameType)
+	{
+	    case BASE:
+	    {
+	        GangZoneShowForAll(CPZone, 0xFF000044);
+	    }
+	    case ARENA:
+	    {
+	        GangZoneShowForAll(ArenaZone,0x95000099);
+	    }
+	}
     return 1;
 }
 
@@ -24161,8 +24176,8 @@ public WarEnded()
 
 
 		foreach(new i : Player) {
-		    for(new j = 0; j < 55; j ++)
-				Player[i][WeaponStat][j] = 0;
+		    //for(new j = 0; j < 55; j ++)
+			//	Player[i][WeaponStat][j] = 0;
 			Player[i][TotalKills] = 0;
 			Player[i][TotalDeaths] = 0;
 			Player[i][TotalDamage] = 0;
