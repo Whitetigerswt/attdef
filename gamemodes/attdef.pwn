@@ -6,6 +6,7 @@
     - Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.
     - Fixed a bug that players would leave a blank graffito when they left the server.
     - Fixed a bug that defenders could abuse some map bugs to stop CP unfairly.
+	- Added new duel arenas.
     
 */
 
@@ -3053,12 +3054,9 @@ public OnGameModeInit()
 	LoadDMs(); // Loads DMs
 	LoadDuels(); // Loads Duels
     LoadGraffs(); // Loads Graffs
-<<<<<<< HEAD
-    
-    AddFoxGlitchFix(); // Fixes BASE 42 glitch
-=======
     CreateDuelArena();
->>>>>>> 176c2b85daa36ae81b84a155e413b6783c79eeff
+    
+    //AddFoxGlitchFix(); // Fixes BASE 42 glitch
 
 
 	#if OBJECTS == 1
@@ -7444,11 +7442,13 @@ CMD:updates(playerid, params[])
 	string = "";
 	
 	strcat(string, "{00FF00}Attack-Defend v2.5 updates:\n");
-
+	
+    strcat(string, "\n{FFFFFF}- Added new duel arenas.");
     strcat(string, "\n{FFFFFF}- Added a public command (/alladmins) to bring a list of all server admins.");
     strcat(string, "\n{FFFFFF}- Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that player would leave a blank graffito when they left the server.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could abuse some map bugs to stop CP unfairly.");
+    strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
