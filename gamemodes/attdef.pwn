@@ -8,9 +8,9 @@
     - Fixed a bug that defenders/attackers could abuse some map bugs to stop/take CP unfairly.
 	- Added new duel arenas.
 	- Vehicle spawning commands now work with IDs as well.
-    - Fixed a bug with duellers sign text.
     - Fixed a bug that defenders could stay longer inside an attacker's vehicle.
     - Added weapon statistics system (check out /weaponstats).
+    - Added /rp command which redirects to /para command to satisfy users from other GMs.
 */
 
 
@@ -391,7 +391,6 @@ new Text: introSelect;
 
 // - Global Textdraws -
 
-new Text: WeaponStatsTD; // Weapon statistics
 new Text: AntiLagTD; // Antilag
 new Text: WebText;  //webtxt
 new Text: ACText;   //actxt
@@ -583,7 +582,6 @@ enum PlayerVariables {
 	bool:TextPos,
 	bool:ShowSpecs,
 	bool:blockedall,    //blockpm
-	bool:ViewingWeaponStats,
 	RadioID,    		//radio
 	NetCheck,
 	//duel
@@ -856,6 +854,7 @@ new OnlineInChannel[MAX_CHANNELS];
 
 // - Global Strings -
 
+new WeaponStatsStr[3000];
 new ChatString[128];
 new ServerPass[128];
 new hostname[64];
@@ -7468,10 +7467,10 @@ CMD:updates(playerid, params[])
     strcat(string, "\n{FFFFFF}- Added a public command (/alladmins) to bring a list of all server admins.");
     strcat(string, "\n{FFFFFF}- Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that player would leave a blank graffito when they left the server.");
-    strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could abuse some map bugs to stop CP unfairly.");
+    strcat(string, "\n{FFFFFF}- Fixed a bug that defenders/attackers could abuse some map bugs to stop/take CP unfairly.");
     strcat(string, "\n{FFFFFF}- Vehicle spawning commands now work with IDs as well.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could stay longer inside an attacker's vehicle.");
-    strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}- Added /rp command which redirects to /para command to satisfy users from other GMs.");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
@@ -9893,6 +9892,7 @@ CMD:war(playerid, params[])
 		SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has set the match to end!", Player[playerid][Name]));
 		SendClientMessageToAll(-1, ""COL_PRIM"Preparing End Match Results..");
 		SendClientMessageToAll(-1, ""COL_PRIM"If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
+        SendClientMessageToAll(-1, ""COL_PRIM"Type {FFFFFF}/weaponstats "COL_PRIM"to see a list of players weapon statistics.");
 
 		return 1;
 	} else if(isnull(TeamBName)) return SendUsageMessage(playerid,"/war ([Team A] [Team B]) (end)");
@@ -10924,6 +10924,12 @@ CMD:para(playerid, params[])
 	return 1;
 }
 
+CMD:rp(playerid, params[])
+{
+	cmd_para(playerid, params);
+	return 1;
+}
+
 CMD:knife(playerid, params[])
 {
 	RemovePlayerWeapon(playerid, WEAPON_KNIFE);
@@ -11499,54 +11505,34 @@ CMD:help(playerid, params[])
 	return 1;
 }
 
-stock CreateWeaponStatsTextDraw()
-{
-    WeaponStatsTD = TextDrawCreate(177.000000, 152.000000, "  ");
-	TextDrawBackgroundColor(WeaponStatsTD, 255);
-	TextDrawFont(WeaponStatsTD, 1);
-	TextDrawLetterSize(WeaponStatsTD, 0.160000, 0.799999);
-	TextDrawColor(WeaponStatsTD, -1);
-	TextDrawSetOutline(WeaponStatsTD, 0);
-	TextDrawSetProportional(WeaponStatsTD, 1);
-	TextDrawSetShadow(WeaponStatsTD, 1);
-	TextDrawUseBox(WeaponStatsTD, 1);
-	TextDrawBoxColor(WeaponStatsTD, 51);
-	TextDrawTextSize(WeaponStatsTD, 562.000000, -31.000000);
-}
-
 stock SetWeaponStatsString()
 {
-    new str[1024];
 	foreach(new i : Player)
 	{
-	    format(str, sizeof str, "%s~b~~h~~h~%s ~y~| ~w~[Deagle: ~r~~h~~h~%d~w~] [Shotgun: ~r~~h~~h~%d~w~] [M4: ~r~~h~~h~%d~w~] [Spas: ~r~~h~~h~%d~w~] [Rifle: ~r~~h~~h~%d~w~] [Sniper: ~r~~h~~h~%d~w~] [AK: ~r~~h~~h~%d~w~] [MP5: ~r~~h~~h~%d~w~] [Punch: ~r~~h~~h~%d~w~]\n",
-			str, Player[i][Name], Player[i][WeaponStat][WEAPON_DEAGLE], Player[i][WeaponStat][WEAPON_SHOTGUN], Player[i][WeaponStat][WEAPON_M4], Player[i][WeaponStat][WEAPON_SHOTGSPA], Player[i][WeaponStat][WEAPON_RIFLE], Player[i][WeaponStat][WEAPON_SNIPER], Player[i][WeaponStat][WEAPON_AK47], Player[i][WeaponStat][WEAPON_MP5], Player[i][WeaponStat][0]);
+	    if((Player[i][WeaponStat][WEAPON_DEAGLE] + Player[i][WeaponStat][WEAPON_SHOTGUN] + Player[i][WeaponStat][WEAPON_M4] + Player[i][WeaponStat][WEAPON_SHOTGSPA] + Player[i][WeaponStat][WEAPON_RIFLE] + Player[i][WeaponStat][WEAPON_SNIPER] + Player[i][WeaponStat][WEAPON_AK47] + Player[i][WeaponStat][WEAPON_MP5] + Player[i][WeaponStat][0]) <= 0)
+			continue;
+			
+		format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {FFFFFF}[Deagle: {CC0000}%d{FFFFFF}] [Shotgun: {CC0000}%d{FFFFFF}] [M4: {CC0000}%d{FFFFFF}] [Spas: {CC0000}%d{FFFFFF}] [Rifle: {CC0000}%d{FFFFFF}] [Sniper: {CC0000}%d{FFFFFF}] [AK: {CC0000}%d{FFFFFF}] [MP5: {CC0000}%d{FFFFFF}] [Punch: {CC0000}%d{FFFFFF}]\n",
+			WeaponStatsStr, Player[i][Name], Player[i][WeaponStat][WEAPON_DEAGLE], Player[i][WeaponStat][WEAPON_SHOTGUN], Player[i][WeaponStat][WEAPON_M4], Player[i][WeaponStat][WEAPON_SHOTGSPA], Player[i][WeaponStat][WEAPON_RIFLE], Player[i][WeaponStat][WEAPON_SNIPER], Player[i][WeaponStat][WEAPON_AK47], Player[i][WeaponStat][WEAPON_MP5], Player[i][WeaponStat][0]);
 	}
 	
 	for(new i = 0; i < SAVE_SLOTS; i ++)
 	{
 		if(strlen(SaveVariables[i][pName]) > 2)
 		{
-			format(str, sizeof str, "%s~b~~h~~h~%s ~y~| ~w~[Deagle: ~r~~h~~h~%d~w~] [Shotgun: ~r~~h~~h~%d~w~] [M4: ~r~~h~~h~%d~w~] [Spas: ~r~~h~~h~%d~w~] [Rifle: ~r~~h~~h~%d~w~] [Sniper: ~r~~h~~h~%d~w~] [AK: ~r~~h~~h~%d~w~] [MP5: ~r~~h~~h~%d~w~] [Punch: ~r~~h~~h~%d~w~]\n",
-				str, SaveVariables[i][pName], SaveVariables[i][WeaponStat][WEAPON_DEAGLE], SaveVariables[i][WeaponStat][WEAPON_SHOTGUN], SaveVariables[i][WeaponStat][WEAPON_M4], SaveVariables[i][WeaponStat][WEAPON_SHOTGSPA], SaveVariables[i][WeaponStat][WEAPON_RIFLE], SaveVariables[i][WeaponStat][WEAPON_SNIPER], SaveVariables[i][WeaponStat][WEAPON_AK47], SaveVariables[i][WeaponStat][WEAPON_MP5], SaveVariables[i][WeaponStat][0]);
+		    if((SaveVariables[i][WeaponStat][WEAPON_DEAGLE] + SaveVariables[i][WeaponStat][WEAPON_SHOTGUN] + SaveVariables[i][WeaponStat][WEAPON_M4] + SaveVariables[i][WeaponStat][WEAPON_SHOTGSPA] + SaveVariables[i][WeaponStat][WEAPON_RIFLE] + SaveVariables[i][WeaponStat][WEAPON_SNIPER] + SaveVariables[i][WeaponStat][WEAPON_AK47] + SaveVariables[i][WeaponStat][WEAPON_MP5] + SaveVariables[i][WeaponStat][0]) <= 0)
+				continue;
+		
+			format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {FFFFFF}[Deagle: {CC0000}%d{FFFFFF}] [Shotgun: {CC0000}%d{FFFFFF}] [M4: {CC0000}%d{FFFFFF}] [Spas: {CC0000}%d{FFFFFF}] [Rifle: {CC0000}%d{FFFFFF}] [Sniper: {CC0000}%d{FFFFFF}] [AK: {CC0000}%d{FFFFFF}] [MP5: {CC0000}%d{FFFFFF}] [Punch: {CC0000}%d{FFFFFF}]\n",
+				WeaponStatsStr, SaveVariables[i][pName], SaveVariables[i][WeaponStat][WEAPON_DEAGLE], SaveVariables[i][WeaponStat][WEAPON_SHOTGUN], SaveVariables[i][WeaponStat][WEAPON_M4], SaveVariables[i][WeaponStat][WEAPON_SHOTGSPA], SaveVariables[i][WeaponStat][WEAPON_RIFLE], SaveVariables[i][WeaponStat][WEAPON_SNIPER], SaveVariables[i][WeaponStat][WEAPON_AK47], SaveVariables[i][WeaponStat][WEAPON_MP5], SaveVariables[i][WeaponStat][0]);
 		}
 	}
-	TextDrawSetString(WeaponStatsTD, str);
 	return 1;
 }
 
 CMD:weaponstats(playerid, params[])
 {
-	if(!Player[playerid][ViewingWeaponStats])
-	{
-		TextDrawShowForPlayer(playerid, WeaponStatsTD);
-		Player[playerid][ViewingWeaponStats] = true;
-	}
-	else
-	{
-	    TextDrawHideForPlayer(playerid, WeaponStatsTD);
-		Player[playerid][ViewingWeaponStats] = false;
-	}
+	ShowPlayerDialog(playerid, DIALOG_NO_RESPONSE, DIALOG_STYLE_MSGBOX, "Players Weapon Statistics", WeaponStatsStr, "Close", "");
 	return 1;
 }
 
@@ -14383,9 +14369,6 @@ new Position = 10;
 	TextDrawColor( LOGO, 0xFFFFFFFF);
 	TextDrawTextSize( LOGO, 512, 512);
 */
-
-
-	CreateWeaponStatsTextDraw();
 
 	//webtxt
 	WebText = TextDrawCreate(555.000000, 12.000000, "_");
@@ -20559,14 +20542,6 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 		return 1;
 	}
 
-    	
-
-    if(Player[playerid][ViewingWeaponStats] == true && PRESSED(4))
-	{
-	   	TextDrawHideForPlayer(playerid, WeaponStatsTD);
-		Player[playerid][ViewingWeaponStats] = false;
-	}
-
 
 	if(Player[playerid][TextDrawOnScreen] == true && PRESSED(4)) {
 	    HideEndRoundTextDraw(playerid);
@@ -23700,6 +23675,7 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 			SetTimer("PreMatchResults", 5000, 0);
 			SendClientMessageToAll(-1, ""COL_PRIM"Preparing Pre-Match Results..");
 			SendClientMessageToAll(-1, ""COL_PRIM"If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
+            SendClientMessageToAll(-1, ""COL_PRIM"Type {FFFFFF}/weaponstats "COL_PRIM"to see a list of players weapon statistics.");
 		}
 	} else if(ESLMode == true && OneOnOne == true) {
 	    if((TeamScore[ATTACKER] == 10 || TeamScore[DEFENDER] == 10) && CurrentRound != TotalRounds) {
@@ -23707,6 +23683,7 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 			SetTimer("PreMatchResults", 5000, 0);
 			SendClientMessageToAll(-1, ""COL_PRIM"Preparing Pre-Match Results..");
 			SendClientMessageToAll(-1, ""COL_PRIM"If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
+            SendClientMessageToAll(-1, ""COL_PRIM"Type {FFFFFF}/weaponstats "COL_PRIM"to see a list of players weapon statistics.");
 		}
 	}
 
@@ -23731,6 +23708,7 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 		SetTimer("WarEnded", 5000, 0);
 		SendClientMessageToAll(-1, ""COL_PRIM"Preparing End Match Results..");
 		SendClientMessageToAll(-1, ""COL_PRIM"If you missed the results screen by hiding the current textdraws, type {FFFFFF}/showagain");
+        SendClientMessageToAll(-1, ""COL_PRIM"Type {FFFFFF}/weaponstats "COL_PRIM"to see a list of players weapon statistics.");
 	}
 
 
@@ -24035,6 +24013,8 @@ public WarEnded()
     TextDrawSetString(topTextScore, iString);
 
 	MatchEnded = true;
+	
+	SetWeaponStatsString();
 
 	if(ESLMode == false) {
 		CurrentRound = 0;
