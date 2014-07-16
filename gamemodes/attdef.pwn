@@ -5,9 +5,12 @@
     - Added a public command (/alladmins) to bring a list of all server admins.
     - Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.
     - Fixed a bug that players would leave a blank graffito when they left the server.
-    - Fixed a bug that defenders could abuse some map bugs to stop CP unfairly.
+    - Fixed a bug that defenders/attackers could abuse some map bugs to stop/take CP unfairly.
 	- Added new duel arenas.
-    
+	- Vehicle spawning commands now work with IDs as well.
+    - Fixed a bug with duellers sign text.
+    - Fixed a bug that defenders could stay longer inside an attacker's vehicle.
+    - Added weapon statistics system (check out /weaponstats).
 */
 
 
@@ -388,6 +391,7 @@ new Text: introSelect;
 
 // - Global Textdraws -
 
+new Text: WeaponStatsTD; // Weapon statistics
 new Text: AntiLagTD; // Antilag
 new Text: WebText;  //webtxt
 new Text: ACText;   //actxt
@@ -579,6 +583,7 @@ enum PlayerVariables {
 	bool:TextPos,
 	bool:ShowSpecs,
 	bool:blockedall,    //blockpm
+	bool:ViewingWeaponStats,
 	RadioID,    		//radio
 	NetCheck,
 	//duel
@@ -4457,7 +4462,10 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 	        Player[playerid][iLastVehicle] = GetPlayerVehicleID(playerid);
 
             if(Player[playerid][Team] == DEFENDER && Player[playerid][Playing] == true) {
-				RemovePlayerFromVehicle(playerid);
+				//RemovePlayerFromVehicle(playerid);
+				new Float:defPos[3];
+				GetPlayerPos(playerid, defPos[0], defPos[1], defPos[2]);
+				SetPlayerPos(playerid, defPos[0]+1.0, defPos[1]+1.0, defPos[2]+1.0);
 				return 1;
 			}
 
@@ -4497,7 +4505,10 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
             Player[playerid][iLastVehicle] = GetPlayerVehicleID(playerid);
 
 			if(Player[playerid][Team] == DEFENDER && Player[playerid][Playing] == true) {
-				RemovePlayerFromVehicle(playerid);
+				//RemovePlayerFromVehicle(playerid);
+				new Float:defPos[3];
+				GetPlayerPos(playerid, defPos[0], defPos[1], defPos[2]);
+				SetPlayerPos(playerid, defPos[0]+1.0, defPos[1]+1.0, defPos[2]+1.0);
 				return 1;
 			}
 
@@ -4626,6 +4637,11 @@ public OnPlayerEnterCheckpoint(playerid) {
     if(!IsPlayerInAnyVehicle(playerid) && Player[playerid][Playing] == true) {
 		switch(Player[playerid][Team]) {
 		    case ATTACKER: {
+		        new Float:attPos[3];
+			    GetPlayerPos(playerid, attPos[0], attPos[1], attPos[2]);
+			    if(attPos[2] <= BCPSpawn[Current][2])
+			    	return 1;
+			    	
 				PlayersInCP++;
 				Player[playerid][WasInCP] = true;
 
@@ -6531,6 +6547,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				}
 				case 15: {
 					if(ServerAntiLag == false) {
+					    if(Current != -1)
+							return SendErrorMessage(playerid, "You cannot do this while round is in progress.");
 					    ServerAntiLag = true;
 
 					    foreach(new i : Player) {
@@ -6541,6 +6559,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 						TextDrawSetString(AntiLagTD, sprintf("%sAntiLag: ~g~On", MAIN_TEXT_COLOUR));
 						TextDrawShowForAll(AntiLagTD);
 					} else {
+					    if(Current != -1)
+							return SendErrorMessage(playerid, "You cannot do this while round is in progress.");
 					    ServerAntiLag = false;
 					    foreach(new i : Player) {
 					        if(Player[i][Playing] == true) {
@@ -7443,12 +7463,14 @@ CMD:updates(playerid, params[])
 	
 	strcat(string, "{00FF00}Attack-Defend v2.5 updates:\n");
 	
+	strcat(string, "\n{FFFFFF}- Added weapon statistics system (check out /weaponstats).");
     strcat(string, "\n{FFFFFF}- Added new duel arenas.");
     strcat(string, "\n{FFFFFF}- Added a public command (/alladmins) to bring a list of all server admins.");
     strcat(string, "\n{FFFFFF}- Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that player would leave a blank graffito when they left the server.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could abuse some map bugs to stop CP unfairly.");
-    strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}- Vehicle spawning commands now work with IDs as well.");
+    strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could stay longer inside an attacker's vehicle.");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
@@ -11477,6 +11499,57 @@ CMD:help(playerid, params[])
 	return 1;
 }
 
+stock CreateWeaponStatsTextDraw()
+{
+    WeaponStatsTD = TextDrawCreate(177.000000, 152.000000, "  ");
+	TextDrawBackgroundColor(WeaponStatsTD, 255);
+	TextDrawFont(WeaponStatsTD, 1);
+	TextDrawLetterSize(WeaponStatsTD, 0.160000, 0.799999);
+	TextDrawColor(WeaponStatsTD, -1);
+	TextDrawSetOutline(WeaponStatsTD, 0);
+	TextDrawSetProportional(WeaponStatsTD, 1);
+	TextDrawSetShadow(WeaponStatsTD, 1);
+	TextDrawUseBox(WeaponStatsTD, 1);
+	TextDrawBoxColor(WeaponStatsTD, 51);
+	TextDrawTextSize(WeaponStatsTD, 562.000000, -31.000000);
+}
+
+stock SetWeaponStatsString()
+{
+    new str[1024];
+	foreach(new i : Player)
+	{
+	    format(str, sizeof str, "%s~b~~h~~h~%s ~y~| ~w~[Deagle: ~r~~h~~h~%d~w~] [Shotgun: ~r~~h~~h~%d~w~] [M4: ~r~~h~~h~%d~w~] [Spas: ~r~~h~~h~%d~w~] [Rifle: ~r~~h~~h~%d~w~] [Sniper: ~r~~h~~h~%d~w~] [AK: ~r~~h~~h~%d~w~] [MP5: ~r~~h~~h~%d~w~] [Punch: ~r~~h~~h~%d~w~]\n",
+			str, Player[i][Name], Player[i][WeaponStat][WEAPON_DEAGLE], Player[i][WeaponStat][WEAPON_SHOTGUN], Player[i][WeaponStat][WEAPON_M4], Player[i][WeaponStat][WEAPON_SHOTGSPA], Player[i][WeaponStat][WEAPON_RIFLE], Player[i][WeaponStat][WEAPON_SNIPER], Player[i][WeaponStat][WEAPON_AK47], Player[i][WeaponStat][WEAPON_MP5], Player[i][WeaponStat][0]);
+	}
+	
+	for(new i = 0; i < SAVE_SLOTS; i ++)
+	{
+		if(strlen(SaveVariables[i][pName]) > 2)
+		{
+			format(str, sizeof str, "%s~b~~h~~h~%s ~y~| ~w~[Deagle: ~r~~h~~h~%d~w~] [Shotgun: ~r~~h~~h~%d~w~] [M4: ~r~~h~~h~%d~w~] [Spas: ~r~~h~~h~%d~w~] [Rifle: ~r~~h~~h~%d~w~] [Sniper: ~r~~h~~h~%d~w~] [AK: ~r~~h~~h~%d~w~] [MP5: ~r~~h~~h~%d~w~] [Punch: ~r~~h~~h~%d~w~]\n",
+				str, SaveVariables[i][pName], SaveVariables[i][WeaponStat][WEAPON_DEAGLE], SaveVariables[i][WeaponStat][WEAPON_SHOTGUN], SaveVariables[i][WeaponStat][WEAPON_M4], SaveVariables[i][WeaponStat][WEAPON_SHOTGSPA], SaveVariables[i][WeaponStat][WEAPON_RIFLE], SaveVariables[i][WeaponStat][WEAPON_SNIPER], SaveVariables[i][WeaponStat][WEAPON_AK47], SaveVariables[i][WeaponStat][WEAPON_MP5], SaveVariables[i][WeaponStat][0]);
+		}
+	}
+	TextDrawSetString(WeaponStatsTD, str);
+	return 1;
+}
+
+CMD:weaponstats(playerid, params[])
+{
+	if(!Player[playerid][ViewingWeaponStats])
+	{
+		TextDrawShowForPlayer(playerid, WeaponStatsTD);
+		Player[playerid][ViewingWeaponStats] = true;
+	}
+	else
+	{
+	    TextDrawHideForPlayer(playerid, WeaponStatsTD);
+		Player[playerid][ViewingWeaponStats] = false;
+	}
+	return 1;
+}
+
 CMD:alladmins(playerid, params[])
 {
     new DBResult:res = db_query(sqliteconnection, "SELECT * FROM Players WHERE LEVEL < 6 AND LEVEL > 0 ORDER BY Level DESC");
@@ -12592,6 +12665,9 @@ CMD:nolag(playerid, params[])
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
 
 
+    if(Current != -1)
+		return SendErrorMessage(playerid, "You cannot do this while round is in progress.");
+
 	if(ServerAntiLag == false) {
 	    ServerAntiLag = true;
 
@@ -12978,7 +13054,12 @@ CMD:acar(playerid, params[])
 	if(Player[playerid][Playing] == true && Player[playerid][TimesSpawned] >= 3) return SendErrorMessage(playerid,"You have spawned the maximum number of vehicles.");
 	if(IsPlayerInAnyVehicle(playerid) && GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendErrorMessage(playerid,"Can't spawn a vehicle while you are not the driver.");
 
-	new veh = GetVehicleModelID(params);
+	new veh;
+
+	if(IsNumeric(params))
+	    veh = strval(params);
+	else
+		veh = GetVehicleModelID(params);
     if(veh < 400 || veh > 611) return SendErrorMessage(playerid,"Invalid Vehicle Name."); //In samp there is no vehile with ID below 400 or above 611
 
 	if(Player[playerid][Playing] == false) {
@@ -13065,8 +13146,13 @@ CMD:car(playerid, params[])
 	if(Player[playerid][Playing] == true && Player[playerid][TimesSpawned] >= 3) return SendErrorMessage(playerid,"You have spawned the maximum number of vehicles.");
 	if(IsPlayerInAnyVehicle(playerid) && GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendErrorMessage(playerid,"Can't spawn a vehicle while you are not the driver.");
 
+    new veh;
 
-	new veh = GetVehicleModelID(params);
+	if(IsNumeric(params))
+	    veh = strval(params);
+	else
+		veh = GetVehicleModelID(params);
+		
     if(veh < 400 || veh > 611) return SendErrorMessage(playerid,"Invalid Vehicle Name."); //In samp there is no vehile with ID below 400 or above 611
 
 	//Block some vehiles that u don't like e.g. Tank, hunter. It wil be annoying in lobby. To search for more vehicle IDs try samp wiki.
@@ -14299,6 +14385,7 @@ new Position = 10;
 */
 
 
+	CreateWeaponStatsTextDraw();
 
 	//webtxt
 	WebText = TextDrawCreate(555.000000, 12.000000, "_");
@@ -20315,7 +20402,7 @@ stock DestroyAllVehicles() {
 
 SyncPlayer(playerid)
 {
-	if(RoundPaused == true) return 1;
+	if(RoundPaused == true && Player[playerid][Playing]) return 1;
 	if(Player[playerid][Syncing] == true) return 1;
 	if(AllowStartBase == false) return 1;
 	if(IsPlayerInAnyVehicle(playerid)) return 1;
@@ -20470,6 +20557,14 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 	if(newkeys == 160 && (GetPlayerWeapon(playerid) == 0 || GetPlayerWeapon(playerid) == 1) && !IsPlayerInAnyVehicle(playerid)){
 		SyncPlayer(playerid);
 		return 1;
+	}
+
+    	
+
+    if(Player[playerid][ViewingWeaponStats] == true && PRESSED(4))
+	{
+	   	TextDrawHideForPlayer(playerid, WeaponStatsTD);
+		Player[playerid][ViewingWeaponStats] = false;
 	}
 
 
@@ -24173,6 +24268,7 @@ public WarEnded()
 	SendClientMessageToAll(-1, "{FFFFFF}---------------------------------------------------------------");
 
 
+    SetWeaponStatsString();
 
 	if(ESLMode == false) {
 		TeamName[ATTACKER] = "Alpha";
@@ -31872,7 +31968,7 @@ SetDuelSignText(playerid, duelerid)
 	format(string, sizeof(string), "%s vs %s", Player[playerid][Name], Player[duelerid][Name]);
 
 	// Set all the object text to our new formatted string.
-	for(new i = 0; i < sizeof(g_oSignText); ++i) 
+	for(new i = 0; i < sizeof(g_oSignText); i ++)
 	{
 		SetObjectMaterialText(g_oSignText[i], string, 0, 110, "Ariel", 30, 1, -16711936, -10066330, 1);
 	}
