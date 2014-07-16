@@ -4638,7 +4638,7 @@ public OnPlayerEnterCheckpoint(playerid) {
 		    case ATTACKER: {
 		        new Float:attPos[3];
 			    GetPlayerPos(playerid, attPos[0], attPos[1], attPos[2]);
-			    if(attPos[2] <= BCPSpawn[Current][2])
+			    if(attPos[2] <= (BCPSpawn[Current][2] - 1.4))
 			    	return 1;
 			    	
 				PlayersInCP++;
@@ -4661,10 +4661,11 @@ public OnPlayerEnterCheckpoint(playerid) {
 			    //PlayersInCP = 0;
 			    new Float:defPos[3];
 			    GetPlayerPos(playerid, defPos[0], defPos[1], defPos[2]);
-			    if(defPos[2] >= BCPSpawn[Current][2])
+			    if(defPos[2] >= (BCPSpawn[Current][2] - 1.4))
 			    	CurrentCPTime = ConfigCPTime;
 				else
-				    SendClientMessageToAll(-1, sprintf(""COL_PRIM"Improper CP touch detected by {FFFFFF}%s", Player[playerid][Name]));
+				    if(CurrentCPTime < ConfigCPTime)
+				    	SendClientMessageToAll(-1, sprintf(""COL_PRIM"Improper CP touch done by {FFFFFF}%s", Player[playerid][Name]));
 
 			    /*foreach(new i : Player) {
 			        if(Player[i][WasInCP] == true) {
