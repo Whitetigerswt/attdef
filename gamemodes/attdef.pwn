@@ -11508,6 +11508,7 @@ CMD:help(playerid, params[])
 
 stock SetWeaponStatsString()
 {
+	format(WeaponStatsStr, sizeof WeaponStatsStr, "");
 	foreach(new i : Player)
 	{
 	    if((Player[i][WeaponStat][WEAPON_DEAGLE] + Player[i][WeaponStat][WEAPON_SHOTGUN] + Player[i][WeaponStat][WEAPON_M4] + Player[i][WeaponStat][WEAPON_SHOTGSPA] + Player[i][WeaponStat][WEAPON_RIFLE] + Player[i][WeaponStat][WEAPON_SNIPER] + Player[i][WeaponStat][WEAPON_AK47] + Player[i][WeaponStat][WEAPON_MP5] + Player[i][WeaponStat][0]) <= 0)
