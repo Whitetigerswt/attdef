@@ -11,6 +11,7 @@
     - Fixed a bug that defenders could stay longer inside an attacker's vehicle.
     - Added weapon statistics system (check out /weaponstats).
     - Added /rp command which redirects to /para command to satisfy users from other GMs.
+    - Feature: it is now announced when a player dies if he/she is a spasser, sniper, m4er and etc.
 */
 
 
@@ -673,7 +674,8 @@ enum PlayerVariables {
 	iLastVehicle,
 	LastEditWepLimit,
 	LastEditWeaponSlot,
-	WeaponStat[55]
+	WeaponStat[55],
+	PlayerTypeByWeapon[32]
 
 }
 new Player[MAX_PLAYERS][PlayerVariables];
@@ -4241,8 +4243,13 @@ public OnPlayerDeath(playerid, killerid, reason)
 			GetPlayerHealth(killerid, HP[0]);
 			GetPlayerArmour(killerid, HP[1]);
 */ //duel
-		   	format(iString, sizeof(iString), "%s%s {FFFFFF}killed %s%s {FFFFFF}with %s | %.1f ft | %.0f HP", TextColor[Player[killerid][Team]], Player[killerid][Name], TextColor[Player[playerid][Team]], Player[playerid][Name], WeaponNames[reason],GetDistanceBetweenPlayers(killerid, playerid), (HP[0] + HP[1]));
-            SendClientMessageToAll(-1, iString);
+
+			if(GameType == BASE)
+		   		format(iString, sizeof(iString), "%s%s {FFFFFF}killed %s%s {FFFFFF}<%s%s{FFFFFF}> {FFFFFF}with %s | %.1f ft | %.0f HP", TextColor[Player[killerid][Team]], Player[killerid][Name], TextColor[Player[playerid][Team]], Player[playerid][Name], TextColor[Player[playerid][Team]], Player[playerid][PlayerTypeByWeapon], WeaponNames[reason],GetDistanceBetweenPlayers(killerid, playerid), (HP[0] + HP[1]));
+			else
+			    format(iString, sizeof(iString), "%s%s {FFFFFF}killed %s%s {FFFFFF}with %s | %.1f ft | %.0f HP", TextColor[Player[killerid][Team]], Player[killerid][Name], TextColor[Player[playerid][Team]], Player[playerid][Name], WeaponNames[reason],GetDistanceBetweenPlayers(killerid, playerid), (HP[0] + HP[1]));
+
+			SendClientMessageToAll(-1, iString);
 
             OnPlayerAmmoUpdate(playerid);
 
@@ -5837,6 +5844,60 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			{
 			    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][0], 9999);
 			    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][1], 9999);
+			    switch(GunMenuWeapons[listitem-1][0])
+			    {
+			        case WEAPON_DEAGLE:
+			        {
+			            format(Player[playerid][PlayerTypeByWeapon], 32, "Deagler");
+			        }
+			        case WEAPON_SHOTGSPA:
+			        {
+                        format(Player[playerid][PlayerTypeByWeapon], 32, "Spasser");
+			        }
+			        case WEAPON_M4:
+			        {
+                        format(Player[playerid][PlayerTypeByWeapon], 32, "M4~er");
+			        }
+			        case WEAPON_SNIPER:
+			        {
+                        format(Player[playerid][PlayerTypeByWeapon], 32, "Sniper");
+			        }
+			        case WEAPON_AK47:
+			        {
+                        format(Player[playerid][PlayerTypeByWeapon], 32, "AK~er");
+					}
+					default:
+					{
+                        switch(GunMenuWeapons[listitem-1][1])
+					    {
+		                    case WEAPON_DEAGLE:
+					        {
+					            format(Player[playerid][PlayerTypeByWeapon], 32, "Deagler");
+					        }
+					        case WEAPON_SHOTGSPA:
+					        {
+		                        format(Player[playerid][PlayerTypeByWeapon], 32, "Spasser");
+					        }
+					        case WEAPON_M4:
+					        {
+		                        format(Player[playerid][PlayerTypeByWeapon], 32, "M4~er");
+					        }
+					        case WEAPON_SNIPER:
+					        {
+		                        format(Player[playerid][PlayerTypeByWeapon], 32, "Sniper");
+					        }
+					        case WEAPON_AK47:
+					        {
+		                        format(Player[playerid][PlayerTypeByWeapon], 32, "AK~er");
+							}
+							default:
+							{
+		                        format(Player[playerid][PlayerTypeByWeapon], 32, "Un-recognised");
+							}
+					    }
+					}
+			    }
+			    
 			    if(GiveKnife)
 			    	GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
 
@@ -7465,6 +7526,7 @@ CMD:updates(playerid, params[])
 	
 	strcat(string, "\n{FFFFFF}- Added weapon statistics system (check out /weaponstats).");
     strcat(string, "\n{FFFFFF}- Added new duel arenas.");
+    strcat(string, "\n{FFFFFF}- Feature: it is now announced when a player dies if he/she is a spasser, sniper, m4er and etc.");
     strcat(string, "\n{FFFFFF}- Added a public command (/alladmins) to bring a list of all server admins.");
     strcat(string, "\n{FFFFFF}- Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that player would leave a blank graffito when they left the server.");
@@ -7472,6 +7534,9 @@ CMD:updates(playerid, params[])
     strcat(string, "\n{FFFFFF}- Vehicle spawning commands now work with IDs as well.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could stay longer inside an attacker's vehicle.");
     strcat(string, "\n{FFFFFF}- Added /rp command which redirects to /para command to satisfy users from other GMs.");
+    strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
@@ -20036,6 +20101,59 @@ stock LoadPlayerVariables(playerid)
 					{
 					    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][0], 9999);
 					    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][1], 9999);
+					    switch(GunMenuWeapons[listitem-1][0])
+					    {
+					        case WEAPON_DEAGLE:
+					        {
+					            format(Player[playerid][PlayerTypeByWeapon], 32, "Deagler");
+					        }
+					        case WEAPON_SHOTGSPA:
+					        {
+		                        format(Player[playerid][PlayerTypeByWeapon], 32, "Spasser");
+					        }
+					        case WEAPON_M4:
+					        {
+		                        format(Player[playerid][PlayerTypeByWeapon], 32, "M4~er");
+					        }
+					        case WEAPON_SNIPER:
+					        {
+		                        format(Player[playerid][PlayerTypeByWeapon], 32, "Sniper");
+					        }
+					        case WEAPON_AK47:
+					        {
+		                        format(Player[playerid][PlayerTypeByWeapon], 32, "AK~er");
+							}
+							default:
+							{
+		                        switch(GunMenuWeapons[listitem-1][1])
+							    {
+				                    case WEAPON_DEAGLE:
+							        {
+							            format(Player[playerid][PlayerTypeByWeapon], 32, "Deagler");
+							        }
+							        case WEAPON_SHOTGSPA:
+							        {
+				                        format(Player[playerid][PlayerTypeByWeapon], 32, "Spasser");
+							        }
+							        case WEAPON_M4:
+							        {
+				                        format(Player[playerid][PlayerTypeByWeapon], 32, "M4~er");
+							        }
+							        case WEAPON_SNIPER:
+							        {
+				                        format(Player[playerid][PlayerTypeByWeapon], 32, "Sniper");
+							        }
+							        case WEAPON_AK47:
+							        {
+				                        format(Player[playerid][PlayerTypeByWeapon], 32, "AK~er");
+									}
+									default:
+									{
+				                        format(Player[playerid][PlayerTypeByWeapon], 32, "Un-recognised");
+									}
+							    }
+							}
+					    }
 					    if(GiveKnife)
 			    			GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
 
