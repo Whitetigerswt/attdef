@@ -12,6 +12,9 @@
     - Added weapon statistics system (check out /weaponstats).
     - Added /rp command which redirects to /para command to satisfy users from other GMs.
     - Feature: it is now announced when a player dies if he/she is a spasser, sniper, m4er and etc.
+    - Removed anti-joypad script from the mode.
+    - Added a train (just for fun) (use /gototrain).
+    - Rcon admins are no longer hidden in /admins.
 */
 
 
@@ -430,6 +433,8 @@ new GotHit[MAX_PLAYERS];    //heartnarmor
 
 //new Text: AttackersAlive[15];
 //new Text: DefendersAlive[15];
+
+new thetrain, traintrailer1, traintrailer2;
 
 #if SKINICONS == 1
 //skinicons
@@ -3074,7 +3079,17 @@ public OnGameModeInit()
 	#endif
 
 	AddPlayerClass(Skin[ATTACKER], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); // attacker
-
+	
+	thetrain = AddStaticVehicleEx(538, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198, 120); // Train
+	traintrailer1 = AddStaticVehicle(569, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198);
+	traintrailer2 = AddStaticVehicle(569, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198);
+	SetVehicleVirtualWorld(thetrain, 0);
+	SetVehicleVirtualWorld(traintrailer1, 0);
+	SetVehicleVirtualWorld(traintrailer2, 0);
+	AttachTrailerToVehicle(traintrailer1, thetrain);
+	AttachTrailerToVehicle(traintrailer2, thetrain);
+	
+	
 	SetWorldTime(MainTime); // Sets server time
 	SetWeather(MainWeather); // Sets server weather
 
@@ -4563,13 +4578,15 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 		        if(Player[playerid][iLastVehicle] > -1) {
 					new vehicleid = Player[playerid][iLastVehicle];
 
+					if(vehicleid == thetrain)
+					    goto skipped;
+
 					new bool:InVehicle = false;
 				    foreach(new i : Player) {
 				    	if(i != playerid && IsPlayerInVehicle(i, vehicleid)) {
 					        InVehicle = true;
 						}
 					}
-
 
 				 	if(InVehicle == false) {
 						new Float:VehiclePoss[4], Float:VehicleVelocity[3], VehicleModel, Panels, Doors, Lights, Tires, Float:VehicleHealth, VehicleColor, VehicleTrailer;
@@ -4611,6 +4628,7 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 						if(VehicleTrailer != 0) AttachTrailerToVehicle(VehicleTrailer, vehicleid);
 						Player[playerid][iLastVehicle] = -1;
 					}
+					skipped:
 				}
 			}
 	    }
@@ -4627,6 +4645,19 @@ public OnPlayerExitVehicle(playerid, vehicleid)
     return 1;
 }
 */
+
+public OnVehicleSpawn(vehicleid)
+{
+	if(vehicleid == thetrain)
+	{
+	    SetVehicleVirtualWorld(thetrain, 0);
+		SetVehicleVirtualWorld(traintrailer1, 0);
+		SetVehicleVirtualWorld(traintrailer2, 0);
+		AttachTrailerToVehicle(traintrailer1, thetrain);
+		AttachTrailerToVehicle(traintrailer2, thetrain);
+	}
+	return 1;
+}
 
 public OnPlayerInteriorChange(playerid, newinteriorid, oldinteriorid)
 {
@@ -4816,7 +4847,7 @@ public OnPlayerUpdate(playerid)
     new keys, ud, lr;
 	GetPlayerKeys(playerid, keys, ud, lr);
 
-	if ((ud != 128 && ud != 0 && ud != -128) || (lr != 128 && lr != 0 && lr != -128)) {
+	/*if ((ud != 128 && ud != 0 && ud != -128) || (lr != 128 && lr != 0 && lr != -128)) {
 		new str[128];
 	    format(str, sizeof(str), "{FFFFFF}** System ** "COL_PRIM"has kicked {FFFFFF}%s "COL_PRIM"for using joypad", Player[playerid][Name]);
 	    SendClientMessageToAll(-1, str);
@@ -4824,7 +4855,7 @@ public OnPlayerUpdate(playerid)
 		Player[playerid][DontPause] = true;
 	    SetTimerEx("OnPlayerKicked", 100, false, "i", playerid);
 	}
-	//antijoypad
+	//antijoypad*/
 
 
 	if(noclipdata[playerid][cameramode] == CAMERA_MODE_FLY) {
@@ -7534,9 +7565,9 @@ CMD:updates(playerid, params[])
     strcat(string, "\n{FFFFFF}- Vehicle spawning commands now work with IDs as well.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could stay longer inside an attacker's vehicle.");
     strcat(string, "\n{FFFFFF}- Added /rp command which redirects to /para command to satisfy users from other GMs.");
-    strcat(string, "\n{FFFFFF}");
-    strcat(string, "\n{FFFFFF}");
-    strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}- Removed anti-joypad script from the mode.");
+    strcat(string, "\n{FFFFFF}- Added a train (just for fun) (use /gototrain).");
+    strcat(string, "\n{FFFFFF}- Rcon admins are no longer hidden in /admins.");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
@@ -11127,7 +11158,15 @@ CMD:admins(playerid, params[])
 	    	format(iString, sizeof(iString), "%s{FFFFFF}%s ({FF3333}%d{FFFFFF})\n", iString, Player[i][Name], Player[i][Level]);
 		}
 	}
-
+	
+	format(iString, sizeof(iString), "%s\n\n"COL_PRIM"Rcon Admins\n", iString);
+	
+	foreach(new i : Player) {
+	    if(IsPlayerAdmin(i)) {
+	    	format(iString, sizeof(iString), "%s{FFFFFF}%s\n", iString, Player[i][Name]);
+		}
+	}
+	
 	if(strlen(iString) < 2) ShowPlayerDialog(playerid,DIALOG_ADMINS,DIALOG_STYLE_MSGBOX,"{FFFFFF}Admins Online", "No Admins online.","Ok","");
 	else ShowPlayerDialog(playerid,DIALOG_ADMINS,DIALOG_STYLE_MSGBOX,"{FFFFFF}Admins Online", iString,"Ok","");
 
@@ -11547,6 +11586,14 @@ CMD:jetpack(playerid,params[])
 
     SetPlayerSpecialAction(pID, 2);
     return 1;
+}
+
+CMD:gototrain(playerid, params[])
+{
+	new Float:pos[3];
+	GetVehiclePos(thetrain, pos[0], pos[1], pos[2]);
+	SetPlayerPos(playerid, pos[0] + 3.0, pos[1] + 3.0, pos[2] + 1.0);
+	return 1;
 }
 
 CMD:help(playerid, params[])
