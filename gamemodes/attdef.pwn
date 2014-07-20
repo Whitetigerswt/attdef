@@ -7562,7 +7562,7 @@ CMD:updates(playerid, params[])
     strcat(string, "\n{FFFFFF}- Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that player would leave a blank graffito when they left the server.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders/attackers could abuse some map bugs to stop/take CP unfairly.");
-    strcat(string, "\n{FFFFFF}- Vehicle spawning commands now work with IDs as well.");
+    strcat(string, "\n{FFFFFF}- Feature: vehicle spawning commands now work with IDs as well.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could stay longer inside an attacker's vehicle.");
     strcat(string, "\n{FFFFFF}- Added /rp command which redirects to /para command to satisfy users from other GMs.");
     strcat(string, "\n{FFFFFF}- Removed anti-joypad script from the mode.");
@@ -11590,6 +11590,18 @@ CMD:jetpack(playerid,params[])
 
 CMD:gototrain(playerid, params[])
 {
+    if(Player[playerid][InDM] == true) QuitDM(playerid);
+   	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq "COL_PRIM"instead.");
+   	if(Player[playerid][InHeadShot] == true)
+	   	return SendErrorMessage(playerid,"Can't use this command while in HeadShot zone.");
+
+	if(Player[playerid][AntiLag] == true)
+		return SendErrorMessage(playerid,"Can't use this command while in Antilag zone.");
+
+
+    if(Player[playerid][Playing] == true) 
+        return SendErrorMessage(playerid,"Can't use this command while in round.");
+
 	new Float:pos[3];
 	GetVehiclePos(thetrain, pos[0], pos[1], pos[2]);
 	SetPlayerPos(playerid, pos[0] + 3.0, pos[1] + 3.0, pos[2] + 1.0);
@@ -23121,11 +23133,13 @@ SpawnPlayersInBase()
 	foreach(new i : Player) {
         PlayerTextDrawHide(i, RoundText);
 
-	    if(Player[i][ToAddInRound] == true) {
+	    if(Player[i][ToAddInRound] == true)
+		{
 	        #if XMAS == 1
 	        StopAudioStreamForPlayer(i);
 			#endif
-			if(Player[i][InDM] == true) { //Make sure to remove player from DM, otherwise the player will have Player[playerid][Playing] = true and Player[playerid][InDM] = true, so you are saying that the player is both in Base and in DM.
+			if(Player[i][InDM] == true)
+			{ //Make sure to remove player from DM, otherwise the player will have Player[playerid][Playing] = true and Player[playerid][InDM] = true, so you are saying that the player is both in Base and in DM.
 			    Player[i][InDM] = false;
     			Player[i][DMReadd] = 0;
 			}
