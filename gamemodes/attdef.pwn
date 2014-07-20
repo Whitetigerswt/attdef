@@ -10027,6 +10027,7 @@ CMD:war(playerid, params[])
 	}
 
 	WarMode = true;
+	RoundPaused = false;
     format(iString, sizeof iString, "%sWar Mode: ~r~ON", MAIN_TEXT_COLOUR);
 	TextDrawSetString(WarModeText, iString);
 
