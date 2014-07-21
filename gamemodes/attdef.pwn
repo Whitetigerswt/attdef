@@ -15,6 +15,7 @@
     - Removed anti-joypad script from the mode.
     - Added a train (just for fun) (use /gototrain).
     - Rcon admins are no longer hidden in /admins.
+    - Added a command to fix fake packetloss (/fakepacket).
 */
 
 
@@ -588,6 +589,7 @@ enum PlayerVariables {
 	bool:TextPos,
 	bool:ShowSpecs,
 	bool:blockedall,    //blockpm
+	bool:FakePacketRenovation,
 	RadioID,    		//radio
 	NetCheck,
 	//duel
@@ -7558,7 +7560,8 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Added weapon statistics system (check out /weaponstats).");
     strcat(string, "\n{FFFFFF}- Added new duel arenas.");
     strcat(string, "\n{FFFFFF}- Feature: it is now announced when a player dies if he/she is a spasser, sniper, m4er and etc.");
-    strcat(string, "\n{FFFFFF}- Added a public command (/alladmins) to bring a list of all server admins.");
+    strcat(string, "\n{FFFFFF}- Added a command to fix fake packetloss (/fakepacket).");
+	strcat(string, "\n{FFFFFF}- Added a public command (/alladmins) to bring a list of all server admins.");
     strcat(string, "\n{FFFFFF}- Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that player would leave a blank graffito when they left the server.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders/attackers could abuse some map bugs to stop/take CP unfairly.");
@@ -7568,7 +7571,6 @@ CMD:updates(playerid, params[])
     strcat(string, "\n{FFFFFF}- Removed anti-joypad script from the mode.");
     strcat(string, "\n{FFFFFF}- Added a train (just for fun) (use /gototrain).");
     strcat(string, "\n{FFFFFF}- Rcon admins are no longer hidden in /admins.");
-    strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
 	
@@ -7624,7 +7626,7 @@ CMD:acmds(playerid, params[])
 	strcat(string, "\n\n"COL_PRIM"Level 1:");
 	strcat(string, "\n{FFFFFF}/add   /remove   /readd   /addall   /replace   /random   /randomint   /start   /war   /teamskin   /defaultskins   /rr   /givemenu");
 	strcat(string, "\n{FFFFFF}/match   /select   /pause   /unpause   /balance   /swap   /setteam   /lock   /unlock   /weaponlimit   /spas   /setradio   /lobbyguns");
-	strcat(string, "\n{FFFFFF}/sethp   /setarmour   /healall   /hl   /armourall  /al   /teamname   /allvs   /setscore   /resetscores   /netcheck   /nolag");
+	strcat(string, "\n{FFFFFF}/sethp   /setarmour   /healall   /hl   /armourall  /al   /teamname   /allvs   /setscore   /resetscores   /netcheck   /nolag  /fakepacket");
 	strcat(string, "\n{FFFFFF}/jetpack   /teamdmg   /showspectateinfo   /resetallguns   /tr   /cr   /setafk   /move   /goto   /get   /roundtime   /cptime   /shortcuts");
 	strcat(string, "\n{FFFFFF}/cc   /minfps   /maxping   /maxpacket   /giveallgun   /givegun   /giveweapon   /freeze   /unfreeze   /autobalance   /antispam   /autopause");
 
@@ -11628,6 +11630,33 @@ CMD:help(playerid, params[])
 
 	ShowPlayerDialog(playerid,DIALOG_SERVER_HELP,DIALOG_STYLE_MSGBOX,"{0044FF}Server Help", HelpString, "OK","");
 
+	return 1;
+}
+
+forward FakePacketRenovationEnd(playerid, Float:fakepacket);
+public FakePacketRenovationEnd(playerid, Float:fakepacket)
+{
+    Player[playerid][FakePacketRenovation] = false;
+    SendClientMessageToAll(-1, sprintf(""COL_PRIM"Fake packetloss renovation on {FFFFFF}%s "COL_PRIM"has ended - Old: {FFFFFF}%.1f "COL_PRIM" | Current: {FFFFFF}%.1f", Player[playerid][Name], fakepacket, GetPlayerPacketLoss(playerid)));
+	return 1;
+}
+
+CMD:fakepacket(playerid, params[])
+{
+	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
+
+	new pID, interv;
+	if(sscanf(params, "id", pID, interv)) return SendUsageMessage(playerid,"/fakepacket [Player ID] [Time in minutes]");
+	if(interv <= 0 || interv > 5)  return SendErrorMessage(playerid,"Invalid (Min: 1 | Max: 5).");
+	if(Player[pID][FakePacketRenovation])  return SendErrorMessage(playerid,"Player is already on fake packetloss renovation.");
+	if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player isn't connected.");
+
+	SetTimerEx("FakePacketRenovationEnd", interv * 60 * 1000, false, "if", pID, GetPlayerPacketLoss(pID));
+	Player[pID][FakePacketRenovation] = true;
+
+	SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has started fake packetloss renovation on {FFFFFF}%s "COL_PRIM" - Interval: {FFFFFF}%d min(s).",Player[playerid][Name], Player[pID][Name], interv));
+
+    LogAdminCommand("fakepacket", playerid, pID);
 	return 1;
 }
 
@@ -21378,7 +21407,8 @@ public OnScriptUpdate()
 		}
 
 		//duel
-		if(Player[i][InDuel] == true && Player[i][NetCheck] == 1) {
+		if(Player[i][InDuel] == true && Player[i][NetCheck] == 1 && Player[i][FakePacketRenovation] == false)
+		{
 			if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5) {
 			    Player[i][FPSKick]++;
 			    format(iString,sizeof(iString),"{CCCCCC}Low FPS! Warning %d/7", Player[i][FPSKick]);
@@ -21511,7 +21541,7 @@ public OnScriptUpdate()
 
 
 
-	   		if(Player[i][NetCheck] == 1) {
+	   		if(Player[i][NetCheck] == 1 && Player[i][FakePacketRenovation] == false) {
 				if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5) {
 				    Player[i][FPSKick]++;
 			    	format(iString,sizeof(iString),"{CCCCCC}Low FPS! Warning %d/7", Player[i][FPSKick]); //will help to know when you cross limit
