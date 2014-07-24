@@ -15,7 +15,9 @@
     - Removed anti-joypad script from the mode.
     - Added a train (just for fun) (use /gototrain).
     - Rcon admins are no longer hidden in /admins.
-    - Added a command to fix fake packetloss (/fakepacket).
+    - Added a command to help fix fake packetloss (/fakepacket).
+    - Fixed CP ghost bug: when someone timed out and round got paused, the CP countdown could still continue while nobody at it.
+	- Fixed a bug that 'Round Paused' textdraw could get stuck at your screen while round is not running.
 */
 
 
@@ -41,6 +43,7 @@ new 	GM_VERSION[6] =		"2.5.0"; // Don't forget to change the length
 #define SILENTAIMDETECT 1   // Anti Wallhack/Silent Aim							//silentaim
 
 native gpci (playerid, serial [], len);
+native IsValidVehicle(vehicleid);
 
 
 #undef MAX_PLAYERS
@@ -910,6 +913,7 @@ new bool:AntiSpam = true;   //antispam
 new bool:ShortCuts = false; //shortcutonoff
 new bool:AutoPause = true;  //autopause
 new bool:LobbyGuns = true;
+new bool:DidSomeoneTimeout = false;
 new AnnTimer;   //anntxt
 
 
@@ -3813,6 +3817,9 @@ public OnPlayerSpawn(playerid)
 
 public OnPlayerDisconnect(playerid, reason)
 {
+	if(reason == 0)
+        DidSomeoneTimeout = true;
+        
 	if(CreatingTextO[playerid])
 	{
 	    //PlayerSaveNewGraff(playerid);
@@ -3837,12 +3844,14 @@ public OnPlayerDisconnect(playerid, reason)
     GetPlayerHealth(playerid, HP[0]);
     GetPlayerArmour(playerid, HP[1]);
 
-    if(WarMode == true) {
+    if(WarMode == true)
+	{
 		if(Player[playerid][Playing] == true || Player[playerid][ToAddInRound] == true)
 		{
 		    PlayerNoLeadTeam(playerid);
 		    StorePlayerVariables(playerid);
-			if(Player[playerid][DontPause] == false && AutoPause == true) {	//autopause
+			if(Player[playerid][DontPause] == false && AutoPause == true && Current != -1)
+			{	//autopause
 
 				if(ESLMode == true) {
 				 	TimedOutPlayers ++;
@@ -3854,7 +3863,9 @@ public OnPlayerDisconnect(playerid, reason)
 				PauseRound();
 				SendClientMessageToAll(-1, ""COL_PRIM"Round has been auto-paused.");
 			}
-		} else StorePlayerVariablesMin(playerid);
+		}
+		else
+			StorePlayerVariablesMin(playerid);
 	}
 
     switch (reason){
@@ -7560,17 +7571,21 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Added weapon statistics system (check out /weaponstats).");
     strcat(string, "\n{FFFFFF}- Added new duel arenas.");
     strcat(string, "\n{FFFFFF}- Feature: it is now announced when a player dies if he/she is a spasser, sniper, m4er and etc.");
-    strcat(string, "\n{FFFFFF}- Added a command to fix fake packetloss (/fakepacket).");
+    strcat(string, "\n{FFFFFF}- Added a command to help fix fake packetloss (/fakepacket).");
 	strcat(string, "\n{FFFFFF}- Added a public command (/alladmins) to bring a list of all server admins.");
-    strcat(string, "\n{FFFFFF}- Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.");
+    strcat(string, "\n{FFFFFF}- Added /rp command which redirects to /para command to satisfy users from other GMs.");
+    strcat(string, "\n{FFFFFF}- Added a train (just for fun) (use /gototrain).");
+    strcat(string, "\n{FFFFFF}- Feature: vehicle spawning commands now work with IDs as well.");
+	strcat(string, "\n{FFFFFF}- Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that player would leave a blank graffito when they left the server.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders/attackers could abuse some map bugs to stop/take CP unfairly.");
-    strcat(string, "\n{FFFFFF}- Feature: vehicle spawning commands now work with IDs as well.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could stay longer inside an attacker's vehicle.");
-    strcat(string, "\n{FFFFFF}- Added /rp command which redirects to /para command to satisfy users from other GMs.");
     strcat(string, "\n{FFFFFF}- Removed anti-joypad script from the mode.");
-    strcat(string, "\n{FFFFFF}- Added a train (just for fun) (use /gototrain).");
     strcat(string, "\n{FFFFFF}- Rcon admins are no longer hidden in /admins.");
+    strcat(string, "\n{FFFFFF}- Fixed CP ghost bug: when someone timed out and round got paused, the CP countdown could still continue while nobody at it.");
+    strcat(string, "\n{FFFFFF}- Fixed a bug that 'Round Paused' textdraw could get stuck at your screen while round is not running.");
+    strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
 	
@@ -7765,6 +7780,7 @@ CMD:credits(playerid, params[])
 	strcat(string, "\n{00BBFF}Most of textdraws by: {FFFFFF}Insanity & Niko_boy");
 	strcat(string, "\n{00BBFF}Duel Arena by: {FFFFFF}Jeffy892");
 	strcat(string, "\n{00BBFF}Allowed By: {FFFFFF}Deloera");
+	strcat(string, "\n{00BBFF}Debugging and testing of 2.5: {FFFFFF}[KHK]Tecumseh");
 	strcat(string, "\n\n{FFFFFF}For suggestions and bug reports, visit: {00BBFF}http://sixtytiger.com/forum/index.php?board=15.0");
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Credits", string, "OK","");
@@ -11605,6 +11621,8 @@ CMD:gototrain(playerid, params[])
     if(Player[playerid][Playing] == true) 
         return SendErrorMessage(playerid,"Can't use this command while in round.");
 
+	if(!IsValidVehicle(thetrain))
+		RespawnTheTrain();
 	new Float:pos[3];
 	GetVehiclePos(thetrain, pos[0], pos[1], pos[2]);
 	SetPlayerPos(playerid, pos[0] + 3.0, pos[1] + 3.0, pos[2] + 1.0);
@@ -11668,8 +11686,8 @@ stock SetWeaponStatsString()
 	    if((Player[i][WeaponStat][WEAPON_DEAGLE] + Player[i][WeaponStat][WEAPON_SHOTGUN] + Player[i][WeaponStat][WEAPON_M4] + Player[i][WeaponStat][WEAPON_SHOTGSPA] + Player[i][WeaponStat][WEAPON_RIFLE] + Player[i][WeaponStat][WEAPON_SNIPER] + Player[i][WeaponStat][WEAPON_AK47] + Player[i][WeaponStat][WEAPON_MP5] + Player[i][WeaponStat][0]) <= 0)
 			continue;
 			
-		format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {FFFFFF}[Deagle: {CC0000}%d{FFFFFF}] [Shotgun: {CC0000}%d{FFFFFF}] [M4: {CC0000}%d{FFFFFF}] [Spas: {CC0000}%d{FFFFFF}] [Rifle: {CC0000}%d{FFFFFF}] [Sniper: {CC0000}%d{FFFFFF}] [AK: {CC0000}%d{FFFFFF}] [MP5: {CC0000}%d{FFFFFF}] [Punch: {CC0000}%d{FFFFFF}]\n",
-			WeaponStatsStr, Player[i][Name], Player[i][WeaponStat][WEAPON_DEAGLE], Player[i][WeaponStat][WEAPON_SHOTGUN], Player[i][WeaponStat][WEAPON_M4], Player[i][WeaponStat][WEAPON_SHOTGSPA], Player[i][WeaponStat][WEAPON_RIFLE], Player[i][WeaponStat][WEAPON_SNIPER], Player[i][WeaponStat][WEAPON_AK47], Player[i][WeaponStat][WEAPON_MP5], Player[i][WeaponStat][0]);
+		format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {FFFFFF}[Deagle: {CC0000}%d{FFFFFF}] [Shotgun: {CC0000}%d{FFFFFF}] [M4: {CC0000}%d{FFFFFF}] [Spas: {CC0000}%d{FFFFFF}] [Rifle: {CC0000}%d{FFFFFF}] [Sniper: {CC0000}%d{FFFFFF}] [AK: {CC0000}%d{FFFFFF}] [MP5: {CC0000}%d{FFFFFF}] [Punch: {CC0000}%d{FFFFFF}] [Rounds: {CC0000}%d{FFFFFF}]\n",
+			WeaponStatsStr, Player[i][Name], Player[i][WeaponStat][WEAPON_DEAGLE], Player[i][WeaponStat][WEAPON_SHOTGUN], Player[i][WeaponStat][WEAPON_M4], Player[i][WeaponStat][WEAPON_SHOTGSPA], Player[i][WeaponStat][WEAPON_RIFLE], Player[i][WeaponStat][WEAPON_SNIPER], Player[i][WeaponStat][WEAPON_AK47], Player[i][WeaponStat][WEAPON_MP5], Player[i][WeaponStat][0], Player[i][RoundPlayed]);
 	}
 	
 	for(new i = 0; i < SAVE_SLOTS; i ++)
@@ -11679,8 +11697,8 @@ stock SetWeaponStatsString()
 		    if((SaveVariables[i][WeaponStat][WEAPON_DEAGLE] + SaveVariables[i][WeaponStat][WEAPON_SHOTGUN] + SaveVariables[i][WeaponStat][WEAPON_M4] + SaveVariables[i][WeaponStat][WEAPON_SHOTGSPA] + SaveVariables[i][WeaponStat][WEAPON_RIFLE] + SaveVariables[i][WeaponStat][WEAPON_SNIPER] + SaveVariables[i][WeaponStat][WEAPON_AK47] + SaveVariables[i][WeaponStat][WEAPON_MP5] + SaveVariables[i][WeaponStat][0]) <= 0)
 				continue;
 		
-			format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {FFFFFF}[Deagle: {CC0000}%d{FFFFFF}] [Shotgun: {CC0000}%d{FFFFFF}] [M4: {CC0000}%d{FFFFFF}] [Spas: {CC0000}%d{FFFFFF}] [Rifle: {CC0000}%d{FFFFFF}] [Sniper: {CC0000}%d{FFFFFF}] [AK: {CC0000}%d{FFFFFF}] [MP5: {CC0000}%d{FFFFFF}] [Punch: {CC0000}%d{FFFFFF}]\n",
-				WeaponStatsStr, SaveVariables[i][pName], SaveVariables[i][WeaponStat][WEAPON_DEAGLE], SaveVariables[i][WeaponStat][WEAPON_SHOTGUN], SaveVariables[i][WeaponStat][WEAPON_M4], SaveVariables[i][WeaponStat][WEAPON_SHOTGSPA], SaveVariables[i][WeaponStat][WEAPON_RIFLE], SaveVariables[i][WeaponStat][WEAPON_SNIPER], SaveVariables[i][WeaponStat][WEAPON_AK47], SaveVariables[i][WeaponStat][WEAPON_MP5], SaveVariables[i][WeaponStat][0]);
+			format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {FFFFFF}[Deagle: {CC0000}%d{FFFFFF}] [Shotgun: {CC0000}%d{FFFFFF}] [M4: {CC0000}%d{FFFFFF}] [Spas: {CC0000}%d{FFFFFF}] [Rifle: {CC0000}%d{FFFFFF}] [Sniper: {CC0000}%d{FFFFFF}] [AK: {CC0000}%d{FFFFFF}] [MP5: {CC0000}%d{FFFFFF}] [Punch: {CC0000}%d{FFFFFF}] [Rounds: {CC0000}%d{FFFFFF}]\n",
+				WeaponStatsStr, SaveVariables[i][pName], SaveVariables[i][WeaponStat][WEAPON_DEAGLE], SaveVariables[i][WeaponStat][WEAPON_SHOTGUN], SaveVariables[i][WeaponStat][WEAPON_M4], SaveVariables[i][WeaponStat][WEAPON_SHOTGSPA], SaveVariables[i][WeaponStat][WEAPON_RIFLE], SaveVariables[i][WeaponStat][WEAPON_SNIPER], SaveVariables[i][WeaponStat][WEAPON_AK47], SaveVariables[i][WeaponStat][WEAPON_MP5], SaveVariables[i][WeaponStat][0], SaveVariables[i][TPlayed]);
 		}
 	}
 	return 1;
@@ -13534,6 +13552,7 @@ CMD:random(playerid, params[])
 
 CMD:vote(playerid, params[])
 {
+    if(ESLMode == true) return SendErrorMessage(playerid,"Can't use this when ESL mode is on.");
 	foreach(new i : Player) {
 	    if(Player[i][Level] > 0) return SendErrorMessage(playerid,"Cannot vote when an admin is online. Type {FFFFFF}/admins "COL_PRIM"to see online admins.");
 	}
@@ -17364,6 +17383,35 @@ public SpawnConnectedPlayer(playerid, team)
 //------------------------------------------------------------------------------
 // Stocks
 //------------------------------------------------------------------------------
+
+stock RespawnTheTrain()
+{
+	DestroyVehicle(thetrain);
+	DestroyVehicle(traintrailer1);
+	DestroyVehicle(traintrailer2);
+    thetrain = AddStaticVehicleEx(538, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198, 120); // Train
+	traintrailer1 = AddStaticVehicle(569, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198);
+	traintrailer2 = AddStaticVehicle(569, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198);
+	SetVehicleVirtualWorld(thetrain, 0);
+	SetVehicleVirtualWorld(traintrailer1, 0);
+	SetVehicleVirtualWorld(traintrailer2, 0);
+	AttachTrailerToVehicle(traintrailer1, thetrain);
+	AttachTrailerToVehicle(traintrailer2, thetrain);
+	return 1;
+}
+
+stock RecountPlayersOnCP()
+{
+	PlayersInCP = 0;
+	foreach(new i : Player)
+	{
+	    if(IsPlayerInCheckpoint(i))
+	    {
+	        OnPlayerEnterCheckpoint(i);
+		}
+	}
+	return 1;
+}
 
 stock AddFoxGlitchFix()
 {
@@ -21245,6 +21293,11 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 forward OnScriptUpdate();
 public OnScriptUpdate()
 {
+	if(DidSomeoneTimeout)
+	{
+	    DidSomeoneTimeout = false;
+	    RecountPlayersOnCP();
+	}
 	new iString[256];
 	//new Alive[2];
 
@@ -22015,6 +22068,7 @@ public UnpauseRound()
 
 	if(PauseCountdown <= 0)
 	{
+	    RecountPlayersOnCP();
 	    for(new g = 0; g < MAX_VEHICLES; g ++)
 			SetVehicleVelocity(g, VehicleVelc[g][0], VehicleVelc[g][1], VehicleVelc[g][2]);
 	}
