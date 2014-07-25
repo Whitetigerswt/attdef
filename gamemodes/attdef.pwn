@@ -16,8 +16,11 @@
     - Added a train (just for fun) (use /gototrain).
     - Rcon admins are no longer hidden in /admins.
     - Added a command to help fix fake packetloss (/fakepacket).
-    - Fixed CP ghost bug: when someone timed out and round got paused, the CP countdown could still continue while nobody at it.
+    - Fixed CP ghost bug: when someone timed out while on CP and round got unpaused, the CP countdown could still continue while nobody at it.
 	- Fixed a bug that 'Round Paused' textdraw could get stuck at your screen while round is not running.
+	- Feature: you can now toggle the command /vote in server configuration dialog.
+	- Feature: muted players cannot use /changename command now.
+	- Feature: you can now toggle the command /changename in server configuration dialog.
 */
 
 
@@ -845,6 +848,8 @@ new bool:ToggleTargetInfo = false; //Shows target player information.
 new bool:ServerAntiLag = false; //Enalbe/Disable AntiLag in the whole script.
 new bool:GiveKnife = true; // Auto-gives knives to players in round
 new bool:ShowBodyLabels = true; // Enable/Disable show 3d text labels on body (ping fps etc)
+new bool:VoteRound = true; // Enable/Disable /vote command.
+new bool:ChangeName = true; // Enable/Disable /changename command.
 
 
 //1=Hardcore NL, 2=ChartHits, 3=MUSIK.MAIN, 4=idobi, 5=DEFJAY US
@@ -4095,6 +4100,18 @@ stock ShowConfigDialog(playerid) {
 	} else {
 		strcat(string, "\n{FF6666}Show Body Labels");
 	}
+	
+	if(VoteRound == true) {
+		strcat(string, "\n{66FF66}Vote round (/vote cmd)");
+	} else {
+		strcat(string, "\n{FF6666}Vote round (/vote cmd)");
+	}
+	
+	if(ChangeName == true) {
+		strcat(string, "\n{66FF66}Change name (/changename cmd)");
+	} else {
+		strcat(string, "\n{FF6666}Change name (/changename cmd)");
+	}
 
 #if SKINICONS == 1
 	if(ShowIcons == true) {
@@ -5888,6 +5905,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			{
 			    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][0], 9999);
 			    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][1], 9999);
+				if(IsPlayerInAnyVehicle(playerid))
+					SetPlayerArmedWeapon(playerid, 0);
 			    switch(GunMenuWeapons[listitem-1][0])
 			    {
 			        case WEAPON_DEAGLE:
@@ -6760,8 +6779,50 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 				    ShowConfigDialog(playerid);
 				}
-				#if SKINICONS == 1
 				case 18: {
+				    new iStringg[180];
+					if(VoteRound == false)
+					{
+					    VoteRound = true;
+
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"(/vote) command.", Player[playerid][Name]);
+						SendClientMessageToAll(-1, iStringg);
+					}
+					else
+					{
+					    VoteRound = false;
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}disabled "COL_PRIM"(/vote) command.", Player[playerid][Name]);
+						SendClientMessageToAll(-1, iStringg);
+					}
+
+					format(iStringg, sizeof(iStringg), "UPDATE Configs SET Value = %d WHERE Option = 'VoteRound'", (VoteRound == false ? 0 : 1));
+				    db_free_result(db_query(sqliteconnection, iStringg));
+
+				    ShowConfigDialog(playerid);
+				}
+				case 19: {
+				    new iStringg[180];
+					if(ChangeName == false)
+					{
+					    ChangeName = true;
+
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"(/changename) command.", Player[playerid][Name]);
+						SendClientMessageToAll(-1, iStringg);
+					}
+					else
+					{
+					    ChangeName = false;
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}disabled "COL_PRIM"(/changename) command.", Player[playerid][Name]);
+						SendClientMessageToAll(-1, iStringg);
+					}
+
+					format(iStringg, sizeof(iStringg), "UPDATE Configs SET Value = %d WHERE Option = 'ChangeName'", (VoteRound == false ? 0 : 1));
+				    db_free_result(db_query(sqliteconnection, iStringg));
+
+				    ShowConfigDialog(playerid);
+				}
+				#if SKINICONS == 1
+				case 20: {
 				    if(ShowIcons == false) {
 					    ShowIcons = true;
 	    				format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"skin icons in round stats.", Player[playerid][Name]);
@@ -7570,21 +7631,23 @@ CMD:updates(playerid, params[])
 	
 	strcat(string, "\n{FFFFFF}- Added weapon statistics system (check out /weaponstats).");
     strcat(string, "\n{FFFFFF}- Added new duel arenas.");
-    strcat(string, "\n{FFFFFF}- Feature: it is now announced when a player dies if he/she is a spasser, sniper, m4er and etc.");
     strcat(string, "\n{FFFFFF}- Added a command to help fix fake packetloss (/fakepacket).");
 	strcat(string, "\n{FFFFFF}- Added a public command (/alladmins) to bring a list of all server admins.");
     strcat(string, "\n{FFFFFF}- Added /rp command which redirects to /para command to satisfy users from other GMs.");
     strcat(string, "\n{FFFFFF}- Added a train (just for fun) (use /gototrain).");
-    strcat(string, "\n{FFFFFF}- Feature: vehicle spawning commands now work with IDs as well.");
+    strcat(string, "\n{FFFFFF}- Feature: it is now announced when a player dies if he/she is a spasser, sniper, m4er and etc.");
+	strcat(string, "\n{FFFFFF}- Feature: vehicle spawning commands now work with IDs as well.");
+    strcat(string, "\n{FFFFFF}- Feature: you can now toggle the command /vote in server configuration dialog.");
+    strcat(string, "\n{FFFFFF}- Feature: muted players cannot use /changename command now.");
+    strcat(string, "\n{FFFFFF}- Feature: you can now toggle the command /changename in server configuration dialog.");
 	strcat(string, "\n{FFFFFF}- Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that player would leave a blank graffito when they left the server.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders/attackers could abuse some map bugs to stop/take CP unfairly.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could stay longer inside an attacker's vehicle.");
     strcat(string, "\n{FFFFFF}- Removed anti-joypad script from the mode.");
     strcat(string, "\n{FFFFFF}- Rcon admins are no longer hidden in /admins.");
-    strcat(string, "\n{FFFFFF}- Fixed CP ghost bug: when someone timed out and round got paused, the CP countdown could still continue while nobody at it.");
+    strcat(string, "\n{FFFFFF}- Fixed CP ghost bug: when someone timed out while on CP and round got unpaused, the CP countdown could still continue while nobody at it.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that 'Round Paused' textdraw could get stuck at your screen while round is not running.");
-    strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
     strcat(string, "\n{FFFFFF}");
@@ -12024,6 +12087,7 @@ CMD:changepass(playerid, params[])
 CMD:changename(playerid,params[])
 {
 	if(Player[playerid][Logged] == false) return SendErrorMessage(playerid,"You must be logged in.");
+    if(Player[playerid][Mute]) return SendErrorMessage(playerid, "Cannot use this command when you're muted.");
 	if(isnull(params)) return SendUsageMessage(playerid,"/changename [New Name]");
 	if(strlen(params) <= 1) return SendErrorMessage(playerid,"Name cannot be that short idiot!!");
 
@@ -13553,6 +13617,7 @@ CMD:random(playerid, params[])
 CMD:vote(playerid, params[])
 {
     if(ESLMode == true) return SendErrorMessage(playerid,"Can't use this when ESL mode is on.");
+	if(!VoteRound) return SendErrorMessage(playerid,"/vote is disabled in this server.");
 	foreach(new i : Player) {
 	    if(Player[i][Level] > 0) return SendErrorMessage(playerid,"Cannot vote when an admin is online. Type {FFFFFF}/admins "COL_PRIM"to see online admins.");
 	}
@@ -16912,6 +16977,14 @@ LoadConfig()
     db_get_field_assoc(res, "Value", iString, sizeof(iString)); // ShowBodyLabels
     ShowBodyLabels = (strval(iString) == 1 ? true : false);
     db_next_row(res);
+    
+    db_get_field_assoc(res, "Value", iString, sizeof(iString)); // VoteRound
+    VoteRound = (strval(iString) == 1 ? true : false);
+    db_next_row(res);
+    
+    db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Changename
+    ChangeName = (strval(iString) == 1 ? true : false);
+    db_next_row(res);
 
 	db_free_result(res);
 
@@ -20238,6 +20311,8 @@ stock LoadPlayerVariables(playerid)
 					{
 					    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][0], 9999);
 					    GivePlayerWeapon(playerid, GunMenuWeapons[listitem-1][1], 9999);
+					    if(IsPlayerInAnyVehicle(playerid))
+							SetPlayerArmedWeapon(playerid, 0);
 					    switch(GunMenuWeapons[listitem-1][0])
 					    {
 					        case WEAPON_DEAGLE:
@@ -21460,7 +21535,7 @@ public OnScriptUpdate()
 		}
 
 		//duel
-		if(Player[i][InDuel] == true && Player[i][NetCheck] == 1 && Player[i][FakePacketRenovation] == false)
+		if(Player[i][InDuel] == true && Player[i][NetCheck] == 1)
 		{
 			if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5) {
 			    Player[i][FPSKick]++;
@@ -21481,7 +21556,7 @@ public OnScriptUpdate()
 			}
 
 
-			if(pPacket >= Max_Packetloss){
+			if(pPacket >= Max_Packetloss && Player[i][FakePacketRenovation] == false){
 			    Player[i][PacketKick]++;
 			    format(iString,sizeof(iString),"{CCCCCC}High PL! Warning %d/15", Player[i][PacketKick]);
 			    SendClientMessage(i, -1, iString);
@@ -21594,7 +21669,7 @@ public OnScriptUpdate()
 
 
 
-	   		if(Player[i][NetCheck] == 1 && Player[i][FakePacketRenovation] == false) {
+	   		if(Player[i][NetCheck] == 1) {
 				if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5) {
 				    Player[i][FPSKick]++;
 			    	format(iString,sizeof(iString),"{CCCCCC}Low FPS! Warning %d/7", Player[i][FPSKick]); //will help to know when you cross limit
@@ -21613,7 +21688,7 @@ public OnScriptUpdate()
 				}
 
 
-				if(pPacket >= Max_Packetloss){
+				if(pPacket >= Max_Packetloss && Player[i][FakePacketRenovation] == false){
 				    Player[i][PacketKick]++;
 			    	format(iString,sizeof(iString),"{CCCCCC}High PL! Warning %d/15", Player[i][PacketKick]); //will help to know when you cross limit
 			    	SendClientMessage(i, -1, iString);
