@@ -21,6 +21,8 @@
 	- Feature: you can now toggle the command /vote in server configuration dialog.
 	- Feature: muted players cannot use /changename command now.
 	- Feature: you can now toggle the command /changename in server configuration dialog.
+	- Tweaked the Version Checker system a little.
+	- Fixed vehicle velocity bug; now vehicles auto re-spawn after they've completely stopped.
 */
 
 
@@ -928,6 +930,8 @@ new ViewTimer;
 new PauseCountdown;
 new CurrentCPTime;
 new HighestID;
+new RespawnThisVehicleTimer[MAX_VEHICLES], Float:LastVehPos[MAX_VEHICLES][3];
+
 
 new IconTimer[MAX_PLAYERS];
 new AttHpTimer;
@@ -1999,8 +2003,8 @@ stock MATCHSYNC_InsertMatchStats()
 // version checker <start>
 #define VERSION_CHAR_LENGTH     		4
 
-#define VERSION_CHECKER_VERSION_URL		"gator3016.hostgator.com/~maarij94/khalid/AttDef_API/VersionChecker/version.php"
-#define VERSION_CHECKER_CHANGELOG_URL	"gator3016.hostgator.com/~maarij94/khalid/AttDef_API/VersionChecker/changelog.php"
+#define VERSION_CHECKER_VERSION_URL		"sixtytiger.com/khalid/AttDef_API/VersionChecker/version.php"
+#define VERSION_CHECKER_CHANGELOG_URL	"INVALID SHIT"
 
 #define VERSION_IS_BEHIND       		0
 #define VERSION_IS_UPTODATE     		1
@@ -2010,7 +2014,7 @@ new bool:VersionCheckerStatus = false;
 new LatestVersionStr[64], LatestVersionChangesStr[512];
 stock InitVersionChecker()
 {
-	SetTimer("ReportServerVersion", 20 * 60 * 1000, true);
+	//SetTimer("ReportServerVersion", 20 * 60 * 1000, true);
     HTTP(0, HTTP_GET, VERSION_CHECKER_VERSION_URL, "", "SaveVersionInStr");
 	return 1;
 }
@@ -2018,6 +2022,9 @@ stock InitVersionChecker()
 forward ReportServerVersion();
 public ReportServerVersion()
 {
+	if(!VersionCheckerStatus)
+	    return 0;
+	    
     HTTP(0, HTTP_GET, VERSION_CHECKER_VERSION_URL, "", "SaveVersionInStr");
 	if(VersionReport == VERSION_IS_BEHIND)
  	{
@@ -2146,11 +2153,8 @@ stock ReportVersion()
 
 CMD:checkversion(playerid, params[])
 {
-	/*new str[720];
-    format(str, sizeof str, ""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s\n\n"COL_PRIM"What's new\n{FFFFFF}%s", GM_VERSION, LatestVersionStr, LatestVersionChangesStr);
-	ShowPlayerDialog(playerid, 0, DIALOG_STYLE_MSGBOX, "Version Checker",
-	 str, "Okay", "");
-	*/
+	if(!VersionCheckerStatus)
+	    return SendErrorMessage(playerid, "Connection error. Try again later maybe!");
     ShowPlayerDialog(playerid, 0, DIALOG_STYLE_MSGBOX, "Version Checker",
 	 sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr), "Okay", "");
 	return 1;
@@ -4506,6 +4510,59 @@ public OnPlayerText(playerid, text[])
 	return 0;
 }
 
+forward RespawnThisVehicle(vehicleid, playerid);
+public RespawnThisVehicle(vehicleid, playerid)
+{
+	new Float:CurrentVehPos[3];
+	GetVehiclePos(vehicleid, CurrentVehPos[0], CurrentVehPos[1], CurrentVehPos[2]);
+	if(LastVehPos[vehicleid][0] == CurrentVehPos[0] && LastVehPos[vehicleid][1] == CurrentVehPos[1] && LastVehPos[vehicleid][2] == CurrentVehPos[2])
+	{
+	    KillTimer(RespawnThisVehicleTimer[vehicleid]);
+	    new Float:VehiclePoss[4], VehicleModel, Panels, Doors, Lights, Tires, Float:VehicleHealth, VehicleColor, VehicleTrailer;
+        GetVehiclePos(vehicleid, VehiclePoss[0], VehiclePoss[1], VehiclePoss[2]);
+		GetVehicleZAngle(vehicleid, VehiclePoss[3]);
+
+		VehicleModel = GetVehicleModel(vehicleid);
+
+		GetVehicleHealth(vehicleid, VehicleHealth);
+
+		GetVehicleDamageStatus(vehicleid, Panels, Doors, Lights, Tires);
+        VehicleTrailer = GetVehicleTrailer(vehicleid);
+
+		DestroyVehicle(vehicleid);
+
+		switch(Player[playerid][Team]) {
+			case ATTACKER: VehicleColor = 175;
+			case ATTACKER_SUB: VehicleColor = 158;
+			case DEFENDER: VehicleColor = 198;
+			case DEFENDER_SUB: VehicleColor = 208;
+			case REFEREE: VehicleColor = 200;
+		}
+
+		vehicleid = CreateVehicle(VehicleModel, VehiclePoss[0], VehiclePoss[1], VehiclePoss[2], VehiclePoss[3], VehicleColor, VehicleColor, -1);
+		//numplate
+		new plate[32];
+		format(plate, sizeof(plate), "%s", Player[playerid][NameWithoutTag]);
+	    SetVehicleNumberPlate(vehicleid, plate);
+	    SetVehicleToRespawn(vehicleid);
+	    //numplate
+		LinkVehicleToInterior(vehicleid, GetPlayerInterior(playerid));
+		SetVehicleVirtualWorld(vehicleid, GetPlayerVirtualWorld(playerid));
+        
+		UpdateVehicleDamageStatus(vehicleid, Panels, Doors, Lights, Tires);
+		SetVehicleHealth(vehicleid, VehicleHealth);
+
+		if(VehicleTrailer != 0) AttachTrailerToVehicle(VehicleTrailer, vehicleid);
+	}
+	else
+	{
+	    LastVehPos[vehicleid][0] = CurrentVehPos[0];
+	    LastVehPos[vehicleid][1] = CurrentVehPos[1];
+	    LastVehPos[vehicleid][2] = CurrentVehPos[2];
+	}
+	return 1;
+}
+
 public OnPlayerStateChange(playerid, newstate, oldstate)
 {
     switch(newstate) {
@@ -4619,44 +4676,8 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 					}
 
 				 	if(InVehicle == false) {
-						new Float:VehiclePoss[4], Float:VehicleVelocity[3], VehicleModel, Panels, Doors, Lights, Tires, Float:VehicleHealth, VehicleColor, VehicleTrailer;
-			            GetVehiclePos(vehicleid, VehiclePoss[0], VehiclePoss[1], VehiclePoss[2]);
-						GetVehicleZAngle(vehicleid, VehiclePoss[3]);
-
-						GetVehicleVelocity(vehicleid, VehicleVelocity[0], VehicleVelocity[1], VehicleVelocity[2]);
-						VehicleModel = GetVehicleModel(vehicleid);
-
-						GetVehicleHealth(vehicleid, VehicleHealth);
-
-						GetVehicleDamageStatus(vehicleid, Panels, Doors, Lights, Tires);
-		                VehicleTrailer = GetVehicleTrailer(vehicleid);
-
-						DestroyVehicle(vehicleid);
-
-						switch(Player[playerid][Team]) {
-							case ATTACKER: VehicleColor = 175;
-							case ATTACKER_SUB: VehicleColor = 158;
-							case DEFENDER: VehicleColor = 198;
-							case DEFENDER_SUB: VehicleColor = 208;
-							case REFEREE: VehicleColor = 200;
-						}
-
-						vehicleid = CreateVehicle(VehicleModel, VehiclePoss[0], VehiclePoss[1], VehiclePoss[2], VehiclePoss[3], VehicleColor, VehicleColor, -1);
-						//numplate
-						new plate[32];
-						format(plate, sizeof(plate), "%s", Player[playerid][NameWithoutTag]);
-					    SetVehicleNumberPlate(vehicleid, plate);
-					    SetVehicleToRespawn(vehicleid);
-					    //numplate
-						LinkVehicleToInterior(vehicleid, GetPlayerInterior(playerid));
-						SetVehicleVirtualWorld(vehicleid, GetPlayerVirtualWorld(playerid));
-				        SetVehicleVelocity(vehicleid, VehicleVelocity[0], VehicleVelocity[1], VehicleVelocity[2]);
-
-						UpdateVehicleDamageStatus(vehicleid, Panels, Doors, Lights, Tires);
-						SetVehicleHealth(vehicleid, VehicleHealth);
-
-						if(VehicleTrailer != 0) AttachTrailerToVehicle(VehicleTrailer, vehicleid);
-						Player[playerid][iLastVehicle] = -1;
+				 	    RespawnThisVehicleTimer[vehicleid] = SetTimerEx("RespawnThisVehicle", 1000, true, "i", vehicleid);
+      					Player[playerid][iLastVehicle] = -1;
 					}
 					skipped:
 				}
@@ -6785,13 +6806,13 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 					{
 					    VoteRound = true;
 
-					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"(/vote) command.", Player[playerid][Name]);
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"(/vote){FFFFFF} command.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iStringg);
 					}
 					else
 					{
 					    VoteRound = false;
-					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}disabled "COL_PRIM"(/vote) command.", Player[playerid][Name]);
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}disabled "COL_PRIM"(/vote){FFFFFF} command.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iStringg);
 					}
 
@@ -6806,13 +6827,13 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 					{
 					    ChangeName = true;
 
-					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"(/changename) command.", Player[playerid][Name]);
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"(/changename){FFFFFF} command.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iStringg);
 					}
 					else
 					{
 					    ChangeName = false;
-					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}disabled "COL_PRIM"(/changename) command.", Player[playerid][Name]);
+					    format(iStringg, sizeof(iStringg), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}disabled "COL_PRIM"(/changename){FFFFFF} command.", Player[playerid][Name]);
 						SendClientMessageToAll(-1, iStringg);
 					}
 
@@ -7648,8 +7669,8 @@ CMD:updates(playerid, params[])
     strcat(string, "\n{FFFFFF}- Rcon admins are no longer hidden in /admins.");
     strcat(string, "\n{FFFFFF}- Fixed CP ghost bug: when someone timed out while on CP and round got unpaused, the CP countdown could still continue while nobody at it.");
     strcat(string, "\n{FFFFFF}- Fixed a bug that 'Round Paused' textdraw could get stuck at your screen while round is not running.");
-    strcat(string, "\n{FFFFFF}");
-    strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}- Tweaked the Version Checker system a little.");
+    strcat(string, "\n{FFFFFF}- Fixed vehicle velocity bug; now vehicles auto re-spawn after they've completely stopped.");
     strcat(string, "\n{FFFFFF}");
 	
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
@@ -11684,11 +11705,12 @@ CMD:gototrain(playerid, params[])
     if(Player[playerid][Playing] == true) 
         return SendErrorMessage(playerid,"Can't use this command while in round.");
 
-	if(!IsValidVehicle(thetrain))
-		RespawnTheTrain();
 	new Float:pos[3];
 	GetVehiclePos(thetrain, pos[0], pos[1], pos[2]);
-	SetPlayerPos(playerid, pos[0] + 3.0, pos[1] + 3.0, pos[2] + 1.0);
+	if(!IsPlayerInAnyVehicle(playerid))
+		SetPlayerPos(playerid, pos[0] + 3.0, pos[1] + 3.0, pos[2] + 1.0);
+	else
+	    SetVehiclePos(GetPlayerVehicleID(playerid), pos[0] + 3.0, pos[1] + 3.0, pos[2] + 1.0);
 	return 1;
 }
 
@@ -11749,7 +11771,7 @@ stock SetWeaponStatsString()
 	    if((Player[i][WeaponStat][WEAPON_DEAGLE] + Player[i][WeaponStat][WEAPON_SHOTGUN] + Player[i][WeaponStat][WEAPON_M4] + Player[i][WeaponStat][WEAPON_SHOTGSPA] + Player[i][WeaponStat][WEAPON_RIFLE] + Player[i][WeaponStat][WEAPON_SNIPER] + Player[i][WeaponStat][WEAPON_AK47] + Player[i][WeaponStat][WEAPON_MP5] + Player[i][WeaponStat][0]) <= 0)
 			continue;
 			
-		format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {FFFFFF}[Deagle: {CC0000}%d{FFFFFF}] [Shotgun: {CC0000}%d{FFFFFF}] [M4: {CC0000}%d{FFFFFF}] [Spas: {CC0000}%d{FFFFFF}] [Rifle: {CC0000}%d{FFFFFF}] [Sniper: {CC0000}%d{FFFFFF}] [AK: {CC0000}%d{FFFFFF}] [MP5: {CC0000}%d{FFFFFF}] [Punch: {CC0000}%d{FFFFFF}] [Rounds: {CC0000}%d{FFFFFF}]\n",
+		format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {D6D6D6}[Deagle: %d] [Shotgun: %d] [M4: %d] [Spas: %d] [Rifle: %d] [Sniper: %d] [AK: %d] [MP5: %d] [Punch: %d] [Rounds: %d]\n",
 			WeaponStatsStr, Player[i][Name], Player[i][WeaponStat][WEAPON_DEAGLE], Player[i][WeaponStat][WEAPON_SHOTGUN], Player[i][WeaponStat][WEAPON_M4], Player[i][WeaponStat][WEAPON_SHOTGSPA], Player[i][WeaponStat][WEAPON_RIFLE], Player[i][WeaponStat][WEAPON_SNIPER], Player[i][WeaponStat][WEAPON_AK47], Player[i][WeaponStat][WEAPON_MP5], Player[i][WeaponStat][0], Player[i][RoundPlayed]);
 	}
 	
@@ -11760,7 +11782,7 @@ stock SetWeaponStatsString()
 		    if((SaveVariables[i][WeaponStat][WEAPON_DEAGLE] + SaveVariables[i][WeaponStat][WEAPON_SHOTGUN] + SaveVariables[i][WeaponStat][WEAPON_M4] + SaveVariables[i][WeaponStat][WEAPON_SHOTGSPA] + SaveVariables[i][WeaponStat][WEAPON_RIFLE] + SaveVariables[i][WeaponStat][WEAPON_SNIPER] + SaveVariables[i][WeaponStat][WEAPON_AK47] + SaveVariables[i][WeaponStat][WEAPON_MP5] + SaveVariables[i][WeaponStat][0]) <= 0)
 				continue;
 		
-			format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {FFFFFF}[Deagle: {CC0000}%d{FFFFFF}] [Shotgun: {CC0000}%d{FFFFFF}] [M4: {CC0000}%d{FFFFFF}] [Spas: {CC0000}%d{FFFFFF}] [Rifle: {CC0000}%d{FFFFFF}] [Sniper: {CC0000}%d{FFFFFF}] [AK: {CC0000}%d{FFFFFF}] [MP5: {CC0000}%d{FFFFFF}] [Punch: {CC0000}%d{FFFFFF}] [Rounds: {CC0000}%d{FFFFFF}]\n",
+			format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {D6D6D6}[Deagle: %d] [Shotgun: %d] [M4: %d] [Spas: %d] [Rifle: %d] [Sniper: %d] [AK: %d] [MP5: %d] [Punch: %d] [Rounds: %d]\n",
 				WeaponStatsStr, SaveVariables[i][pName], SaveVariables[i][WeaponStat][WEAPON_DEAGLE], SaveVariables[i][WeaponStat][WEAPON_SHOTGUN], SaveVariables[i][WeaponStat][WEAPON_M4], SaveVariables[i][WeaponStat][WEAPON_SHOTGSPA], SaveVariables[i][WeaponStat][WEAPON_RIFLE], SaveVariables[i][WeaponStat][WEAPON_SNIPER], SaveVariables[i][WeaponStat][WEAPON_AK47], SaveVariables[i][WeaponStat][WEAPON_MP5], SaveVariables[i][WeaponStat][0], SaveVariables[i][TPlayed]);
 		}
 	}
@@ -12086,10 +12108,12 @@ CMD:changepass(playerid, params[])
 
 CMD:changename(playerid,params[])
 {
+    if(!ChangeName) return SendErrorMessage(playerid, "/changename command is disabled in this server.");
 	if(Player[playerid][Logged] == false) return SendErrorMessage(playerid,"You must be logged in.");
-    if(Player[playerid][Mute]) return SendErrorMessage(playerid, "Cannot use this command when you're muted.");
+	if(Player[playerid][Mute]) return SendErrorMessage(playerid, "Cannot use this command when you're muted.");
 	if(isnull(params)) return SendUsageMessage(playerid,"/changename [New Name]");
 	if(strlen(params) <= 1) return SendErrorMessage(playerid,"Name cannot be that short idiot!!");
+	if(!ChangeName) return SendErrorMessage(playerid, "/changename command is disabled in this server.");
 
 	switch( SetPlayerName(playerid,params) )
 	{
@@ -17457,21 +17481,6 @@ public SpawnConnectedPlayer(playerid, team)
 // Stocks
 //------------------------------------------------------------------------------
 
-stock RespawnTheTrain()
-{
-	DestroyVehicle(thetrain);
-	DestroyVehicle(traintrailer1);
-	DestroyVehicle(traintrailer2);
-    thetrain = AddStaticVehicleEx(538, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198, 120); // Train
-	traintrailer1 = AddStaticVehicle(569, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198);
-	traintrailer2 = AddStaticVehicle(569, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198);
-	SetVehicleVirtualWorld(thetrain, 0);
-	SetVehicleVirtualWorld(traintrailer1, 0);
-	SetVehicleVirtualWorld(traintrailer2, 0);
-	AttachTrailerToVehicle(traintrailer1, thetrain);
-	AttachTrailerToVehicle(traintrailer2, thetrain);
-	return 1;
-}
 
 stock RecountPlayersOnCP()
 {
