@@ -3,7 +3,7 @@
 	v2.5.2
 	
 	- Fixed a major security issue.
-	-
+	- Improved /vote command. Usage: /vote [base | arena | tdm] [ID or -1]
 
 */
 
@@ -71,7 +71,6 @@ native IsValidVehicle(vehicleid);
 
 #define GTA_V_INTRO 0
 
-//antisob
 #define PUB:%1(%2) forward %1(%2); public %1(%2)
 #define FREEZE_SECONDS 3
 enum pinfo
@@ -81,7 +80,6 @@ enum pinfo
 	hacker
 };
 new gpInfo[MAX_PLAYERS][pinfo];
-//antisob
 
 
 // freecam
@@ -329,7 +327,7 @@ new ColScheme[10] = ""COL_PRIM"";
 #define DIALOG_CONFIG_SET_SECOND_WEAPON 52
 #define EDITSHORTCUTS_DIALOG            53
 #define GETVAL_DIAG                     54
-#define DIALOG_HELPS                    55  //dialogstyle
+#define DIALOG_HELPS                    55
 #define PLAYERCLICK_DIALOG              56
 #define DIALOG_SWITCH_TEAM_CLASS        57
 #define DIALOG_ROUND_LIST               58 // dialog for showing list of rounds played in last match mode or current.
@@ -570,7 +568,7 @@ enum PlayerVariables {
 	bool:Spawned,
 	bool:IsAFK,
 	bool:IsFrozen,
-	//bool:IsFreezed,		//antisob
+	//bool:IsFreezed,
 	bool:IsGettingKicked,
 	bool:AskingForHelp,
 	AskingForHelpTimer,
@@ -586,6 +584,7 @@ enum PlayerVariables {
 	bool:ShowSpecs,
 	bool:blockedall,    //blockpm
 	bool:FakePacketRenovation,
+	bool:HasVoted,
 	RadioID,    		//radio
 	NetCheck,
 	//duel
@@ -749,6 +748,7 @@ new BInterior[MAX_BASES];
 new BName[MAX_BASES][128];
 new bool:BExist[MAX_BASES] = false;
 new TotalBases;
+new VoteCount[MAX_BASES] = 0;
 
 
 // - Arena Variables -
@@ -821,6 +821,7 @@ new TotalRounds;
 new WeatherLimit = 50;
 new TimeLimit = 50;
 new WebString[128]; //webtxt
+new VotingTime = 10;
 //setradios
 new link[128];
 new link1[128]; //radio1
@@ -840,6 +841,7 @@ new bool:GiveKnife = true; // Auto-gives knives to players in round
 new bool:ShowBodyLabels = true; // Enable/Disable show 3d text labels on body (ping fps etc)
 new bool:VoteRound = true; // Enable/Disable /vote command.
 new bool:ChangeName = true; // Enable/Disable /changename command.
+new bool:VoteInProgress = false;
 
 
 //1=Hardcore NL, 2=ChartHits, 3=MUSIK.MAIN, 4=idobi, 5=DEFJAY US
@@ -3379,7 +3381,7 @@ public OnPlayerConnect(playerid)
 	Player[playerid][Spawned] = false;
 	Player[playerid][IsAFK] = false;
 	Player[playerid][IsFrozen] = false;
-//	Player[playerid][IsFreezed] = false;    //antisob
+//	Player[playerid][IsFreezed] = false;
 	Player[playerid][IsGettingKicked] = false;
 	Player[playerid][AskingForHelp] = false;
 	Player[playerid][Mute] = false;
@@ -3393,6 +3395,7 @@ public OnPlayerConnect(playerid)
 	Player[playerid][TextPos] = false;
 	Player[playerid][ShowSpecs] = true;
 	Player[playerid][blockedall] = false;
+	Player[playerid][HasVoted] = false;
 
 	noclipdata[playerid][cameramode] 	= 	CAMERA_MODE_NONE;
 	noclipdata[playerid][lrold]	   	 	= 	0;
@@ -3456,12 +3459,11 @@ public OnPlayerConnect(playerid)
 
 	#endif
 
-//antisob
 /*    gpInfo[playerid][hacker] = 0;
 	gpInfo[playerid][firstspawn] = 0;
 	GetPlayerName(playerid, gpInfo[playerid][pname], MAX_PLAYER_NAME);
 */
-//antisob
+
 
     if(AllMuted)
     	Player[playerid][Mute] = true;
@@ -3597,7 +3599,7 @@ public OnPlayerRequestSpawn(playerid) {
 }
 
 
-//antisob
+
 /*PUB:HackCheck(playerid)
 {
     gpInfo[playerid][firstspawn] = 1;
@@ -3629,11 +3631,10 @@ public OnPlayerRequestSpawn(playerid) {
 	}
 	return 1;
 }*/
-//antisob
+
 
 public OnPlayerSpawn(playerid)
 {
-	//antisob
     if(gpInfo[playerid][firstspawn] == 0 && Player[playerid][Playing] == false)
 	{
 	    SetCameraBehindPlayer(playerid);
@@ -3678,9 +3679,7 @@ public OnPlayerSpawn(playerid)
 		//SendClientMessage(playerid, -1, "Checking for cheats..");
 		//setradio
 	}
-//antisob
-
-
+	
 
 	if(Player[playerid][IgnoreSpawn] == true)
 	{
@@ -3867,17 +3866,17 @@ public OnPlayerDisconnect(playerid, reason)
     switch (reason){
 		case 0:{
 			if(Player[playerid][Playing] == false) format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Timeout{CCCCCC} :.",Player[playerid][Name]);
-		 	else format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Timeout{CCCCCC} :. HP {FFFFFF}%.0f {CCCCCC}| Armour {FFFFFF} %.0f", Player[playerid][Name], HP[0], HP[1]);
+		 	else format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Timeout{CCCCCC} :. HP {FFFFFF}%.0f {CCCCCC}| Armour {FFFFFF}%.0f", Player[playerid][Name], HP[0], HP[1]);
 		} case 1: {
 			if(Player[playerid][Playing] == false) format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Leaving {CCCCCC}:.",Player[playerid][Name]);
-			else format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Leaving {CCCCCC}:. HP {FFFFFF}%.0f {CCCCCC}| Armour {FFFFFF} %.0f", Player[playerid][Name], HP[0], HP[1]);
+			else format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Leaving {CCCCCC}:. HP {FFFFFF}%.0f {CCCCCC}| Armour {FFFFFF}%.0f", Player[playerid][Name], HP[0], HP[1]);
 		} case 2: {
 		    if(Player[playerid][Playing] == false) {
 				if(Player[playerid][IsKicked] == true)format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Kicked {CCCCCC}:.",Player[playerid][Name]);
 				else format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Banned {CCCCCC}:.",Player[playerid][Name]);
 			} else {
-				if(Player[playerid][IsKicked] == true)format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Kicked {CCCCCC}:. HP {FFFFFF}%.0f {CCCCCC}| Armour {FFFFFF} %.0f",Player[playerid][Name], HP[0], HP[1]);
-				else format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Banned {CCCCCC}:. HP {FFFFFF}%.0f {CCCCCC}| Armour {FFFFFF} %.0f",Player[playerid][Name], HP[0], HP[1]);
+				if(Player[playerid][IsKicked] == true)format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Kicked {CCCCCC}:. HP {FFFFFF}%.0f {CCCCCC}| Armour {FFFFFF}%.0f",Player[playerid][Name], HP[0], HP[1]);
+				else format(iString, sizeof(iString), "{FFFFFF}%s {CCCCCC}has disconnected .: {FFFFFF}Banned {CCCCCC}:. HP {FFFFFF}%.0f {CCCCCC}| Armour {FFFFFF}%.0f",Player[playerid][Name], HP[0], HP[1]);
 			}
 		}
 	}
@@ -7562,7 +7561,7 @@ public OnPlayerCommandReceived(playerid, cmdtext[])
 		}
 	}
 
-//antisob
+
     /*if(Player[playerid][IsFreezed] == true) {
 		new CmdText[50];
 		#if PLUGINS == 1
@@ -7573,7 +7572,7 @@ public OnPlayerCommandReceived(playerid, cmdtext[])
 	 	SendErrorMessage(playerid,"Can't use any command when you are frozen.");
 		return 0;
 	}*/
-//antisob
+
 
 //duel
 	if(Player[playerid][InDuel] == true) {
@@ -7610,7 +7609,7 @@ public OnPlayerCommandPerformed(playerid, cmdtext[], success)
 	return 1;
 }
 
-//dialogstyle
+
 CMD:updates(playerid, params[])
 {
 	new string[2048];
@@ -7620,6 +7619,7 @@ CMD:updates(playerid, params[])
 	strcat(string, "{00FF00}Attack-Defend v2.5.2 updates:\n");
 
 	strcat(string, "\n{FFFFFF}- Fixed a major security issue.");
+	strcat(string, "\n{FFFFFF}- Improved /vote command. Usage: /vote [base | arena | tdm] [ID or -1]");
 	strcat(string, "\n{FFFFFF}");
 	
 	strcat(string, "{00FF00}Attack-Defend v2.5.1 updates:\n");
@@ -7677,7 +7677,7 @@ CMD:cmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/duel   /yes   /no   /rq");
 
 	strcat(string, "\n\n"COL_PRIM"Base commands:");
-	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr   /fix   /para  /knife  /vote   /voteint");
+	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr (/fix)   /para (/rp)   /knife   /vote");
 
 	strcat(string, "\n\n"COL_PRIM"Player profile commands:");
 	strcat(string, "\n{FFFFFF}/togspecs  /changename  /weather (/w)   /time (/t)   /changepass   /sound   /testsound   /textdraw   /togspec(all)   /shortcuts");
@@ -7707,7 +7707,7 @@ CMD:acmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/jetpack   /teamdmg   /showspectateinfo   /resetallguns   /tr   /cr   /setafk   /move   /goto   /get   /roundtime   /cptime   /shortcuts");
 	strcat(string, "\n{FFFFFF}/cc   /minfps   /maxping   /maxpacket   /giveallgun   /givegun   /giveweapon   /freeze   /unfreeze   /autobalance   /antispam   /autopause");
 
-	strcat(string, "\n{FFFFFF}/ra /rb /rt {CACACA}(random arena/base/TDM)	{FFFFFF}/MaxTdmKills");
+	strcat(string, "\n{FFFFFF}/ra /rb /rt {CACACA}(random arena/base/tdm)	{FFFFFF}/maxtdmkills");
 
 	if(Player[playerid][Level] > 1) {
 		strcat(string, "\n\n"COL_PRIM"Level 2:");
@@ -10531,10 +10531,10 @@ CMD:maxtdmkills(playerid,params[])
 {
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level to do that.");
 	if(Current != -1) return SendErrorMessage(playerid,"Can't use the command while round is on.");
-	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/maxtdmkills [kills (5 - 90)]");
+	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/maxtdmkills [5 - 90]");
 
 	new val = strval(params);
-	if(val < 5 || val > 90) return SendErrorMessage(playerid,"Maximum TDM Kills can range b/w  5 - 90 kills only.");
+	if(val < 5 || val > 90) return SendErrorMessage(playerid,"Maximum TDM kills can range b/w  5 - 90 kills only.");
 
 	MaxTDMKills = val;
 
@@ -10542,7 +10542,7 @@ CMD:maxtdmkills(playerid,params[])
 	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'Max TDM Kills'", MaxTDMKills);
     db_free_result(db_query(sqliteconnection, iString));
 
-    format(iString,sizeof(iString),"{FFFFFF}%s "COL_PRIM"has changed the Max Tdm Kills to {FFFFFF}%d kills", Player[playerid][Name], MaxTDMKills);
+    format(iString,sizeof(iString),"{FFFFFF}%s "COL_PRIM"has changed the maximum TDM kills to {FFFFFF}%d", Player[playerid][Name], MaxTDMKills);
 	SendClientMessageToAll(-1, iString);
 	LogAdminCommand("maxtdmkills", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -13523,7 +13523,7 @@ CMD:random(playerid, params[])
 
 	if(isnull(Params) || IsNumeric(Params)) return
 	#if ENABLED_TDM == 1
-	SendUsageMessage(playerid,"/random [base | arena | TDM]");
+	SendUsageMessage(playerid,"/random [base | arena | tdm]");
 	#else
 	SendUsageMessage(playerid,"/random [base | arena]");
 	#endif
@@ -13531,11 +13531,11 @@ CMD:random(playerid, params[])
 	if(strcmp(Params, "base", true) == 0) CommandID = 1;
 	else if(strcmp(Params, "arena", true) == 0) CommandID = 2;
 	#if ENABLED_TDM == 1
-	else if(strcmp(Params, "TDM", true) == 0) CommandID = 3;
+	else if(strcmp(Params, "tdm", true) == 0) CommandID = 3;
 	#endif //--
 	else return
 	#if ENABLED_TDM == 1
-	SendUsageMessage(playerid,"/random [base | arena | TDM]");
+	SendUsageMessage(playerid,"/random [base | arena | tdm]");
 	#else
 	SendUsageMessage(playerid,"/random [base | arena]");
 	#endif
@@ -13626,66 +13626,212 @@ CMD:vote(playerid, params[])
 	if(Current != -1) return SendErrorMessage(playerid,"A round is in progress, please wait for it to end.");
 	if(AllowStartBase == false) return SendErrorMessage(playerid,"Please wait.");
 
-	new Params[64], iString[160], CommandID;
+	new Params[2][64], iString[160], CommandID;
 	#if PLUGINS == 1
-		sscanf(params, "s[64]", Params);
+		sscanf(params, "s[64]s[64]", Params[0], Params[1]);
 	#else
-	    sscanf(params, "s", Params);
+	    sscanf(params, "ss", Params[0], Params[1]);
 	#endif
 
-	if(isnull(Params) || IsNumeric(Params)) return SendUsageMessage(playerid,"/vote [base | arena]");
+	if(isnull(Params[0]) || IsNumeric(Params[0]) || isnull(Params[1])) return
+	#if ENABLED_TDM == 1
+	SendUsageMessage(playerid,"/vote [base | arena | tdm] [ID or -1]");
+	#else
+	SendUsageMessage(playerid,"/vote [base | arena] [ID or -1]");
+	#endif
+	
+ 	if(strcmp(Params[0], "base", true) == 0) CommandID = 1;
+	else if(strcmp(Params[0], "arena", true) == 0) CommandID = 2;
+	#if ENABLED_TDM == 1
+	else if(strcmp(Params[0], "tdm", true) == 0) CommandID = 3;
+	#endif
+	else return
+	#if ENABLED_TDM == 1
+	SendUsageMessage(playerid,"/vote [base | arena | tdm] [ID or -1]");
+	#else
+	SendUsageMessage(playerid,"/vote [base | arena] [ID or -1]");
+	#endif
 
-	if(strcmp(Params, "base", true) == 0) CommandID = 1;
-	else if(strcmp(Params, "arena", true) == 0) CommandID = 2;
-	else return SendUsageMessage(playerid,"/vote [base | arena]");
-
-	switch(CommandID) {
-		case 1: {
-		    new BaseID = DetermineRandomRound(2, 0, BASE);
-
-			if(BaseID == -1) {
-			    for(new i = 0; i < MAX_BASES; i++) {
+	if(CommandID == 1)
+	{
+	    if(Player[playerid][HasVoted] == true) SendErrorMessage(playerid,"You have already voted.");
+	    else
+	    {
+	        new BaseID = strval(Params[1]);
+  			if(BaseID == -1)
+			{
+				for(new i = 0; i < MAX_BASES; i++)
+				{
 					RecentBase[i] = -1;
 				}
 				BasesPlayed = 0;
 				BaseID = DetermineRandomRound(2, 0, BASE);
 			}
-
-			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
-			SetTimerEx("OnBaseStart", 4000, false, "i", BaseID);
-
-			format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has voted to randomly started Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
-			SendClientMessageToAll(-1, iString);
-
-			GameType = BASE;
-		} case 2: {
-		    new ArenaID = DetermineRandomRound(2, 0, ARENA);
-
-			if(ArenaID == -1) {
-			    for(new i = 0; i < MAX_ARENAS; i++) {
+			if(BaseID > MAX_BASES) return SendErrorMessage(playerid,"That base does not exist.");
+			if(!BExist[BaseID]) return SendErrorMessage(playerid,"That base does not exist.");
+			else
+			{
+			    VoteCount[BaseID] = VoteCount[BaseID]+1;
+				Player[playerid][HasVoted] = true;
+				format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has voted to start Base: {FFFFFF}%s (ID: %d) "COL_PRIM"--- Votes: %d/3", Player[playerid][Name], BName[BaseID], BaseID, VoteCount[BaseID]);
+				SendClientMessageToAll(-1, iString);
+				
+    			if(VoteCount[BaseID] >= 3)
+				{
+				    VoteInProgress = false;
+				    
+					AllowStartBase = false;
+					SetTimerEx("OnBaseStart", 2000, false, "i", BaseID);
+					format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started Base: {FFFFFF}%s (ID: %d)", BName[BaseID], BaseID);
+					SendClientMessageToAll(-1, iString);
+                    VotingTime = 10;
+					GameType = BASE;
+					foreach(new i : Player)
+					{
+					    if(CanPlay(i)) {
+					        TogglePlayerControllableEx(i, false);
+							Player[i][ToAddInRound] = true;
+							Player[i][HasVoted] = false;
+						}
+					}
+				}
+		 		if(VoteInProgress == false)
+				{
+				    VoteInProgress = true;
+					new i;
+				   	while((i < MAX_BASES) || (i <= HighestID+1))
+				   	{
+				   	    if(i < MAX_BASES) VoteCount[i] = 0; VoteCount[BaseID] = 1;
+				   	    if(i <= HighestID+1) Player[i][HasVoted] = false; Player[playerid][HasVoted] = true;
+				   	    i++;
+				   	}
+				   	OnVoteBase();
+				}
+			}
+	    }
+	}
+	
+	else if(CommandID == 2)
+	{
+	    if(Player[playerid][HasVoted] == true) SendErrorMessage(playerid,"You have already voted.");
+	    else
+	    {
+	        new ArenaID = strval(Params[1]);
+  			if(ArenaID == -1)
+			{
+				for(new i = 0; i < MAX_ARENAS; i++)
+				{
 					RecentArena[i] = -1;
 				}
 				ArenasPlayed = 0;
 				ArenaID = DetermineRandomRound(2, 0, ARENA);
 			}
+			if(ArenaID > MAX_ARENAS) return SendErrorMessage(playerid,"That arena does not exist.");
+			if(!AExist[ArenaID]) return SendErrorMessage(playerid,"That arena does not exist.");
+			else
+			{
+			    VoteCount[ArenaID] = VoteCount[ArenaID]+1;
+				Player[playerid][HasVoted] = true;
+				format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has voted to start Arena: {FFFFFF}%s (ID: %d) "COL_PRIM"--- Votes: %d/3", Player[playerid][Name], AName[ArenaID], ArenaID, VoteCount[ArenaID]);
+				SendClientMessageToAll(-1, iString);
 
-			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
-			SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
+    			if(VoteCount[ArenaID] >= 3)
+				{
+				    VoteInProgress = false;
 
-			format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has voted to randomly started Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
-			SendClientMessageToAll(-1, iString);
-
-			GameType = ARENA;
-			OneOnOne = false;
-		}
+					AllowStartBase = false;
+					SetTimerEx("OnArenaStart", 2000, false, "i", ArenaID);
+					format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started Arena: {FFFFFF}%s (ID: %d)", AName[ArenaID], ArenaID);
+					SendClientMessageToAll(-1, iString);
+                    VotingTime = 10;
+					GameType = ARENA;
+					OneOnOne = false;
+					foreach(new i : Player)
+					{
+					    if(CanPlay(i)) {
+					        TogglePlayerControllableEx(i, false);
+							Player[i][ToAddInRound] = true;
+							Player[i][HasVoted] = false;
+						}
+					}
+				}
+		 		if(VoteInProgress == false)
+				{
+				    VoteInProgress = true;
+					new i;
+				   	while((i < MAX_ARENAS) || (i <= HighestID+1))
+				   	{
+				   	    if(i < MAX_ARENAS) VoteCount[i] = 0; VoteCount[ArenaID] = 1;
+				   	    if(i <= HighestID+1) Player[i][HasVoted] = false; Player[playerid][HasVoted] = true;
+				   	    i++;
+				   	}
+				   	OnVoteArena();
+				}
+			}
+	    }
 	}
+	
+	#if ENABLED_TDM == 1
+	else if(CommandID == 3)
+	{
+	    if(Player[playerid][HasVoted] == true) SendErrorMessage(playerid,"You have already voted.");
+	    else
+	    {
+	        new ArenaID = strval(Params[1]);
+  			if(ArenaID == -1)
+			{
+				for(new i = 0; i < MAX_ARENAS; i++)
+				{
+					RecentArena[i] = -1;
+				}
+				ArenasPlayed = 0;
+				ArenaID = DetermineRandomRound(2, 0, ARENA);
+			}
+			if(ArenaID > MAX_ARENAS) return SendErrorMessage(playerid,"That TDM does not exist.");
+			if(!AExist[ArenaID]) return SendErrorMessage(playerid,"That TDM does not exist.");
+			else
+			{
+			    VoteCount[ArenaID] = VoteCount[ArenaID]+1;
+				Player[playerid][HasVoted] = true;
+				format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has voted to start TDM: {FFFFFF}%s (ID: %d) "COL_PRIM"--- Votes: %d/3", Player[playerid][Name], AName[ArenaID], ArenaID, VoteCount[ArenaID]);
+				SendClientMessageToAll(-1, iString);
 
-	foreach(new i : Player) {
-	    if(CanPlay(i)) {
-	        TogglePlayerControllableEx(i, false); // Pause all the players.
-			Player[i][ToAddInRound] = true;
-		}
+    			if(VoteCount[ArenaID] >= 3)
+				{
+				    VoteInProgress = false;
+
+					AllowStartBase = false;
+					SetTimerEx("OnArenaStart", 2000, false, "i", ArenaID);
+					format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started TDM: {FFFFFF}%s (ID: %d)", AName[ArenaID], ArenaID);
+					SendClientMessageToAll(-1, iString);
+					VotingTime = 10;
+					GameType = TDM;
+					OneOnOne = false;
+					foreach(new i : Player)
+					{
+					    if(CanPlay(i)) {
+					        TogglePlayerControllableEx(i, false);
+							Player[i][ToAddInRound] = true;
+							Player[i][HasVoted] = false;
+						}
+					}
+				}
+		 		if(VoteInProgress == false)
+				{
+				    VoteInProgress = true;
+					new i;
+				   	while((i < MAX_ARENAS) || (i <= HighestID+1))
+				   	{
+				   	    if(i < MAX_ARENAS) VoteCount[i] = 0; VoteCount[ArenaID] = 1;
+				   	    if(i <= HighestID+1) Player[i][HasVoted] = false; Player[playerid][HasVoted] = true;
+				   	    i++;
+				   	}
+				   	OnVoteTDM();
+				}
+			}
+	    }
 	}
+	#endif
 
 	return 1;
 }
@@ -13704,7 +13850,7 @@ CMD:randomint(playerid, params[])
 	#endif
 	if(isnull(Params) || IsNumeric(Params)) return
 	#if ENABLED_TDM == 1
-	SendUsageMessage(playerid,"/randomint [base | arena | TDM]");
+	SendUsageMessage(playerid,"/randomint [base | arena | tdm]");
 	#else
 	SendUsageMessage(playerid,"/randomint [base | arena]");
 	#endif
@@ -13716,7 +13862,7 @@ CMD:randomint(playerid, params[])
 	#endif
 	else return//--
 	#if ENABLED_TDM == 1
-	SendUsageMessage(playerid,"/randomint [base | arena | TDM]");
+	SendUsageMessage(playerid,"/randomint [base | arena | tdm]");
 	#else
 	SendUsageMessage(playerid,"/randomint [base | arena]");
 	#endif
@@ -13792,77 +13938,6 @@ CMD:randomint(playerid, params[])
 	return 1;
 }
 
-CMD:voteint(playerid, params[])
-{
-	foreach(new i : Player) {
-    	if(Player[i][Level] > 0) return SendErrorMessage(playerid,"Cannot vote when an admin is online. Type {FFFFFF}/admins "COL_PRIM"to see online admins.");
-	}
-	if(Current != -1) return SendErrorMessage(playerid,"A round is in progress, please wait for it to end.");
-	if(AllowStartBase == false) return SendErrorMessage(playerid,"Please wait.");
-
-	new Params[64], iString[160], CommandID;
-	#if PLUGINS == 1
-		sscanf(params, "s[64]", Params);
-	#else
-	    sscanf(params, "s", Params);
-	#endif
-	if(isnull(Params) || IsNumeric(Params)) return SendUsageMessage(playerid,"/voteint [base | arena]");
-
-	if(strcmp(Params, "base", true) == 0) CommandID = 1;
-	else if(strcmp(Params, "arena", true) == 0) CommandID = 2;
-	else return SendUsageMessage(playerid,"/voteint [base | arena]");
-
-	switch(CommandID) {
-		case 1: {
-		    new BaseID = DetermineRandomRound(1, 0, BASE);
-
-			if(BaseID == -1) {
-			    for(new i = 0; i < MAX_BASES; i++) {
-					RecentBase[i] = -1;
-				}
-				BasesPlayed = 0;
-				BaseID = DetermineRandomRound(1, 0, BASE);
-			}
-
-			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
-			SetTimerEx("OnBaseStart", 4000, false, "i", BaseID);
-
-			format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has voted to randomly start interior Base: {FFFFFF}%s (ID: %d)", Player[playerid][Name], BName[BaseID], BaseID);
-			SendClientMessageToAll(-1, iString);
-
-			GameType = BASE;
-		} case 2: {
-		    new ArenaID = DetermineRandomRound(1, 0, ARENA);
-
-			if(ArenaID == -1) {
-			    for(new i = 0; i < MAX_ARENAS; i++) {
-					RecentArena[i] = -1;
-				}
-				ArenasPlayed = 0;
-				ArenaID = DetermineRandomRound(1, 0, ARENA);
-			}
-
-			AllowStartBase = false; // Make sure other player or you yourself is not able to start base on top of another base.
-			SetTimerEx("OnArenaStart", 4000, false, "i", ArenaID);
-
-			format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has voted to randomly start interior Arena: {FFFFFF}%s (ID: %d)", Player[playerid][Name], AName[ArenaID], ArenaID);
-			SendClientMessageToAll(-1, iString);
-
-			GameType = ARENA;
-		}
-	}
-
-	foreach(new i : Player) {
-	    if(CanPlay(i)) {
-	        TogglePlayerControllableEx(i, false); // Pause all the players.
-	        Player[i][ToAddInRound] = true;
-		}
-	}
-
-	return 1;
-}
-
-
 CMD:start(playerid, params[])
 {
 	if(ESLMode == true) return SendErrorMessage(playerid,"Can't use when ESL mode is enabled.");
@@ -13879,9 +13954,9 @@ CMD:start(playerid, params[])
 
 	if(isnull(Params[0]) || IsNumeric(Params[0])) return
 	#if ENABLED_TDM == 1
-	SendUsageMessage(playerid,"/start [base | arena | TDM | last] [ID]");
+	SendUsageMessage(playerid,"/start [base | arena | tdm | last] [ID]");
 	#else
-	SendUsageMessage(playerid,"/start [base | arena | TDM | last] [ID]");
+	SendUsageMessage(playerid,"/start [base | arena | last] [ID]");
 	#endif
 
 	if(!strcmp(Params[0], "last", true))
@@ -13954,14 +14029,14 @@ CMD:start(playerid, params[])
 	if(strcmp(Params[0], "base", true) == 0) CommandID = 1;
 	else if(strcmp(Params[0], "arena", true) == 0) CommandID = 2;
 	#if ENABLED_TDM == 1
-	else if(strcmp(Params[0], "TDM", true) == 0) CommandID = 3;
+	else if(strcmp(Params[0], "tdm", true) == 0) CommandID = 3;
 	#endif
 //	else if(strcmp(Params[0], "duel", true) == 0) CommandID = 3;
 	else return
 	#if ENABLED_TDM == 1
-	SendUsageMessage(playerid,"/start [base | arena | TDM | last] [ID]");
+	SendUsageMessage(playerid,"/start [base | arena | tdm | last] [ID]");
 	#else
-	SendUsageMessage(playerid,"/start [base | arena | TDM | last] [ID]");
+	SendUsageMessage(playerid,"/start [base | arena | last] [ID]");
 	#endif
 
 	if(!IsNumeric(Params[1])) return SendErrorMessage(playerid,"Base/Arena ID can only be numerical.");
@@ -14078,7 +14153,7 @@ CMD:setlevel(playerid, params[])
 {
 	if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be level 5 or rcon admin.");
 	new GiveID, LEVEL;
-	if(sscanf(params, "id", GiveID, LEVEL)) return SendUsageMessage(playerid,"/setlevel [Playerid] [Level]");
+	if(sscanf(params, "id", GiveID, LEVEL)) return SendUsageMessage(playerid,"/setlevel [Player ID] [Level]");
 
 	if(!IsPlayerConnected(GiveID)) return SendErrorMessage(playerid,"That player is not connected.");
 	if(Player[GiveID][Logged] == false) return SendErrorMessage(playerid,"That player is not logged in.");
@@ -18206,6 +18281,166 @@ stock FixVsTextDraw()
 	return 1;
 }
 
+forward OnVoteBase();
+public OnVoteBase()
+{
+	if(Current != -1) return 0;
+	if(AllowStartBase == false) return 0;
+	if(VoteInProgress == false) return 0;
+	
+	new iString[128];
+    VotingTime--;
+	format(iString, sizeof(iString), "%sRound voting has started~n~Time left: ~r~%d %sseconds", MAIN_TEXT_COLOUR, VotingTime, MAIN_TEXT_COLOUR);
+	TextDrawSetString(EN_CheckPoint, iString);
+	TextDrawShowForAll(EN_CheckPoint);
+
+    if(VotingTime <= 0)
+    {
+		VoteInProgress = false;
+
+		new GreaterVotesBaseID;
+		for(new i = 0; i < MAX_BASES; i++)
+		{
+			if(i != GreaterVotesBaseID)
+			{
+				if(VoteCount[i] > VoteCount[GreaterVotesBaseID])
+				{
+					GreaterVotesBaseID = i;
+				}
+			}
+		}
+		
+		AllowStartBase = false;
+		SetTimerEx("OnBaseStart", 2000, false, "i", GreaterVotesBaseID);
+		format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started Base: {FFFFFF}%s (ID: %d)", BName[GreaterVotesBaseID], GreaterVotesBaseID);
+		SendClientMessageToAll(-1, iString);
+		VotingTime = 10;
+		TextDrawHideForAll(EN_CheckPoint);
+		GameType = BASE;
+		foreach(new i : Player)
+		{
+		    if(CanPlay(i)) {
+				TogglePlayerControllableEx(i, false);
+				Player[i][ToAddInRound] = true;
+				Player[i][HasVoted] = false;
+			}
+		}
+		
+  		return 1;
+    }
+
+    SetTimer("OnVoteBase",1000,0);
+    return 0;
+}
+
+forward OnVoteArena();
+public OnVoteArena()
+{
+	if(Current != -1) return 0;
+	if(AllowStartBase == false) return 0;
+	if(VoteInProgress == false) return 0;
+
+	new iString[128];
+    VotingTime--;
+	format(iString, sizeof(iString), "%sRound voting has started~n~Time left: ~r~%d %sseconds", MAIN_TEXT_COLOUR, VotingTime, MAIN_TEXT_COLOUR);
+	TextDrawSetString(EN_CheckPoint, iString);
+	TextDrawShowForAll(EN_CheckPoint);
+
+    if(VotingTime <= 0)
+    {
+		VoteInProgress = false;
+
+		new GreaterVotesArenaID;
+		for(new i = 0; i < MAX_ARENAS; i++)
+		{
+			if(i != GreaterVotesArenaID)
+			{
+				if(VoteCount[i] > VoteCount[GreaterVotesArenaID])
+				{
+					GreaterVotesArenaID = i;
+				}
+			}
+		}
+
+		AllowStartBase = false;
+		SetTimerEx("OnArenaStart", 2000, false, "i", GreaterVotesArenaID);
+		format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started Arena: {FFFFFF}%s (ID: %d)", AName[GreaterVotesArenaID], GreaterVotesArenaID);
+		SendClientMessageToAll(-1, iString);
+		VotingTime = 10;
+		TextDrawHideForAll(EN_CheckPoint);
+		GameType = ARENA;
+		OneOnOne = false;
+		foreach(new i : Player)
+		{
+		    if(CanPlay(i)) {
+				TogglePlayerControllableEx(i, false);
+				Player[i][ToAddInRound] = true;
+				Player[i][HasVoted] = false;
+			}
+		}
+
+  		return 1;
+    }
+
+    SetTimer("OnVoteArena",1000,0);
+    return 0;
+}
+
+
+
+forward OnVoteTDM();
+public OnVoteTDM()
+{
+	if(Current != -1) return 0;
+	if(AllowStartBase == false) return 0;
+	if(VoteInProgress == false) return 0;
+
+	new iString[128];
+    VotingTime--;
+	format(iString, sizeof(iString), "%sRound voting has started~n~Time left: ~r~%d %sseconds", MAIN_TEXT_COLOUR, VotingTime, MAIN_TEXT_COLOUR);
+	TextDrawSetString(EN_CheckPoint, iString);
+	TextDrawShowForAll(EN_CheckPoint);
+
+    if(VotingTime <= 0)
+    {
+		VoteInProgress = false;
+
+		new GreaterVotesArenaID;
+		for(new i = 0; i < MAX_ARENAS; i++)
+		{
+			if(i != GreaterVotesArenaID)
+			{
+				if(VoteCount[i] > VoteCount[GreaterVotesArenaID])
+				{
+					GreaterVotesArenaID = i;
+				}
+			}
+		}
+
+		AllowStartBase = false;
+		SetTimerEx("OnArenaStart", 2000, false, "i", GreaterVotesArenaID);
+		format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started TDM: {FFFFFF}%s (ID: %d)", AName[GreaterVotesArenaID], GreaterVotesArenaID);
+		SendClientMessageToAll(-1, iString);
+		VotingTime = 10;
+		TextDrawHideForAll(EN_CheckPoint);
+		GameType = TDM;
+		OneOnOne = false;
+		foreach(new i : Player)
+		{
+		    if(CanPlay(i)) {
+				TogglePlayerControllableEx(i, false);
+				Player[i][ToAddInRound] = true;
+				Player[i][HasVoted] = false;
+			}
+		}
+
+  		return 1;
+    }
+
+    SetTimer("OnVoteTDM",1000,0);
+    return 0;
+}
+
 #if SKINICONS == 1
 //skinicons
 forward UpdateAliveForAll();
@@ -20740,7 +20975,7 @@ SyncPlayer(playerid)
 	if(AllowStartBase == false) return 1;
 	if(IsPlayerInAnyVehicle(playerid)) return 1;
 	if(Player[playerid][IsAFK] == true || Player[playerid][IsFrozen] == true) return 1;
-	//if(Player[playerid][IsFreezed] == true) return 1;   //antisob
+	//if(Player[playerid][IsFreezed] == true) return 1;
 
 	Player[playerid][Syncing] = true;
 	SetTimerEx("SyncInProgress", 1000, false, "i", playerid);
@@ -22568,6 +22803,11 @@ public OnArenaStart(ArenaID)
 		else if( GameType == ARENA ) format(iString, sizeof(iString), "%sArena %s(~r~%d%s)", MAIN_TEXT_COLOUR, MAIN_TEXT_COLOUR, Current, MAIN_TEXT_COLOUR);
 	}else format(iString, sizeof(iString), "%sDuel %s(~r~%d%s)", MAIN_TEXT_COLOUR, MAIN_TEXT_COLOUR, Current, MAIN_TEXT_COLOUR);
 
+	for(new i = 0; i < MAX_ARENAS; i++)
+	{
+		VoteCount[i] = 0;
+	}
+
 	foreach(new i : Player) {
 
 
@@ -23107,6 +23347,11 @@ public OnBaseStart(BaseID)
     new iString[160];
 	format(iString, sizeof(iString), "%sBase %s(~r~%d%s)", MAIN_TEXT_COLOUR, MAIN_TEXT_COLOUR, Current, MAIN_TEXT_COLOUR);
 
+	for(new i = 0; i < MAX_BASES; i++)
+	{
+		VoteCount[i] = 0;
+	}
+	
 	foreach(new i : Player) {
 		Player[i][LastVehicle] = -1;
 		//PlayerTextDrawShow(i, RoundText);
