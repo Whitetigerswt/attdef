@@ -14715,11 +14715,14 @@ CMD:style(playerid, params[])
 	{
 		case 1:
 		{
+ 			
+			db_free_result(db_query(sqliteconnection, sprintf("UPDATE Players SET Style = 0 WHERE Name = '%s'", DB_Escape(Player[playerid][Name]))));
 		    Player[playerid][Style] = 0;
 		    SendClientMessage(playerid, -1, "{FFFFFF}You have changed your textdraw style to: "COL_PRIM"0 (Minimum/Lag-free textdraws)");
 		}
 		case 2:
 		{
+		    db_free_result(db_query(sqliteconnection, sprintf("UPDATE Players SET Style = 1 WHERE Name = '%s'", DB_Escape(Player[playerid][Name]))));
 		    Player[playerid][Style] = 1;
 		    SendClientMessage(playerid, -1, "{FFFFFF}You have changed your textdraw style to: "COL_PRIM"1 (Normal textdraws)");
 		}
