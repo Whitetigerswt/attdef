@@ -4,6 +4,9 @@
 	
 	- Fixed a major security issue.
 	- Improved /vote command. Usage: /vote [base | arena | tdm] [ID or -1]
+	- Anti-joypad is now back, however it won't function when lag-shoot is enabled.
+	- Added anti-keybind system (however this can't be a solution to macros, this is just something to keep it busy until Tiger puts an end to it with the AC).
+	- Server owners (from now on) always have to upgrade to the latest version of AttDef GM or their servers will be blocked and out of use.
 
 */
 
@@ -353,7 +356,8 @@ new ColScheme[10] = ""COL_PRIM"";
 
 new w0[MAX_PLAYERS];	//heartnarmor
 
-#define PRESSED(%0) (((newkeys & (%0)) == (%0)) && ((oldkeys & (%0)) != (%0)))
+#define PRESSED(%0) 	(((newkeys & (%0)) == (%0)) && ((oldkeys & (%0)) != (%0)))
+#define RELEASED(%0) 	(((newkeys & (%0)) != (%0)) && ((oldkeys & (%0)) == (%0)))
 
 #define ATTACKER_CHANGES_X      19.4
 #define ATTACKER_CHANGES_Y      0
@@ -677,7 +681,10 @@ enum PlayerVariables {
 	LastEditWepLimit,
 	LastEditWeaponSlot,
 	WeaponStat[55],
-	PlayerTypeByWeapon[32]
+	PlayerTypeByWeapon[32],
+	last,
+ 	Sprinting,
+ 	KBuing
 
 }
 new Player[MAX_PLAYERS][PlayerVariables];
@@ -695,6 +702,7 @@ new EditingShortcutOf[MAX_PLAYERS];
 new LastClickedPlayer[MAX_PLAYERS];
 
 new TargetInfoTimer[MAX_PLAYERS];
+new SprintTimer[MAX_PLAYERS];
 
 // bool:TargetInfoShown[MAX_PLAYERS];
 
@@ -867,7 +875,7 @@ new WeaponStatsStr[3000];
 new ChatString[128];
 new ServerPass[128];
 new hostname[64];
-//new lagcompmode;
+new lagcompmode;
 new ScoreString[4][256];
 new TotalStr[2500];
 //new Exception[24];
@@ -1993,18 +2001,43 @@ stock MATCHSYNC_InsertMatchStats()
 #define VERSION_CHAR_LENGTH     		4
 
 #define VERSION_CHECKER_VERSION_URL		"sixtytiger.com/khalid/AttDef_API/VersionChecker/version.php"
+#define VERSION_CHECKER_FORCEUSER_URL	"sixtytiger.com/khalid/AttDef_API/VersionChecker/forceuser.php"
 #define VERSION_CHECKER_CHANGELOG_URL	"INVALID SHIT"
 
 #define VERSION_IS_BEHIND       		0
 #define VERSION_IS_UPTODATE     		1
 
 new VersionReport = -1;
-new bool:VersionCheckerStatus = false;
+new bool:VersionCheckerStatus = false, bool:ForceUserToNewestVersion = false;
 new LatestVersionStr[64], LatestVersionChangesStr[512];
-stock InitVersionChecker()
+stock InitVersionChecker(timer = true, moreinfo = false)
 {
-	//SetTimer("ReportServerVersion", 20 * 60 * 1000, true);
-    HTTP(0, HTTP_GET, VERSION_CHECKER_VERSION_URL, "", "SaveVersionInStr");
+	if(timer)
+	{
+		SetTimer("ReportServerVersion", 6 * 60 * 60 * 1000, true);
+	}
+	if(moreinfo)
+	{
+	    HTTP(1, HTTP_GET, VERSION_CHECKER_FORCEUSER_URL, "", "ForceUserToUseNewest");
+	}
+	HTTP(0, HTTP_GET, VERSION_CHECKER_VERSION_URL, "", "SaveVersionInStr");
+	return 1;
+}
+
+forward ReportServerVersion_Delayed();
+public ReportServerVersion_Delayed()
+{
+    if(VersionReport == VERSION_IS_BEHIND)
+ 	{
+     	SendClientMessageToAll(-1, ""COL_PRIM"Version checker: {FFFFFF}the version used in this server is out-dated. You can visit "COL_PRIM"www.sixtytiger.com {FFFFFF}to get the latest version");
+        SendClientMessageToAll(-1, sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
+		if(ForceUserToNewestVersion)
+		    SendClientMessageToAll(-1, ""COL_PRIM"Server is blocked and out of use until it is upgraded to the latest version.");
+	}
+	/*else
+ 	{
+     	SendClientMessageToAll(-1, sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
+	}*/
 	return 1;
 }
 
@@ -2015,16 +2048,29 @@ public ReportServerVersion()
 	    return 0;
 	    
     HTTP(0, HTTP_GET, VERSION_CHECKER_VERSION_URL, "", "SaveVersionInStr");
-	if(VersionReport == VERSION_IS_BEHIND)
- 	{
-     	SendClientMessageToAll(-1, ""COL_PRIM"Version checker: {FFFFFF}the version used in this server is out-dated. You can visit "COL_PRIM"www.sixtytiger.com {FFFFFF}to get the latest version");
-        SendClientMessageToAll(-1, sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
-	}
-	/*else
- 	{
-     	SendClientMessageToAll(-1, sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
-	}*/
+    HTTP(1, HTTP_GET, VERSION_CHECKER_FORCEUSER_URL, "", "ForceUserToUseNewest");
+    SetTimer("ReportServerVersion_Delayed", 2000, false);
 	return 1;
+}
+
+forward ForceUserToUseNewest(index, response_code, data[]);
+public ForceUserToUseNewest(index, response_code, data[])
+{
+    if(response_code == 200)
+    {
+		new value = strval(data);
+		if(value == 0)
+		{
+		    ForceUserToNewestVersion = false;
+		}
+		else if(value == 1)
+		{
+		    ForceUserToNewestVersion = true;
+		}
+    }
+    else
+        ForceUserToNewestVersion = false;
+    return 1;
 }
 
 forward SaveVersionInStr(index, response_code, data[]);
@@ -2979,9 +3025,9 @@ public OnGameModeInit()
     GetServerVarAsString("hostname", hostname, sizeof(hostname));
     GetServerVarAsString("bind", ServerIP, sizeof(ServerIP));
 
-    /*lagcompmode = GetServerVarAsInt("lagcompmode");
+    lagcompmode = GetServerVarAsInt("lagcompmode");
 
-    new hn[128];
+    /*new hn[128];
 	lagcompmode = GetServerVarAsInt("lagcompmode");
     if(lagcompmode == 2)
 		format(hn, sizeof(hn), "hostname %s [Normal Aim-leading]", hostname);
@@ -3154,7 +3200,7 @@ public OnGameModeInit()
 
 	SetTimer("OnScriptUpdate", 1000, true); // Timer that updates every second (will be using this for most stuff)
     //SetTimer("HeadShotCheck", 250, true);
-    InitVersionChecker();
+    InitVersionChecker(true, true);
 
 	if(ESLMode == true) {
 	    TeamScore[ATTACKER] = 0;
@@ -3221,11 +3267,27 @@ public OnGameModeExit()
 	return 1;
 }
 
-
+forward VersionOutdatedKick(playerid);
+public VersionOutdatedKick(playerid)
+{
+	ShowPlayerDialog(playerid, -1, 0, " ", " ", " ", " ");
+	ClearChatForPlayer(playerid);
+	SendClientMessage(playerid, -1, ""COL_PRIM"This server is using an out-dated version of AttDef GM. Server owners have to upgrade to the latest version so you can play here.");
+	SendClientMessage(playerid, -1, ""COL_PRIM"Visit {FFFFFF}www.sixtytiger.com "COL_PRIM"for more info and help!");
+	SetTimerEx("OnPlayerKicked", 500, false, "i", playerid);
+	return 1;
+}
 
 public OnPlayerConnect(playerid)
 {
-	if(playerid > HighestID) HighestID = playerid;
+    if(VersionReport == VERSION_IS_BEHIND && ForceUserToNewestVersion == true)
+	{
+	    SetTimerEx("VersionOutdatedKick", 1000, false, "i", playerid);
+	    return 1;
+	}
+
+    if(playerid > HighestID)
+		HighestID = playerid;
 
 	#if ENABLED_TDM == 1
 	Player[playerid][InTDM] = false; //tdm var clear
@@ -4867,15 +4929,18 @@ public OnPlayerUpdate(playerid)
     new keys, ud, lr;
 	GetPlayerKeys(playerid, keys, ud, lr);
 
-	/*if ((ud != 128 && ud != 0 && ud != -128) || (lr != 128 && lr != 0 && lr != -128)) {
-		new str[128];
-	    format(str, sizeof(str), "{FFFFFF}** System ** "COL_PRIM"has kicked {FFFFFF}%s "COL_PRIM"for using joypad", Player[playerid][Name]);
-	    SendClientMessageToAll(-1, str);
+	if(lagcompmode != 0 || ServerAntiLag == true)
+	{
+		if ((ud != 128 && ud != 0 && ud != -128) || (lr != 128 && lr != 0 && lr != -128)) {
+			new str[128];
+		    format(str, sizeof(str), "{FFFFFF}** System ** "COL_PRIM"has kicked {FFFFFF}%s "COL_PRIM"for using joypad", Player[playerid][Name]);
+		    SendClientMessageToAll(-1, str);
 
-		Player[playerid][DontPause] = true;
-	    SetTimerEx("OnPlayerKicked", 100, false, "i", playerid);
+			Player[playerid][DontPause] = true;
+		    SetTimerEx("OnPlayerKicked", 100, false, "i", playerid);
+		}
 	}
-	//antijoypad*/
+	//antijoypad
 
 
 	if(noclipdata[playerid][cameramode] == CAMERA_MODE_FLY) {
@@ -7620,13 +7685,16 @@ CMD:updates(playerid, params[])
 
 	strcat(string, "\n{FFFFFF}- Fixed a major security issue.");
 	strcat(string, "\n{FFFFFF}- Improved /vote command. Usage: /vote [base | arena | tdm] [ID or -1]");
+	strcat(string, "\n{FFFFFF}- Anti-joypad is now back, however it won't function when lag-shoot is enabled.");
+	strcat(string, "\n{FFFFFF}- Added anti-keybind system (however this can't be a solution to macros, this is just something to keep it busy until Tiger puts an end to it with the AC).");
+	strcat(string, "\n{FFFFFF}- Server owners (from now on) always have to upgrade to the latest version of AttDef GM or their servers will be blocked and out of use.");
 	strcat(string, "\n{FFFFFF}");
 	
 	strcat(string, "{00FF00}Attack-Defend v2.5.1 updates:\n");
 
 	strcat(string, "\n{FFFFFF}- Fixed vehicle respawn bug.");
 	
-	strcat(string, "\n\n{00FF00}Attack-Defend v2.5 updates:\n");
+	/*strcat(string, "\n\n{00FF00}Attack-Defend v2.5 updates:\n");
 	
 	strcat(string, "\n{FFFFFF}- Added weapon statistics system (check out /weaponstats).");
     strcat(string, "\n{FFFFFF}- Added new duel arenas.");
@@ -7649,7 +7717,7 @@ CMD:updates(playerid, params[])
     strcat(string, "\n{FFFFFF}- Fixed a bug that 'Round Paused' textdraw could get stuck at your screen while round is not running.");
     strcat(string, "\n{FFFFFF}- Tweaked the Version Checker system a little.");
     strcat(string, "\n{FFFFFF}- Fixed vehicle velocity bug; now vehicles auto re-spawn after they've completely stopped.");
-    strcat(string, "\n{FFFFFF}");
+    strcat(string, "\n{FFFFFF}");*/
 	
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
 	return 1;
@@ -21119,9 +21187,54 @@ stock pProfile(playerid) {
 }
 */
 
+forward OnPlayerSprinting(playerid);
+public OnPlayerSprinting(playerid)
+{
+    Player[playerid][Sprinting] = 0;
+}
 
 public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 {
+    if(newkeys & KEY_SPRINT)
+    {
+       if (GetPlayerAnimationIndex(playerid) == 1231)
+       {
+	          new now = GetTickCount();
+
+	          if (now - Player[playerid][last] < 120)
+	          {
+					if (Player[playerid][KBuing] < 20)
+					{
+						Player[playerid][KBuing] = Player[playerid][KBuing] + 1;
+					}
+					else
+					{
+						new string[160];
+						format(string, sizeof string, ""COL_PRIM"Keybind detection: {FFFFFF}%s "COL_PRIM"is probably using sprint macros {FFFFFF}("COL_PRIM"pressed key 8x a second{FFFFFF}"COL_PRIM".)", Player[playerid][Name]);
+						SendClientMessageToAll(-1, string);
+						SendClientMessage(playerid, -1, ""COL_PRIM"Warning: {FFFFFF}Stop using keybind or you'll get kicked!");
+
+						Player[playerid][Sprinting]++;
+						KillTimer(SprintTimer[playerid]);
+						SprintTimer[playerid] = SetTimerEx("OnPlayerSprinting", 5000, false, "i", playerid);
+
+						if(Player[playerid][Sprinting] >= 2)
+						{
+						    Player[playerid][IsKicked] = true;
+						    SetTimerEx("OnPlayerKicked", 500, false, "i", playerid);
+						    return 1;
+						}
+						Player[playerid][KBuing] = 0;
+					}
+	          }
+			  else
+			  {
+					Player[playerid][KBuing] = 0;
+			  }
+			  Player[playerid][last] = now;
+		}
+    }
+
 	if(newkeys == 160 && (GetPlayerWeapon(playerid) == 0 || GetPlayerWeapon(playerid) == 1) && !IsPlayerInAnyVehicle(playerid)){
 		SyncPlayer(playerid);
 		return 1;
