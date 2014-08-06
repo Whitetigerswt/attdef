@@ -4,10 +4,20 @@
 	
 	- Fixed a major security issue.
 	- Improved /vote command. Usage: /vote [base | arena | tdm] [ID or -1]
+<<<<<<< HEAD
 	- Anti-joypad is now back, however it won't function when lag-shoot is enabled.
 	- Added anti-keybind system (however this can't be a solution to macros, this is just something to keep it busy until Tiger puts an end to it with the AC).
 	- Server owners (from now on) always have to upgrade to the latest version of AttDef GM or their servers will be blocked and out of use.
 
+=======
+	- Made "Graffito ID: xyz" 3dtext visible at 5 units instead of 25
+	- Added /style [0 - 1] command to switch between minimal and normal textdraw styles.
+	- Fixed the bug where radio kept re-streaming every time you synced or spawned.
+	- Made "X vs X" textdraw autoupdate every 3 seconds
+	-
+	-
+	
+>>>>>>> origin/master
 */
 
 
@@ -399,7 +409,7 @@ new Text: WebText;  //webtxt
 new Text: ACText;   //actxt
 new Text: AnnTD;	//anntxt
 new Text: PauseTD;  //pausetxt
-// new Text: RoundStats; // Shows team names, players alive and team hp.
+new Text: RoundStats; // Shows team names, players alive and team hp.
 new Text: RoundsPlayed; // Shows how many rounds are played out of for example 9 rounds. (Rounds 3/9)
 new Text: TeamScoreText; // Shows team name and score (e.g. TeK 3 CZE 3)
 new Text: WeaponLimitTD;
@@ -436,7 +446,6 @@ new GotHit[MAX_PLAYERS];    //heartnarmor
 new thetrain, traintrailer1, traintrailer2;
 
 #if SKINICONS == 1
-//skinicons
 new Text: A1;
 new Text: A2;
 new Text: A3;
@@ -458,7 +467,6 @@ new Text: D7;
 new Text: D8;
 new Text: D9;
 new Text: D10;
-//skinicons
 #endif
 
 // - Round Textdraws - added by Niko_boy // -
@@ -589,7 +597,11 @@ enum PlayerVariables {
 	bool:blockedall,    //blockpm
 	bool:FakePacketRenovation,
 	bool:HasVoted,
+<<<<<<< HEAD
 	RadioID,    		//radio
+=======
+	RadioID,
+>>>>>>> origin/master
 	NetCheck,
 	//duel
 	challengerid,
@@ -600,6 +612,7 @@ enum PlayerVariables {
 	//duel
 	LastMsgr,   		//reply
 	blockedid,			//blockpm
+	Style,
 
 	#if GTA_V_INTRO == 1
 
@@ -829,7 +842,11 @@ new TotalRounds;
 new WeatherLimit = 50;
 new TimeLimit = 50;
 new WebString[128]; //webtxt
+<<<<<<< HEAD
 new VotingTime = 10;
+=======
+new VotingTime = 20;
+>>>>>>> origin/master
 //setradios
 new link[128];
 new link1[128]; //radio1
@@ -911,7 +928,7 @@ new bool:AllMuted = false;
 #endif
 new ESLAC;
 #if SKINICONS == 1
-new bool:ShowIcons = true;  //skinicons
+new bool:ShowIcons = true;
 #endif
 new bool:AutoBal = true;	//autobalancefix
 new bool:AntiSpam = true;   //antispam
@@ -2301,7 +2318,7 @@ stock LoadGraffs()
             new obj = CreateObject(GraffData[i][G_objectmodel], GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], GraffData[i][G_pos][3], GraffData[i][G_pos][4], GraffData[i][G_pos][5]);
         	SetObjectMaterialText(obj, GraffData[i][G_sprayedtext], 0, GraffData[i][G_materialsize], GraffData[i][G_fontface],
 			GraffData[i][G_fontsize], GraffData[i][G_bold], GraffData[i][G_textcolor], GraffData[i][G_backcolor], GraffData[i][G_textalignment]);
-			GraffData[i][G_label] = Create3DTextLabel(sprintf("Graffito ID: %d", i), 0x47B0FEFF, GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], 25.0, 0, 0);
+			GraffData[i][G_label] = Create3DTextLabel(sprintf("Graffito ID: %d", i), 0x47B0FEFF, GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], 5.0, 0, 0);
 			IsGraff[obj] = true;
 			TotalGraffs ++;
 		} while(db_next_row(res));
@@ -3199,6 +3216,7 @@ public OnGameModeInit()
 	for(new i = 0; i < MAX_ARENAS; i++) RecentArena[i] = -1;
 
 	SetTimer("OnScriptUpdate", 1000, true); // Timer that updates every second (will be using this for most stuff)
+	SetTimer("FixVsTextDraw", 3000, true);
     //SetTimer("HeadShotCheck", 250, true);
     InitVersionChecker(true, true);
 
@@ -3415,7 +3433,7 @@ public OnPlayerConnect(playerid)
 	Player[playerid][iLastVehicle] = -1;
 	Player[playerid][LastEditWepLimit] = -1;
 	Player[playerid][LastEditWeaponSlot] = -1;
-    Player[playerid][RadioID] = 0;  //radio
+    Player[playerid][RadioID] = 0;
     //duel
     Player[playerid][challengerid] = -1;
 	Player[playerid][duelweap1] = 0;
@@ -3425,6 +3443,7 @@ public OnPlayerConnect(playerid)
 	//duel
     Player[playerid][LastMsgr] = -1;    //reply
     Player[playerid][blockedid] = -1;
+    Player[playerid][Style] = 1;
 
     Player[playerid][Logged] = false;
     Player[playerid][IgnoreSpawn] = false;
@@ -3704,36 +3723,6 @@ public OnPlayerSpawn(playerid)
 	    //SetTimerEx("HackCheck", FREEZE_SECONDS * 1000, 0, "i", playerid);
    	    //Player[playerid][IsFreezed] = true;
 		//setradio
-    	if(Player[playerid][RadioID] == 1) {
-			PlayAudioStreamForPlayer(playerid, link1);
-		}
-		if(Player[playerid][RadioID] == 2) {
-			PlayAudioStreamForPlayer(playerid, link2);
-		}
-		if(Player[playerid][RadioID] == 3) {
-			PlayAudioStreamForPlayer(playerid, link3);
-		}
-		if(Player[playerid][RadioID] == 4) {
-			PlayAudioStreamForPlayer(playerid, link4);
-		}
-		if(Player[playerid][RadioID] == 5) {
-			PlayAudioStreamForPlayer(playerid, link5);
-		}
-		if(Player[playerid][RadioID] == 6) {
-			PlayAudioStreamForPlayer(playerid, link6);
-		}
-		if(Player[playerid][RadioID] == 7) {
-			PlayAudioStreamForPlayer(playerid, link7);
-		}
-		if(Player[playerid][RadioID] == 8) {
-			PlayAudioStreamForPlayer(playerid, link8);
-		}
-		if(Player[playerid][RadioID] == 9) {
-			PlayAudioStreamForPlayer(playerid, link9);
-		}
-		if(Player[playerid][RadioID] == 10) {
-			PlayAudioStreamForPlayer(playerid, link10);
-		}
 
 //1=Hardcore NL, 2=ChartHits, 3=MUSIK.MAIN, 4=idobi, 5=DEFJAY US
 //6=181.FM Hiphop, 7=Indian Radio HSL, 8=BlackBeats.FM, 9=TechnoBase.FM, 10=HouseTime.FM
@@ -3772,7 +3761,7 @@ public OnPlayerSpawn(playerid)
 
 	if(Player[playerid][DMReadd] > 0) {
 	    SpawnInDM(playerid, Player[playerid][DMReadd]);
-	    FixVsTextDraw();
+//	    FixVsTextDraw();
 	    return 1;
 	}
 
@@ -3867,7 +3856,7 @@ public OnPlayerSpawn(playerid)
 
 
     //TextDrawShowForPlayer(playerid, LOGO);
-    FixVsTextDraw();
+//    FixVsTextDraw();
 	return 1;
 }
 
@@ -4054,11 +4043,9 @@ public OnPlayerDisconnect(playerid, reason)
 	}
 
 #if SKINICONS == 1
-	//skinicons
 	if(ShowIcons == true) {
 		if(Player[playerid][Playing] == true) SetTimer("UpdateAliveForAll", 2000, false);
 	}
-	//skinicons
 #endif
 
     Player[playerid][VoteToUnpause] = false;
@@ -4070,7 +4057,7 @@ public OnPlayerDisconnect(playerid, reason)
 	Player[playerid][VoteToNetCheck] = -1;
 	Player[playerid][Level] = 0;    //iponconnect --- to avoid on connect IPs being shown to non-admins
 
-    FixVsTextDraw();
+//    FixVsTextDraw();
 
     #if XMAS == 1
     Snow_OnDisconnect(playerid);
@@ -4242,7 +4229,6 @@ public OnPlayerDeath(playerid, killerid, reason)
             OnPlayerAmmoUpdate(playerid);
 
 #if SKINICONS == 1
-            //skinicons
             if(ShowIcons == true) {
 	            SetTimer("UpdateAliveForAll", 2000, false);
             }
@@ -4351,7 +4337,6 @@ public OnPlayerDeath(playerid, killerid, reason)
             OnPlayerAmmoUpdate(playerid);
 
 #if SKINICONS == 1
-            //skinicons
             if(ShowIcons == true) {
             	SetTimer("UpdateAliveForAll", 2000, false);
 			}
@@ -4922,7 +4907,10 @@ public OnPlayerUpdate(playerid)
 */
 	// Target info
 
-	if(ToggleTargetInfo == true) ShowTargetInfo(playerid, GetPlayerTargetPlayer(playerid));
+	if(ToggleTargetInfo == true && Player[playerid][Style] == 1)
+	{
+		ShowTargetInfo(playerid, GetPlayerTargetPlayer(playerid));
+	}
 
 
     //antijoypad
@@ -5073,7 +5061,10 @@ public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY
 
 public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart)
 {
-    if(ToggleTargetInfo == true) ShowTargetInfo(playerid, damagedid);
+	if(ToggleTargetInfo == true && Player[playerid][Style] == 1)
+	{
+	    ShowTargetInfo(playerid, damagedid);
+	}
     
     // slit throat with a knife
     if(amount > 1800 && weaponid == 4 && GetPlayerAnimationIndex(playerid) == 747) {
@@ -5183,7 +5174,11 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		}
 	}
 
-	if(ToggleTargetInfo == true) ShowTargetInfo(issuerid, playerid);
+	if(ToggleTargetInfo == true && Player[issuerid][Style] == 1)
+	{
+	    ShowTargetInfo(issuerid, playerid);
+	}
+
 	if(ServerAntiLag == true && weaponid != -1) return 1;
 
 	//heartnarmor
@@ -5523,7 +5518,10 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 
 
 		TextDrawColor( leftRedBG , 0xFF2B2BAA );
-		TextDrawShowForAll( leftRedBG );
+		foreach(new i:Player)
+		{
+			if(Player[i][Style] == 1) TextDrawShowForPlayer(i, leftRedBG);
+		}
 
 		KillTimer(AttHpTimer);
 		AttHpTimer = SetTimer("HideHpTextForAtt", 3000, false);
@@ -5537,7 +5535,10 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		TextDrawSetString(TeamHpLose[1], iString);
 
         TextDrawColor( rightBlueBG , 0x2121FFAA );
-        TextDrawShowForAll( rightBlueBG );
+		foreach(new i:Player)
+		{
+			if(Player[i][Style] == 1) TextDrawShowForPlayer(i, rightBlueBG);
+		}
 		//foreach(new i:Player)
 		//{
 		 //   if( Player[i][Playing] || ( Player[i][Spectating] == true && IsPlayerConnected(Player[i][IsSpectatingID]) && Player[ Player[i][IsSpectatingID] ][Playing] ) )
@@ -5787,7 +5788,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
             Player[playerid][Logged] = true;
 		    Player[playerid][ChatChannel] = -1;
 		    Player[playerid][NetCheck] = 1;
-		    Player[playerid][RadioID] = 0;  	//radio
+		    Player[playerid][RadioID] = 0;
 		    Player[playerid][DuelsWon] = 0; 	//duel
 		    Player[playerid][DuelsLost] = 0;    //duel
 
@@ -7223,9 +7224,10 @@ public OnPlayerClickTextDraw(playerid, Text:clickedid)
 
 			if(Current != -1)
 			{
-// 				TextDrawShowForPlayer(playerid, RoundStats);
-				ShowRoundStats(playerid);
+				if(Player[playerid][Style] == 0) TextDrawShowForPlayer(playerid, RoundStats);
+				else ShowRoundStats(playerid);
 			}
+			
 			if(Player[playerid][ShowSpecs])
 			{
 				PlayerTextDrawShow(playerid, WhoSpec[0]);
@@ -7551,10 +7553,10 @@ public OnHashUpdate(const iIdx, szHash[]) {
 
  			db_get_field_assoc(res, "GetHitSound", iString, sizeof(iString));
     		Player[playerid][GetHitSound] = strval(iString);
-			//radio
+
             db_get_field_assoc(res, "RadID", iString, sizeof(iString));
     		Player[playerid][RadioID] = strval(iString);
-    		//radio
+
 			//duel
 			db_get_field_assoc(res, "DWon", iString, sizeof(iString));
     		Player[playerid][DuelsWon] = strval(iString);
@@ -7566,12 +7568,12 @@ public OnHashUpdate(const iIdx, szHash[]) {
 
 			ClearPlayerChat(playerid);
             SendClientMessage(playerid,-1, "You have successfully logged in.");
-			//radio //duel
+			//duel
 			format(Query, sizeof(Query), "Level: %d | Weather: %d | Time: %d | Chat Channel: %d | HitSound: %d | Get HitSound: %d", Player[playerid][Level], Player[playerid][Weather], Player[playerid][Time], Player[playerid][ChatChannel], Player[playerid][HitSound], Player[playerid][GetHitSound]);
 			SendClientMessage(playerid, -1, Query);
 			format(Query, sizeof(Query), "Duels Won: %d | Duels Lost: %d | Radio ID: %d | Net Check: %d", Player[playerid][DuelsWon], Player[playerid][DuelsLost], Player[playerid][RadioID], Player[playerid][NetCheck]);
 			SendClientMessage(playerid, -1, Query);
-			//radio //duel
+			//duel
 
 			#if INTROTEXT == 0
 				if(ESLMode == false)
@@ -7685,12 +7687,20 @@ CMD:updates(playerid, params[])
 
 	strcat(string, "\n{FFFFFF}- Fixed a major security issue.");
 	strcat(string, "\n{FFFFFF}- Improved /vote command. Usage: /vote [base | arena | tdm] [ID or -1]");
+<<<<<<< HEAD
 	strcat(string, "\n{FFFFFF}- Anti-joypad is now back, however it won't function when lag-shoot is enabled.");
 	strcat(string, "\n{FFFFFF}- Added anti-keybind system (however this can't be a solution to macros, this is just something to keep it busy until Tiger puts an end to it with the AC).");
 	strcat(string, "\n{FFFFFF}- Server owners (from now on) always have to upgrade to the latest version of AttDef GM or their servers will be blocked and out of use.");
 	strcat(string, "\n{FFFFFF}");
+=======
+	strcat(string, "\n{FFFFFF}- Added /style [0 - 1] command to switch between minimal and normal textdraw styles.");
+	strcat(string, "\n{FFFFFF}- Fixed the bug where radio kept re-streaming every time you synced or spawned.");
+	strcat(string, "\n{FFFFFF}- Fixed 'X vs X' textdraw showing wrong player count on connect/disconnect.");
+	strcat(string, "\n{FFFFFF}- ");
+
+>>>>>>> origin/master
 	
-	strcat(string, "{00FF00}Attack-Defend v2.5.1 updates:\n");
+	strcat(string, "\n\n{00FF00}Attack-Defend v2.5.1 updates:\n");
 
 	strcat(string, "\n{FFFFFF}- Fixed vehicle respawn bug.");
 	
@@ -7735,7 +7745,7 @@ CMD:cmds(playerid, params[])
 
 
 	strcat(string, "\n\n"COL_PRIM"Basic commands:");
-	strcat(string, "\n{FFFFFF}/help   /updates   /s(ync)   /v   /car   /spec   /specoff   /kill   /severstats   /sstats");
+	strcat(string, "\n{FFFFFF}/help   /updates   /s(ync)   /v   /car   /spec   /specoff   /kill   /severstats (/sstats)");
 	strcat(string, "\n{FFFFFF}/radio   /lobby   /switch   /afk   /back   /dance   /showagain   /lastplayed   /rounds   /getgun");
 
 	strcat(string, "\n\n"COL_PRIM"DM commands:");
@@ -7748,13 +7758,13 @@ CMD:cmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr (/fix)   /para (/rp)   /knife   /vote");
 
 	strcat(string, "\n\n"COL_PRIM"Player profile commands:");
-	strcat(string, "\n{FFFFFF}/togspecs  /changename  /weather (/w)   /time (/t)   /changepass   /sound   /testsound   /textdraw   /togspec(all)   /shortcuts");
+	strcat(string, "\n{FFFFFF}/togspecs  /changename  /weather (/w)   /time (/t)   /changepass   /sound   /textdraw   /togspec(all)   /shortcuts   /style");
 
 	strcat(string, "\n\n"COL_PRIM"Chat-related commands:");
 	strcat(string, "\n{FFFFFF}/pm   /r   /blockpm(all)   /nopm(all)   /cchannel   /pchannel   Use "COL_PRIM"# {FFFFFF}to talk in chat channel");
 
 	strcat(string, "\n\n"COL_PRIM"Other commands:");
-	strcat(string, "\n{FFFFFF}/admins   /credits   /view   /getpos   /serverpassword   /sp   /settings   /freecam   /porn   /int  /checkversion");
+	strcat(string, "\n{FFFFFF}/admins   /credits   /view   /getpos   /serverpassword (/sp)   /settings   /freecam   /porn   /int   /checkversion   /testsound");
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Player Commands", string, "OK","");
 	return 1;
@@ -7773,9 +7783,13 @@ CMD:acmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/match   /select   /pause   /unpause   /balance   /swap   /setteam   /lock   /unlock   /weaponlimit   /spas   /setradio   /lobbyguns");
 	strcat(string, "\n{FFFFFF}/sethp   /setarmour   /healall   /hl   /armourall  /al   /teamname   /allvs   /setscore   /resetscores   /netcheck   /nolag  /fakepacket");
 	strcat(string, "\n{FFFFFF}/jetpack   /teamdmg   /showspectateinfo   /resetallguns   /tr   /cr   /setafk   /move   /goto   /get   /roundtime   /cptime   /shortcuts");
-	strcat(string, "\n{FFFFFF}/cc   /minfps   /maxping   /maxpacket   /giveallgun   /givegun   /giveweapon   /freeze   /unfreeze   /autobalance   /antispam   /autopause");
+	strcat(string, "\n{FFFFFF}/cc   /minfps   /maxping   /maxpacket   /giveallgun   /givegun   /giveweapon   /freeze   /unfreeze   /autobalance   /antispam");
 
+<<<<<<< HEAD
 	strcat(string, "\n{FFFFFF}/ra /rb /rt {CACACA}(random arena/base/tdm)	{FFFFFF}/maxtdmkills");
+=======
+	strcat(string, "\n{FFFFFF}/ra /rb /rt {CACACA}(random arena/base/tdm)   {FFFFFF}/maxtdmkills   /autopause");
+>>>>>>> origin/master
 
 	if(Player[playerid][Level] > 1) {
 		strcat(string, "\n\n"COL_PRIM"Level 2:");
@@ -7784,7 +7798,7 @@ CMD:acmds(playerid, params[])
 
 	if(Player[playerid][Level] > 2) {
 		strcat(string, "\n\n"COL_PRIM"Level 3:");
-		strcat(string, "\n{FFFFFF}/kick   /ban   /unbanip   /ac   /end   /limit   /muteall   /unmuteall   /skinicons   /aka");
+		strcat(string, "\n{FFFFFF}/kick   /ban   /unbanip   /ac   /end   /limit   /muteall   /unmuteall   /aka");
 	}
 
 	if(Player[playerid][Level] > 3) {
@@ -8044,7 +8058,7 @@ CMD:ann(playerid, params[])
 
 	TextDrawSetString(AnnTD, str);
 	TextDrawShowForAll(AnnTD);
-	AnnTimer = SetTimer("HideAnnForAll", 3000, false);
+	AnnTimer = SetTimer("HideAnnForAll", 5000, false);
 
 	format(str, sizeof(str), "{FFFFFF}%s "COL_PRIM"made an announcement.", Player[playerid][Name]);
 	SendClientMessageToAll(-1, str);
@@ -8308,7 +8322,7 @@ CMD:lobby(playerid, params[])
 		format(iString, sizeof(iString), "{FFFFFF}%s (%d) "COL_PRIM"has removed himself from the round. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, HP[0], HP[1]);
 		SendClientMessageToAll(-1, iString);
         RemovePlayerFromRound(playerid);
-        FixVsTextDraw();
+//        FixVsTextDraw();
     }
     SpawnPlayerEx(playerid);
 	return 1;
@@ -8421,7 +8435,7 @@ CMD:yes(playerid, params[])
 
 	SetDuelSignText(playerid, pID);
 
-    FixVsTextDraw();    //fixbyxk
+//    FixVsTextDraw();    //fixbyxk
 
 	return 1;
 }
@@ -8475,7 +8489,6 @@ CMD:rq(playerid, params[])
 //duel
 
 #if SKINICONS == 1
-//skinicons
 CMD:skinicons(playerid, params[])
 {
 	if(Player[playerid][Level] < 3) return SendErrorMessage(playerid,"You need to be a level 3 admin to do that.");
@@ -8495,10 +8508,9 @@ CMD:skinicons(playerid, params[])
 	}
 	return 1;
 }
-//skinicons
 #endif
 
-//radio
+
 CMD:radio(playerid, params[])
 {
    	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/radio [1 - 10] {FFFFFF}to change radio. "COL_PRIM"/radio 0 {FFFFFF}to turn off radio");
@@ -8552,7 +8564,7 @@ CMD:radio(playerid, params[])
 
 	return 1;
 }
-//radio
+
 
 //setradio
 CMD:setradio(playerid, params[])
@@ -10245,7 +10257,7 @@ CMD:war(playerid, params[])
 
 	TextDrawShowForAll(RoundsPlayed);
 	TextDrawShowForAll(TeamScoreText);
-    FixVsTextDraw();
+//    FixVsTextDraw();
 	return 1;
 }
 
@@ -11644,7 +11656,7 @@ CMD:allvs(playerid,params[])
 
     format(iString, sizeof(iString),"{FFFFFF}%s "COL_PRIM"has changed the teams to {FFFFFF}\"%s\" vs all.", Player[playerid][Name], TempTeamName);
     SendClientMessageToAll(-1, iString);
-    FixVsTextDraw();
+//    FixVsTextDraw();
     return 1;
 }
 
@@ -12076,7 +12088,7 @@ CMD:setteam(playerid, params[])
 
 	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has switched {FFFFFF}%s "COL_PRIM"to: {FFFFFF}%s", Player[playerid][Name], Player[Params[0]][Name], TeamName[Params[1]+1]);
 	SendClientMessageToAll(-1, iString);
-    FixVsTextDraw();
+//    FixVsTextDraw();
 	return 1;
 }
 
@@ -12282,17 +12294,17 @@ CMD:rr(playerid, params[])
 		}
 	}
 
-//	TextDrawHideForAll(RoundStats);
 	foreach(new i:Player)
-	    HideRoundStats(i);
+	{
+		if(Player[i][Style] == 0) TextDrawHideForPlayer(i, RoundStats);
+		else HideRoundStats(i);
+	}
     TextDrawHideForAll(EN_CheckPoint);
 
 #if SKINICONS == 1
-	//skinicons
 	if(ShowIcons == true) {
 	    HideAllForAll();
 	}
-	//skinicons
 #endif
 
 	return 1;
@@ -12349,7 +12361,7 @@ CMD:afk(playerid, params[])
 	    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has set himself to AFK mode.", Player[pID][Name]);
 	}
  	SendClientMessageToAll(-1, iString);
-    FixVsTextDraw();
+//    FixVsTextDraw();
 	return 1;
 }
 
@@ -12374,7 +12386,7 @@ CMD:setafk(playerid, params[])
 	new iString[180];
 	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has set {FFFFFF}%s "COL_PRIM"to AFK mode.", Player[playerid][Name], Player[pID][Name]);
 	SendClientMessageToAll(-1, iString);
-    FixVsTextDraw();
+//    FixVsTextDraw();
     LogAdminCommand("setafk", playerid, pID);
 	return 1;
 }
@@ -12405,7 +12417,7 @@ CMD:back(playerid, params[])
 	new iString[160];
  	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"is back from AFK mode.", Player[playerid][Name]);
  	SendClientMessageToAll(-1, iString);
- 	FixVsTextDraw();
+// 	FixVsTextDraw();
 
     new str[256];
 	format(str, sizeof(str), "%s%s\n%s%s Sub\n%s%s\n%s%s Sub\n%sReferee", TextColor[ATTACKER], TeamName[ATTACKER], TextColor[ATTACKER_SUB], TeamName[ATTACKER], TextColor[DEFENDER], TeamName[DEFENDER], TextColor[DEFENDER_SUB], TeamName[DEFENDER], TextColor[REFEREE]);
@@ -12420,7 +12432,7 @@ CMD:swap(playerid, params[])
 	if(Current != -1) return SendErrorMessage(playerid,"Can't swap while round is active.");
 
 	SwapTeams();
-	FixVsTextDraw();
+//	FixVsTextDraw();
 
 	new iString[160];
 	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has swaped the teams.", Player[playerid][Name]);
@@ -12436,7 +12448,7 @@ CMD:balance(playerid, params[])
 	if(Current != -1) return SendErrorMessage(playerid,"Can't balance when round is active.");
 
 	BalanceTeams();
-	FixVsTextDraw();
+//	FixVsTextDraw();
 
 	new iString[160];
 	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has balanced the teams.", Player[playerid][Name]);
@@ -12740,17 +12752,17 @@ CMD:end(playerid, params[])
 		TextDrawHideForPlayer(i, DefenderTeam[3]);
 	}
 
-//	TextDrawHideForAll(RoundStats);
 	foreach(new i:Player)
-	    HideRoundStats(i);
+	{
+		if(Player[i][Style] == 0) TextDrawHideForPlayer(i, RoundStats);
+		else HideRoundStats(i);
+	}
 	TextDrawHideForAll(EN_CheckPoint);
 
 #if SKINICONS == 1
-	//skinicons
 	if(ShowIcons == true) {
 	    HideAllForAll();
 	}
-	//skinicons
 #endif
 
  	for( new i; i < 10; i ++ ) { // Reset the number of times a weapon is picked for each team.
@@ -13752,7 +13764,11 @@ CMD:vote(playerid, params[])
 					SetTimerEx("OnBaseStart", 2000, false, "i", BaseID);
 					format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started Base: {FFFFFF}%s (ID: %d)", BName[BaseID], BaseID);
 					SendClientMessageToAll(-1, iString);
+<<<<<<< HEAD
                     VotingTime = 10;
+=======
+					VotingTime = 20;
+>>>>>>> origin/master
 					GameType = BASE;
 					foreach(new i : Player)
 					{
@@ -13811,7 +13827,11 @@ CMD:vote(playerid, params[])
 					SetTimerEx("OnArenaStart", 2000, false, "i", ArenaID);
 					format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started Arena: {FFFFFF}%s (ID: %d)", AName[ArenaID], ArenaID);
 					SendClientMessageToAll(-1, iString);
+<<<<<<< HEAD
                     VotingTime = 10;
+=======
+					VotingTime = 20;
+>>>>>>> origin/master
 					GameType = ARENA;
 					OneOnOne = false;
 					foreach(new i : Player)
@@ -13872,7 +13892,11 @@ CMD:vote(playerid, params[])
 					SetTimerEx("OnArenaStart", 2000, false, "i", ArenaID);
 					format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started TDM: {FFFFFF}%s (ID: %d)", AName[ArenaID], ArenaID);
 					SendClientMessageToAll(-1, iString);
+<<<<<<< HEAD
 					VotingTime = 10;
+=======
+					VotingTime = 20;
+>>>>>>> origin/master
 					GameType = TDM;
 					OneOnOne = false;
 					foreach(new i : Player)
@@ -14714,6 +14738,30 @@ CMD:int(playerid,params[])
 	return 1;
 }
 
+CMD:style(playerid, params[])
+{
+	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/style [0 - 1]");
+
+	new CommandID;
+	if(strcmp(params, "0", true) == 0) CommandID = 1;
+	else if(strcmp(params, "1", true) == 0) CommandID = 2;
+
+	switch(CommandID)
+	{
+		case 1:
+		{
+		    Player[playerid][Style] = 0;
+		    SendClientMessage(playerid, -1, "{FFFFFF}You have changed your textdraw style to: "COL_PRIM"0 (Minimum/Lag-free textdraws)");
+		}
+		case 2:
+		{
+		    Player[playerid][Style] = 1;
+		    SendClientMessage(playerid, -1, "{FFFFFF}You have changed your textdraw style to: "COL_PRIM"1 (Normal textdraws)");
+		}
+	}
+	return 1;
+}
+
 SpawnInDM(playerid, DMID)
 {
 	Player[playerid][InDM] = true;
@@ -14821,7 +14869,7 @@ new Position = 10;
 
 
 //pausetxt
-	PauseTD = TextDrawCreate(320.000000, 420.000000, "_");
+	PauseTD = TextDrawCreate(320.000000, 415.000000, "_");
 	TextDrawBackgroundColor(PauseTD, MAIN_BACKGROUND_COLOUR);
 	TextDrawFont(PauseTD, 2);
 	TextDrawLetterSize(PauseTD, 0.300000, 1.500000);
@@ -14831,7 +14879,6 @@ new Position = 10;
 	TextDrawAlignment(PauseTD, 2);
 
 #if SKINICONS == 1
-//skinicons
 	A1 = TextDrawCreate(0.000000, 389.000000, "_");
 	TextDrawBackgroundColor(A1, 0x00000000);
 	TextDrawFont(A1, TEXT_DRAW_FONT_MODEL_PREVIEW);
@@ -15032,7 +15079,6 @@ new Position = 10;
 	TextDrawSetPreviewModel(D10, Skin[DEFENDER]);
 	TextDrawSetPreviewRot(D10, 0.000000, 0.000000, 0.000000, 3.000000);
 
-//skinicons
 #endif
 
 	#if INTROTEXT == 1
@@ -15227,7 +15273,7 @@ new Position = 10;
 
 	#endif
 
-/*
+
 	RoundStats = TextDrawCreate(318.0,431.5,"_");
 	TextDrawUseBox(RoundStats,1);
 	TextDrawBoxColor(RoundStats,0x0000022);
@@ -15240,7 +15286,7 @@ new Position = 10;
 	TextDrawSetShadow(RoundStats,0);
     TextDrawAlignment(RoundStats,2);
     TextDrawSetProportional(RoundStats, 1);
-*/
+
 
 	RoundsPlayed = TextDrawCreate(555.000000, 114.000000, "_");
 	TextDrawAlignment(RoundsPlayed, 2);
@@ -17575,17 +17621,17 @@ public SpawnConnectedPlayer(playerid, team)
 
 		if(Current != -1)
 	 	{
-			//	TextDrawShowForPlayer(playerid,RoundStats);
 			foreach(new i:Player)
-			    ShowRoundStats(i);
+			{
+				if(Player[i][Style] == 0) TextDrawShowForPlayer(i, RoundStats);
+				else ShowRoundStats(i);
+			}
 
 #if SKINICONS == 1
-			//skinicons
 			if(ShowIcons == true)
 			{
 				UpdateAliveForPlayer(playerid);
 			}
-			//skinicons
 #endif
 		}
 
@@ -18308,7 +18354,8 @@ stock ClearPlayerChat(playerid)
 	}
 }
 
-stock FixVsTextDraw()
+forward FixVsTextDraw();
+public FixVsTextDraw()
 {
 	new iString[128];
 
@@ -18358,7 +18405,11 @@ public OnVoteBase()
 	
 	new iString[128];
     VotingTime--;
+<<<<<<< HEAD
 	format(iString, sizeof(iString), "%sRound voting has started~n~Time left: ~r~%d %sseconds", MAIN_TEXT_COLOUR, VotingTime, MAIN_TEXT_COLOUR);
+=======
+	format(iString, sizeof(iString), "%sRound voting has started~n~Time left: ~r~~h~%d %sseconds", MAIN_TEXT_COLOUR, VotingTime, MAIN_TEXT_COLOUR);
+>>>>>>> origin/master
 	TextDrawSetString(EN_CheckPoint, iString);
 	TextDrawShowForAll(EN_CheckPoint);
 
@@ -18510,7 +18561,6 @@ public OnVoteTDM()
 }
 
 #if SKINICONS == 1
-//skinicons
 forward UpdateAliveForAll();
 public UpdateAliveForAll()
 {
@@ -18933,7 +18983,6 @@ stock HideAllForAll()
 	TextDrawHideForAll(D9);
 	TextDrawHideForAll(D10);
 }
-//skinicons
 #endif
 
 //anntxt
@@ -19712,7 +19761,7 @@ stock SwapTeams()
 
 	format(iString, sizeof(iString), "{FFFFFF}Teams are swapped - {FF0033}Attackers: {FFFFFF}%s | {3344FF}Defenders: {FFFFFF}%s", TeamName[ATTACKER], TeamName[DEFENDER]);
 	SendClientMessageToAll(-1, iString);
-    FixVsTextDraw();
+//    FixVsTextDraw();
     return 1;
 }
 
@@ -19791,7 +19840,7 @@ stock BalanceTeams() {
 			ClearAnimations(i);
 		}
 	}
-	FixVsTextDraw();
+//	FixVsTextDraw();
 	return 1;
 }
 
@@ -19846,7 +19895,7 @@ stock SwitchTeamFix(playerid) {
 			case REFEREE: ChangeVehicleColor(GetPlayerVehicleID(playerid), 200, 200);
 		}
 	}
-	FixVsTextDraw();
+//	FixVsTextDraw();
 }
 
 stock GetTeamWithLessPlayers()
@@ -20001,11 +20050,9 @@ stock RemovePlayerFromRound(playerid) {
 //    RadarFix();
 
 #if SKINICONS == 1
-	//skinicons
 	if(ShowIcons == true) {
 		SetTimer("UpdateAliveForAll", 2000, false);
 	}
-	//skinicons
 #endif
 
 	return 1;
@@ -20770,11 +20817,9 @@ stock LoadPlayerVariables(playerid)
 	    	SendClientMessageToAll(-1, iString);
 
 #if SKINICONS == 1
-			//skinicons
             if(ShowIcons == true) {
 		    	SetTimer("UpdateAliveForAll", 2000, false);
 			}
-			//skinicons
 #endif
 
 			if(Player[playerid][TextPos] == false) format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDamage ~r~%.0f~n~%sTotal Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[playerid][RoundKills], MAIN_TEXT_COLOUR, Player[playerid][RoundDamage], MAIN_TEXT_COLOUR, Player[playerid][TotalDamage]);
@@ -22257,15 +22302,25 @@ public OnScriptUpdate()
 		    ElapsedTime++;
 		}
 
-		/*
+/*
 			if(PlayersInCP == 0) format(iString,sizeof(iString),"~r~%s  ~r~~h~%d   ~l~(~r~~h~%.0f~l~)			   	            ~l~%d:%02d			   	            ~b~~h~%s  ~b~~h~%d   ~l~(~b~~h~%.0f~l~)~n~",TeamName[ATTACKER],PlayersAlive[ATTACKER],TeamHP[ATTACKER],RoundMints,RoundSeconds,TeamName[DEFENDER],PlayersAlive[DEFENDER],TeamHP[DEFENDER]);
 			else format(iString,sizeof(iString),"~r~%s  ~r~~h~%d   ~l~(~r~~h~%.0f~l~)			   	            ~l~%d:%02d / ~r~%d		   	            ~b~~h~%s  ~b~~h~%d   ~l~(~b~~h~%.0f~l~)~n~",TeamName[ATTACKER],PlayersAlive[ATTACKER],TeamHP[ATTACKER],RoundMints,RoundSeconds,CurrentCPTime, TeamName[DEFENDER],PlayersAlive[DEFENDER],TeamHP[DEFENDER]);
 			TextDrawSetString(RoundStats, iString);
-		*/
-
-		if(PlayersInCP == 0) format( iString, sizeof(iString),"~w~%d:%02d", RoundMints,	RoundSeconds );
-		else format( iString, sizeof(iString), "~w~%d:%02d / ~r~~h~%d", RoundMints,	RoundSeconds, CurrentCPTime );
+*/
+  		
+		new iString2[256];
+		if(PlayersInCP == 0)
+		{
+			format( iString, sizeof(iString),"~w~%d:%02d", RoundMints,	RoundSeconds );
+			format(iString2,sizeof(iString2),"~r~~h~%s  ~r~~h~~h~%d   ~w~(~r~~h~~h~%.0f~w~)			   	            ~w~%d:%02d			   	            ~b~~h~%s  ~b~~h~~h~%d   ~w~(~b~~h~~h~%.0f~w~)~n~",TeamName[ATTACKER],PlayersAlive[ATTACKER],TeamHP[ATTACKER],RoundMints,RoundSeconds,TeamName[DEFENDER],PlayersAlive[DEFENDER],TeamHP[DEFENDER]);
+		}
+		else
+		{
+			format( iString, sizeof(iString), "~w~%d:%02d / ~r~~h~%d", RoundMints,	RoundSeconds, CurrentCPTime );
+			format(iString2,sizeof(iString2),"~r~~h~%s  ~r~~h~~h~%d   ~w~(~r~~h~~h~%.0f~w~)			   	            ~w~%d:%02d / ~r~~h~%d		   	            ~b~~h~%s  ~b~~h~~h~%d   ~w~(~b~~h~~h~%.0f~w~)~n~",TeamName[ATTACKER],PlayersAlive[ATTACKER],TeamHP[ATTACKER],RoundMints,RoundSeconds,CurrentCPTime, TeamName[DEFENDER],PlayersAlive[DEFENDER],TeamHP[DEFENDER]);
+		}
 		TextDrawSetString(timerCenterTD , iString);
+		TextDrawSetString(RoundStats, iString2);
 
 		format( iString, 64, "~w~%d__(%0.0f)", PlayersAlive[ATTACKER], TeamHP[ATTACKER] );
 		TextDrawSetString( leftTeamData, iString );
@@ -22278,8 +22333,14 @@ public OnScriptUpdate()
 
 		TextDrawColor( leftRedBG , 0xDE000066 );
 		TextDrawColor( rightBlueBG , 0x3344FF66 );
-		TextDrawShowForAll( leftRedBG );
-		TextDrawShowForAll( rightBlueBG );
+		foreach(new i:Player)
+		{
+			if(Player[i][Style] == 1)
+			{
+			    TextDrawShowForPlayer(i, leftRedBG);
+			    TextDrawShowForPlayer(i, rightBlueBG);
+			}
+		}
 
 	} else if(ArenaStarted == true) {
 
@@ -22377,8 +22438,14 @@ public OnScriptUpdate()
 
 				TextDrawColor( leftRedBG , 0xDE000066 );
 				TextDrawColor( rightBlueBG , 0x3344FF66 );
-				TextDrawShowForAll( leftRedBG );
-				TextDrawShowForAll( rightBlueBG );
+				foreach(new i:Player)
+				{
+					if(Player[i][Style] == 1)
+					{
+					    TextDrawShowForPlayer(i, leftRedBG);
+					    TextDrawShowForPlayer(i, rightBlueBG);
+					}
+				}
 
 				/*==== had to do this because i couldnt figure out a
 						quick work around 	==================================*/
@@ -22423,10 +22490,10 @@ public OnScriptUpdate()
 
 	            ElapsedTime++;
 			}
-	/*
+
 			format(iString,sizeof(iString),"~r~%s  ~r~~h~%d   ~l~(~r~~h~%.0f~l~)			   	            ~l~%d:%02d			   	            ~b~~h~%s  ~b~~h~%d   ~l~(~b~~h~%.0f~l~)~n~",TeamName[ATTACKER],PlayersAlive[ATTACKER],TeamHP[ATTACKER],RoundMints,RoundSeconds,TeamName[DEFENDER],PlayersAlive[DEFENDER],TeamHP[DEFENDER]);
 	        TextDrawSetString(RoundStats, iString);
-	*/
+
 			format( iString, sizeof(iString),"~w~%d:%02d", RoundMints,	RoundSeconds );
 			TextDrawSetString(timerCenterTD , iString);
 
@@ -22441,8 +22508,14 @@ public OnScriptUpdate()
 
 			TextDrawColor( leftRedBG , 0xDE000066 );
 			TextDrawColor( rightBlueBG , 0x3344FF66 );
-			TextDrawShowForAll( leftRedBG );
-			TextDrawShowForAll( rightBlueBG );
+			foreach(new i:Player)
+			{
+				if(Player[i][Style] == 1)
+				{
+				    TextDrawShowForPlayer(i, leftRedBG);
+				    TextDrawShowForPlayer(i, rightBlueBG);
+				}
+			}
 		}
 	}
 
@@ -22858,11 +22931,9 @@ public OnPlayerInGameReplace(ToAddID, i, playerid) {
     RadarFix();
 
 #if SKINICONS == 1
-    //skinicons
     if(ShowIcons == true) {
 		SetTimer("UpdateAliveForAll", 2000, false);
 	}
-	//skinicons
 #endif
     return 1;
 }
@@ -22928,7 +22999,9 @@ public OnArenaStart(ArenaID)
 	    Player[i][Readied] = false;
 
 		//PlayerTextDrawShow(i, RoundText);
-		ShowRoundStats(i);
+		
+		if(Player[i][Style] == 0) PlayerTextDrawShow(i, RoundText);
+		else ShowRoundStats(i);
 		TextDrawSetString( leftTeamData, "_");
 		TextDrawSetString( rightTeamData, "_");
 		TextDrawSetString( centerTeamNames, "_");
@@ -23251,23 +23324,23 @@ SpawnPlayersInArena()
 	#endif
 	RoundSeconds = 0;
 
-//	TextDrawShowForAll(RoundStats);
-	foreach(new i:Player)
-			ShowRoundStats(i);
+    foreach(new i:Player)
+    {
+		if(Player[i][Style] == 0) TextDrawShowForPlayer(i, RoundStats);
+		else ShowRoundStats(i);
+	}
 
 #if SKINICONS == 1
-    //skinicons
     if(ShowIcons == true) {
 		SetTimer("UpdateAliveForAll", 2000, false);
 	}
-	//skinicons
 #endif
 
 	AllowStartBase = true;
 	ArenaStarted = true;
 	FallProtection = true;
 	RadarFix();
-	FixVsTextDraw();
+//	FixVsTextDraw();
 }
 
 forward AddPlayerToArena(playerid);
@@ -23282,11 +23355,9 @@ public AddPlayerToArena(playerid)
     PlayerTextDrawHide(playerid, RoundText);
 
 #if SKINICONS == 1
-	//skinicons
     if(ShowIcons == true) {
 	    SetTimer("UpdateAliveForAll", 2000, false);
 	}
-	//skinicons
 #endif
 
     #if XMAS == 1
@@ -23385,7 +23456,7 @@ public AddPlayerToArena(playerid)
 	PlayerTextDrawSetString(playerid, RoundKillDmgTDmg, iString);
 
 	RadarFix();
-	FixVsTextDraw();
+//	FixVsTextDraw();
 	return 1;
 }
 
@@ -23467,9 +23538,9 @@ public OnBaseStart(BaseID)
 	
 	foreach(new i : Player) {
 		Player[i][LastVehicle] = -1;
-		//PlayerTextDrawShow(i, RoundText);
 
-		ShowRoundStats(i);
+		if(Player[i][Style] == 0) PlayerTextDrawShow(i, RoundText);
+		else ShowRoundStats(i);
 		TextDrawSetString( leftTeamData, "_");
 		TextDrawSetString( rightTeamData, "_");
 		TextDrawSetString( centerTeamNames, "_");
@@ -23781,22 +23852,23 @@ SpawnPlayersInBase()
 	RoundMints = ConfigRoundTime;
 	RoundSeconds = 0;
 
-//	TextDrawShowForAll(RoundStats);
 	foreach(new i:Player)
-		ShowRoundStats(i);
+	{
+		if(Player[i][Style] == 0) TextDrawShowForPlayer(i, RoundStats);
+		else ShowRoundStats(i);
+	}
+
 #if SKINICONS == 1
-	//skinicons
 	if(ShowIcons == true) {
 		SetTimer("UpdateAliveForAll", 2000, false);
 	}
-	//skinicons
 #endif
 
 	AllowStartBase = true;
 	BaseStarted = true;
     FallProtection = true;
 	RadarFix();
-    FixVsTextDraw();
+//    FixVsTextDraw();
     return 1;
 }
 
@@ -23812,11 +23884,9 @@ public AddPlayerToBase(playerid)
     PlayerTextDrawHide(playerid, RoundText);
 
 #if SKINICONS == 1
-	//skinicons
 	if(ShowIcons == true) {
 		SetTimer("UpdateAliveForAll", 2000, false);
 	}
-	//skinicons
 #endif
 
     #if XMAS == 1
@@ -23913,7 +23983,7 @@ public AddPlayerToBase(playerid)
 	} */
 
 	RadarFix();
-	FixVsTextDraw();
+//	FixVsTextDraw();
 	return 1;
 }
 
@@ -24015,17 +24085,18 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
     TimedOutPlayers = 0;
 
 	new iString[256], TopString[3][128];
-//	TextDrawHideForAll(RoundStats);
+	
 	foreach(new i:Player)
-		HideRoundStats(i);
+	{
+		if(Player[i][Style] == 0) TextDrawHideForPlayer(i, RoundStats);
+		else HideRoundStats(i);
+	}
 	TextDrawHideForAll(EN_CheckPoint);
 
 #if SKINICONS == 1
-	//skinicons
 	if(ShowIcons == true) {
 	    HideAllForAll();
 	}
-	//skinicons
 #endif
 
 	#if STATS == 1 && MYSQL == 1    //esl
@@ -24450,7 +24521,7 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 	DefDamage = "";
 	DefAcc = "";
 
-	FixVsTextDraw();    //fixbyxk
+//	FixVsTextDraw();    //fixbyxk
     ResetTeamLeaders();
     LoadGraffs();
 	return 1;
@@ -25782,6 +25853,17 @@ LoginPlayer(playerid, DBResult:res) {
 
 
     Player[playerid][Logged] = true;
+    
+   	if(Player[playerid][RadioID] == 1) PlayAudioStreamForPlayer(playerid, link1);
+   	if(Player[playerid][RadioID] == 2) PlayAudioStreamForPlayer(playerid, link2);
+   	if(Player[playerid][RadioID] == 3) PlayAudioStreamForPlayer(playerid, link3);
+   	if(Player[playerid][RadioID] == 4) PlayAudioStreamForPlayer(playerid, link4);
+   	if(Player[playerid][RadioID] == 5) PlayAudioStreamForPlayer(playerid, link5);
+   	if(Player[playerid][RadioID] == 6) PlayAudioStreamForPlayer(playerid, link6);
+   	if(Player[playerid][RadioID] == 7) PlayAudioStreamForPlayer(playerid, link7);
+   	if(Player[playerid][RadioID] == 8) PlayAudioStreamForPlayer(playerid, link8);
+   	if(Player[playerid][RadioID] == 9) PlayAudioStreamForPlayer(playerid, link9);
+   	if(Player[playerid][RadioID] == 10) PlayAudioStreamForPlayer(playerid, link10);
 
 	#if INTROTEXT == 0
 	if(ESLMode == false) {
