@@ -4,20 +4,14 @@
 	
 	- Fixed a major security issue.
 	- Improved /vote command. Usage: /vote [base | arena | tdm] [ID or -1]
-<<<<<<< HEAD
 	- Anti-joypad is now back, however it won't function when lag-shoot is enabled.
 	- Added anti-keybind system (however this can't be a solution to macros, this is just something to keep it busy until Tiger puts an end to it with the AC).
 	- Server owners (from now on) always have to upgrade to the latest version of AttDef GM or their servers will be blocked and out of use.
-
-=======
-	- Made "Graffito ID: xyz" 3dtext visible at 5 units instead of 25
+	- Graffiti 3D text labels should now be visible only when you get quite closer to them.
 	- Added /style [0 - 1] command to switch between minimal and normal textdraw styles.
-	- Fixed the bug where radio kept re-streaming every time you synced or spawned.
-	- Made "X vs X" textdraw autoupdate every 3 seconds
+	- Fixed bug: radio kept re-streaming every time you synced or spawned.
 	-
-	-
-	
->>>>>>> origin/master
+
 */
 
 
@@ -597,11 +591,7 @@ enum PlayerVariables {
 	bool:blockedall,    //blockpm
 	bool:FakePacketRenovation,
 	bool:HasVoted,
-<<<<<<< HEAD
-	RadioID,    		//radio
-=======
 	RadioID,
->>>>>>> origin/master
 	NetCheck,
 	//duel
 	challengerid,
@@ -842,11 +832,7 @@ new TotalRounds;
 new WeatherLimit = 50;
 new TimeLimit = 50;
 new WebString[128]; //webtxt
-<<<<<<< HEAD
-new VotingTime = 10;
-=======
 new VotingTime = 20;
->>>>>>> origin/master
 //setradios
 new link[128];
 new link1[128]; //radio1
@@ -7687,18 +7673,14 @@ CMD:updates(playerid, params[])
 
 	strcat(string, "\n{FFFFFF}- Fixed a major security issue.");
 	strcat(string, "\n{FFFFFF}- Improved /vote command. Usage: /vote [base | arena | tdm] [ID or -1]");
-<<<<<<< HEAD
 	strcat(string, "\n{FFFFFF}- Anti-joypad is now back, however it won't function when lag-shoot is enabled.");
 	strcat(string, "\n{FFFFFF}- Added anti-keybind system (however this can't be a solution to macros, this is just something to keep it busy until Tiger puts an end to it with the AC).");
 	strcat(string, "\n{FFFFFF}- Server owners (from now on) always have to upgrade to the latest version of AttDef GM or their servers will be blocked and out of use.");
-	strcat(string, "\n{FFFFFF}");
-=======
+	strcat(string, "\n{FFFFFF}- Graffiti 3D text labels should now be visible only when you get quite closer to them.");
 	strcat(string, "\n{FFFFFF}- Added /style [0 - 1] command to switch between minimal and normal textdraw styles.");
-	strcat(string, "\n{FFFFFF}- Fixed the bug where radio kept re-streaming every time you synced or spawned.");
+	strcat(string, "\n{FFFFFF}- Fixed bug: radio kept re-streaming every time you synced or spawned.");
 	strcat(string, "\n{FFFFFF}- Fixed 'X vs X' textdraw showing wrong player count on connect/disconnect.");
 	strcat(string, "\n{FFFFFF}- ");
-
->>>>>>> origin/master
 	
 	strcat(string, "\n\n{00FF00}Attack-Defend v2.5.1 updates:\n");
 
@@ -7784,12 +7766,7 @@ CMD:acmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/sethp   /setarmour   /healall   /hl   /armourall  /al   /teamname   /allvs   /setscore   /resetscores   /netcheck   /nolag  /fakepacket");
 	strcat(string, "\n{FFFFFF}/jetpack   /teamdmg   /showspectateinfo   /resetallguns   /tr   /cr   /setafk   /move   /goto   /get   /roundtime   /cptime   /shortcuts");
 	strcat(string, "\n{FFFFFF}/cc   /minfps   /maxping   /maxpacket   /giveallgun   /givegun   /giveweapon   /freeze   /unfreeze   /autobalance   /antispam");
-
-<<<<<<< HEAD
-	strcat(string, "\n{FFFFFF}/ra /rb /rt {CACACA}(random arena/base/tdm)	{FFFFFF}/maxtdmkills");
-=======
 	strcat(string, "\n{FFFFFF}/ra /rb /rt {CACACA}(random arena/base/tdm)   {FFFFFF}/maxtdmkills   /autopause");
->>>>>>> origin/master
 
 	if(Player[playerid][Level] > 1) {
 		strcat(string, "\n\n"COL_PRIM"Level 2:");
@@ -13764,11 +13741,7 @@ CMD:vote(playerid, params[])
 					SetTimerEx("OnBaseStart", 2000, false, "i", BaseID);
 					format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started Base: {FFFFFF}%s (ID: %d)", BName[BaseID], BaseID);
 					SendClientMessageToAll(-1, iString);
-<<<<<<< HEAD
-                    VotingTime = 10;
-=======
 					VotingTime = 20;
->>>>>>> origin/master
 					GameType = BASE;
 					foreach(new i : Player)
 					{
@@ -13827,11 +13800,7 @@ CMD:vote(playerid, params[])
 					SetTimerEx("OnArenaStart", 2000, false, "i", ArenaID);
 					format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started Arena: {FFFFFF}%s (ID: %d)", AName[ArenaID], ArenaID);
 					SendClientMessageToAll(-1, iString);
-<<<<<<< HEAD
-                    VotingTime = 10;
-=======
 					VotingTime = 20;
->>>>>>> origin/master
 					GameType = ARENA;
 					OneOnOne = false;
 					foreach(new i : Player)
@@ -13892,11 +13861,7 @@ CMD:vote(playerid, params[])
 					SetTimerEx("OnArenaStart", 2000, false, "i", ArenaID);
 					format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started TDM: {FFFFFF}%s (ID: %d)", AName[ArenaID], ArenaID);
 					SendClientMessageToAll(-1, iString);
-<<<<<<< HEAD
-					VotingTime = 10;
-=======
 					VotingTime = 20;
->>>>>>> origin/master
 					GameType = TDM;
 					OneOnOne = false;
 					foreach(new i : Player)
@@ -18405,11 +18370,7 @@ public OnVoteBase()
 	
 	new iString[128];
     VotingTime--;
-<<<<<<< HEAD
-	format(iString, sizeof(iString), "%sRound voting has started~n~Time left: ~r~%d %sseconds", MAIN_TEXT_COLOUR, VotingTime, MAIN_TEXT_COLOUR);
-=======
 	format(iString, sizeof(iString), "%sRound voting has started~n~Time left: ~r~~h~%d %sseconds", MAIN_TEXT_COLOUR, VotingTime, MAIN_TEXT_COLOUR);
->>>>>>> origin/master
 	TextDrawSetString(EN_CheckPoint, iString);
 	TextDrawShowForAll(EN_CheckPoint);
 
