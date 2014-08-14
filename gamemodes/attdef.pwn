@@ -25807,6 +25807,10 @@ LoginPlayer(playerid, DBResult:res) {
 	db_get_field_assoc(res, "ShowSpecs", iString, sizeof(iString));
 	Player[playerid][ShowSpecs] = (strval(iString) == 0 ? false : true);
 	
+	// Load Style
+	db_get_field_assoc(res, "Style", iString, sizeof(iString));
+	Player[playerid][Style] = strval(iString);
+	
 	// Get current IP address
 	new IP[MAX_PLAYER_NAME];
 	GetPlayerIp(playerid, IP, sizeof(IP));
