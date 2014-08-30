@@ -1,22 +1,19 @@
 /*
 
-	v2.5.2
+	v2.5.3
 	
-	- Fixed a major security issue.
-	- Improved /vote command. Usage: /vote [base | arena | tdm] [ID or -1]
-	- Anti-joypad is now back, however it won't function when lag-shoot is enabled.
-	- Added anti-keybind system (however this can't be a solution to macros, this is just something to keep it busy until Tiger puts an end to it with the AC).
-	- Server owners (from now on) always have to upgrade to the latest version of AttDef GM or their servers will be blocked and out of use.
-	- Graffiti 3D text labels should now be visible only when you get quite closer to them.
-	- Added /style [0 - 1] command to switch between minimal and normal textdraw styles.
-	- Fixed bug: radio kept re-streaming every time you synced or spawned.
-	-
+	- Removed anti-macros system and all of its components.
+	- Removed old AC system and all of its components.
+	- The mighty new Anti-Cheat is now set up and working.
+	- Fixed old bug: you're now given a parachute on round-unpause if you get one before pause/crash.
+	- Fixed old bug: players now are re-spawned in their vehicles after crash or sudden leave.
+	
 
 */
 
 
-new 	GM_VERSION[6] =		"2.5.2"; // Don't forget to change the length
-#define GM_NAME				"Attack-Defend v2.5.2"
+new 	GM_VERSION[6] =		"2.5.3"; // Don't forget to change the length
+#define GM_NAME				"Attack-Defend v2.5.3 (B)"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -24,13 +21,15 @@ new 	GM_VERSION[6] =		"2.5.2"; // Don't forget to change the length
 #include <geolocation> 		// Shows player country based on IP
 #include <strlib>
 
+#include <sampac> // THE MIGHTY NEW ANTICHEAT
+
 
 #define MAILER_URL "sixtytiger.com/khalid/AttDef_API/Mailer/mailer.php"
 
 #include <mailer>
 
 #define ENABLED_TDM     1 	// DISABLE TDM IF YOU WANT e.e
-#define ANTICHEAT       1 	// If you want Whitetiger's Anti-Cheat, put 1 else 0.
+#define ANTICHEAT       0 	// If you want Whitetiger's Anti-Cheat, put 1 else 0.
 #define PLUGINS         0 	// If you want to use plugins then put 1 else leave 0.
 #define INTROTEXT       0 	// Adds intro textdraw.
 #define MYSQL           0 	// Use MySQL system
@@ -593,6 +592,9 @@ enum PlayerVariables {
 	bool:HasVoted,
 	RadioID,
 	NetCheck,
+	FPSCheck,
+	PLCheck,
+	PingCheck,
 	//duel
 	challengerid,
     duelweap1,
@@ -685,9 +687,7 @@ enum PlayerVariables {
 	LastEditWeaponSlot,
 	WeaponStat[55],
 	PlayerTypeByWeapon[32],
-	last,
- 	Sprinting,
- 	KBuing
+	bool:ToGiveParachute
 
 }
 new Player[MAX_PLAYERS][PlayerVariables];
@@ -705,7 +705,6 @@ new EditingShortcutOf[MAX_PLAYERS];
 new LastClickedPlayer[MAX_PLAYERS];
 
 new TargetInfoTimer[MAX_PLAYERS];
-new SprintTimer[MAX_PLAYERS];
 
 // bool:TargetInfoShown[MAX_PLAYERS];
 
@@ -735,7 +734,10 @@ enum save_vars
 	bool:ToBeAdded,
 	bool:CheckScore,
 	bool:PauseWait,
-	WeaponStat[55]
+	WeaponStat[55],
+	pVehicleID,
+	pSeatID,
+	HadParachute
 }
 new SaveVariables[SAVE_SLOTS][save_vars];
 
@@ -912,7 +914,9 @@ new bool:AllMuted = false;
 	new ACTimer;
 
 #endif
+#if ANTICHEAT == 1
 new ESLAC;
+#endif
 #if SKINICONS == 1
 new bool:ShowIcons = true;
 #endif
@@ -947,7 +951,9 @@ new bool:WarMode 		= false;
 new bool:PausePressed 	= false;
 new bool:ServerLocked 	= false;
 new bool:PermLocked 	= false;
+#if ANTICHEAT == 1
 new bool:PermAC 		= false;
+#endif
 //new bool:AttWin 		= true;
 new bool:MatchEnded 	= false;
 new bool:FallProtection = false;
@@ -3407,6 +3413,9 @@ public OnPlayerConnect(playerid)
     Player[playerid][VoteToAddID] = -1;
     Player[playerid][VoteToNetCheck] = -1;
 	Player[playerid][NetCheck] = 1;
+	Player[playerid][FPSCheck] = 1;
+	Player[playerid][PingCheck] = 1;
+	Player[playerid][PLCheck] = 1;
 	for(new i = 0; i < 6; ++i) {
 		gLastHit[i][playerid] = -1;
 		DamageDone[i][playerid] = 0.0;
@@ -3919,19 +3928,21 @@ public OnPlayerDisconnect(playerid, reason)
 	}
 	SendClientMessageToAll(-1,iString);
 
-	if(Player[playerid][WeaponPicked] > 0){
+	if(Player[playerid][WeaponPicked] > 0)
+	{
  		TimesPicked[Player[playerid][Team]][Player[playerid][WeaponPicked]-1]--;
  		Player[playerid][WeaponPicked] = 0;
 	}
 
-	if(Current != -1 && Player[playerid][WasInCP] == true) {
-	    PlayersInCP--;
+	if(Current != -1 && Player[playerid][WasInCP] == true)
+	{
+	    PlayersInCP --;
 	    Player[playerid][WasInCP] = false;
 
-		if(PlayersInCP <= 0) {
+		/*if(PlayersInCP <= 0) {
 		    CurrentCPTime = ConfigCPTime;
 		    TextDrawHideForAll(EN_CheckPoint);
-		}
+		}*/
 	}
 
 //duel
@@ -7669,47 +7680,14 @@ CMD:updates(playerid, params[])
 
 	string = "";
 	
-	strcat(string, "{00FF00}Attack-Defend v2.5.2 updates:\n");
+	strcat(string, "{00FF00}Attack-Defend v2.5.3 updates:\n");
 
-	strcat(string, "\n{FFFFFF}- Fixed a major security issue.");
-	strcat(string, "\n{FFFFFF}- Improved /vote command. Usage: /vote [base | arena | tdm] [ID or -1]");
-	strcat(string, "\n{FFFFFF}- Anti-joypad is now back, however it won't function when lag-shoot is enabled.");
-	strcat(string, "\n{FFFFFF}- Added anti-keybind system (however this can't be a solution to macros, this is just something to keep it busy until Tiger puts an end to it with the AC).");
-	strcat(string, "\n{FFFFFF}- Server owners (from now on) always have to upgrade to the latest version of AttDef GM or their servers will be blocked and out of use.");
-	strcat(string, "\n{FFFFFF}- Graffiti 3D text labels should now be visible only when you get quite closer to them.");
-	strcat(string, "\n{FFFFFF}- Added /style [0 - 1] command to switch between minimal and normal textdraw styles.");
-	strcat(string, "\n{FFFFFF}- Fixed bug: radio kept re-streaming every time you synced or spawned.");
-	strcat(string, "\n{FFFFFF}- Fixed 'X vs X' textdraw showing wrong player count on connect/disconnect.");
+	strcat(string, "\n{FFFFFF}- Removed anti-macros system and all of its components.");
+	strcat(string, "\n{FFFFFF}- Removed old AC system and all of its components.");
+	strcat(string, "\n{FFFFFF}- The mighty new Anti-Cheat is now set up and working.");
+	strcat(string, "\n{FFFFFF}- Bug-fix: you're now given a parachute on round-unpause if you get one before pause/crash.");
+	strcat(string, "\n{FFFFFF}- Bug-fix: players now are re-spawned in their vehicles after crash or sudden leave.");
 	strcat(string, "\n{FFFFFF}- ");
-	
-	strcat(string, "\n\n{00FF00}Attack-Defend v2.5.1 updates:\n");
-
-	strcat(string, "\n{FFFFFF}- Fixed vehicle respawn bug.");
-	
-	/*strcat(string, "\n\n{00FF00}Attack-Defend v2.5 updates:\n");
-	
-	strcat(string, "\n{FFFFFF}- Added weapon statistics system (check out /weaponstats).");
-    strcat(string, "\n{FFFFFF}- Added new duel arenas.");
-    strcat(string, "\n{FFFFFF}- Added a command to help fix fake packetloss (/fakepacket).");
-	strcat(string, "\n{FFFFFF}- Added a public command (/alladmins) to bring a list of all server admins.");
-    strcat(string, "\n{FFFFFF}- Added /rp command which redirects to /para command to satisfy users from other GMs.");
-    strcat(string, "\n{FFFFFF}- Added a train (just for fun) (use /gototrain).");
-    strcat(string, "\n{FFFFFF}- Feature: it is now announced when a player dies if he/she is a spasser, sniper, m4er and etc.");
-	strcat(string, "\n{FFFFFF}- Feature: vehicle spawning commands now work with IDs as well.");
-    strcat(string, "\n{FFFFFF}- Feature: you can now toggle the command /vote in server configuration dialog.");
-    strcat(string, "\n{FFFFFF}- Feature: muted players cannot use /changename command now.");
-    strcat(string, "\n{FFFFFF}- Feature: you can now toggle the command /changename in server configuration dialog.");
-	strcat(string, "\n{FFFFFF}- Fixed a bug regarding Arena zones and boundaries, happened when /addall was used.");
-    strcat(string, "\n{FFFFFF}- Fixed a bug that player would leave a blank graffito when they left the server.");
-    strcat(string, "\n{FFFFFF}- Fixed a bug that defenders/attackers could abuse some map bugs to stop/take CP unfairly.");
-    strcat(string, "\n{FFFFFF}- Fixed a bug that defenders could stay longer inside an attacker's vehicle.");
-    strcat(string, "\n{FFFFFF}- Removed anti-joypad script from the mode.");
-    strcat(string, "\n{FFFFFF}- Rcon admins are no longer hidden in /admins.");
-    strcat(string, "\n{FFFFFF}- Fixed CP ghost bug: when someone timed out while on CP and round got unpaused, the CP countdown could still continue while nobody at it.");
-    strcat(string, "\n{FFFFFF}- Fixed a bug that 'Round Paused' textdraw could get stuck at your screen while round is not running.");
-    strcat(string, "\n{FFFFFF}- Tweaked the Version Checker system a little.");
-    strcat(string, "\n{FFFFFF}- Fixed vehicle velocity bug; now vehicles auto re-spawn after they've completely stopped.");
-    strcat(string, "\n{FFFFFF}");*/
 	
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
 	return 1;
@@ -7766,7 +7744,7 @@ CMD:acmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/sethp   /setarmour   /healall   /hl   /armourall  /al   /teamname   /allvs   /setscore   /resetscores   /netcheck   /nolag  /fakepacket");
 	strcat(string, "\n{FFFFFF}/jetpack   /teamdmg   /showspectateinfo   /resetallguns   /tr   /cr   /setafk   /move   /goto   /get   /roundtime   /cptime   /shortcuts");
 	strcat(string, "\n{FFFFFF}/cc   /minfps   /maxping   /maxpacket   /giveallgun   /givegun   /giveweapon   /freeze   /unfreeze   /autobalance   /antispam");
-	strcat(string, "\n{FFFFFF}/ra /rb /rt {CACACA}(random arena/base/tdm)   {FFFFFF}/maxtdmkills   /autopause");
+	strcat(string, "\n{FFFFFF}/ra /rb /rt {CACACA}(random arena/base/tdm)   {FFFFFF}/maxtdmkills   /autopause  /fpscheck  /pingcheck  /plcheck");
 
 	if(Player[playerid][Level] > 1) {
 		strcat(string, "\n\n"COL_PRIM"Level 2:");
@@ -7914,7 +7892,11 @@ CMD:settings(playerid, params[])
 	new string[200];
 
 	SendClientMessage(playerid, -1, ""COL_PRIM"Server settings:");
+	#if ANTICHEAT == 1
 	format(string, sizeof(string), "{FFFFFF}CP Time = "COL_PRIM"%d {FFFFFF}seconds | Round Time = "COL_PRIM"%d {FFFFFF}minutes | Anti-Cheat = %s", ConfigCPTime, ConfigRoundTime, (AntiCheat == true ? ("{66FF66}Enabled") : ("{FF6666}Disabled")));
+	#else
+	format(string, sizeof(string), "{FFFFFF}CP Time = "COL_PRIM"%d {FFFFFF}seconds | Round Time = "COL_PRIM"%d {FFFFFF}minutes", ConfigCPTime, ConfigRoundTime);
+	#endif
 	SendClientMessage(playerid, -1, string);
 	format(string, sizeof(string), "{FFFFFF}Attacker Skin = "COL_PRIM"%d {FFFFFF}| Defender Skin = "COL_PRIM"%d {FFFFFF}| Referee Skin = "COL_PRIM"%d", Skin[ATTACKER], Skin[DEFENDER], Skin[REFEREE]);
 	SendClientMessage(playerid, -1, string);
@@ -8711,7 +8693,7 @@ CMD:config(playerid, params[]) {
 	return 1;
 }
 
-
+#if ANTICHEAT == 1
 CMD:eslac(playerid, params[])
 {
 	if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be level 5 or rcon admin.");
@@ -8731,7 +8713,7 @@ CMD:eslac(playerid, params[])
     LogAdminCommand("eslac", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
-
+#endif
 
 CMD:textdraw(playerid, params[])
 {
@@ -9874,9 +9856,15 @@ CMD:netcheck(playerid, params[])
 	new iString[180];
 	if(Player[pID][NetCheck] == 1) {
 	    Player[pID][NetCheck] = 0;
+	    Player[pID][FPSCheck] = 0;
+	    Player[pID][PingCheck] = 0;
+	    Player[pID][PLCheck] = 0;
 	    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has disabled Net-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
 	} else {
 	    Player[pID][NetCheck] = 1;
+	    Player[pID][FPSCheck] = 1;
+	    Player[pID][PingCheck] = 1;
+	    Player[pID][PLCheck] = 1;
 	    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has enabled Net-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
 	}
 	SendClientMessageToAll(-1, iString);
@@ -9898,6 +9886,77 @@ CMD:netcheck(playerid, params[])
 	return 1;
 }
 
+CMD:fpscheck(playerid, params[])
+{
+	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level to do that.");
+	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/fpscheck [Player ID]");
+
+	new pID = strval(params);
+	if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player is not connected.");
+	if(Player[pID][NetCheck] == 0) return SendErrorMessage(playerid, "That player has netcheck disabled on him.");
+	if(Player[pID][Level] >= Player[playerid][Level] && pID != playerid) return SendErrorMessage(playerid,"That player is same or higher admin level than you.");
+
+
+	new iString[180];
+	if(Player[pID][FPSCheck] == 1) {
+	    Player[pID][FPSCheck] = 0;
+	    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has disabled FPS-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
+	} else {
+	    Player[pID][FPSCheck] = 1;
+	    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has enabled FPS-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
+	}
+	SendClientMessageToAll(-1, iString);
+    LogAdminCommand("fpscheck", playerid, pID);
+	return 1;
+}
+
+CMD:pingcheck(playerid, params[])
+{
+	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level to do that.");
+	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/pingcheck [Player ID]");
+
+	new pID = strval(params);
+	if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player is not connected.");
+	if(Player[pID][NetCheck] == 0) return SendErrorMessage(playerid, "That player has netcheck disabled on him.");
+	if(Player[pID][Level] >= Player[playerid][Level] && pID != playerid) return SendErrorMessage(playerid,"That player is same or higher admin level than you.");
+
+
+	new iString[180];
+	if(Player[pID][PingCheck] == 1) {
+	    Player[pID][PingCheck] = 0;
+	    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has disabled Ping-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
+	} else {
+	    Player[pID][PingCheck] = 1;
+	    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has enabled Ping-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
+	}
+	SendClientMessageToAll(-1, iString);
+    LogAdminCommand("pingcheck", playerid, pID);
+	return 1;
+}
+
+CMD:plcheck(playerid, params[])
+{
+	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level to do that.");
+	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/plcheck [Player ID]");
+
+	new pID = strval(params);
+	if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player is not connected.");
+	if(Player[pID][NetCheck] == 0) return SendErrorMessage(playerid, "That player has netcheck disabled on him.");
+	if(Player[pID][Level] >= Player[playerid][Level] && pID != playerid) return SendErrorMessage(playerid,"That player is same or higher admin level than you.");
+
+
+	new iString[180];
+	if(Player[pID][PLCheck] == 1) {
+	    Player[pID][PLCheck] = 0;
+	    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has disabled PL-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
+	} else {
+	    Player[pID][PLCheck] = 1;
+	    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has enabled PL-Check on: {FFFFFF}%s", Player[playerid][Name], Player[pID][Name]);
+	}
+	SendClientMessageToAll(-1, iString);
+    LogAdminCommand("plcheck", playerid, pID);
+	return 1;
+}
 
 CMD:voteunpause(playerid, params[])
 {
@@ -11391,6 +11450,7 @@ CMD:permac(playerid, params[])
 	return 1;
 }
 
+#if ANTICHEAT == 1
 CMD:ac(playerid, params[])
 {
 	if(Player[playerid][Level] < 3 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
@@ -11433,6 +11493,8 @@ CMD:ac(playerid, params[])
 	return 1;
 
 }
+#endif
+
 /*
 CMD:accheck(playerid,params[])
 {
@@ -16969,10 +17031,13 @@ LoadConfig()
         db_next_row(res);
 	#endif
 
-
+	#if ANTICHEAT == 1
 	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // ESL Anticheat
     ESLAC = strval(iString);
 	db_next_row(res);
+	#else
+	db_next_row(res);
+	#endif
 
 	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // ESL Mode
 	ESLMode = (strval(iString) == 1 ? true : false);
@@ -16983,9 +17048,13 @@ LoadConfig()
 	    new slots[10][20];
 	    sscanf(iString, "p<|>s[20]s[20]s[20]s[20]s[20]s[20]s[20]s[20]s[20]s[20]", slots[0], slots[1], slots[2], slots[3], slots[4], slots[5], slots[6], slots[7], slots[8], slots[9]);
 
-	    for(new i=0; i < 10; ++i) {
-	        if(slots[i][strlen(slots[i])-1] == '|') strdel(slots[i], strlen(slots[i]) - 1, strlen(slots[i]));
-	        sscanf(slots[i], "p<,>dd", GunMenuWeapons[i][0], GunMenuWeapons[i][1]);
+	    for(new i = 0; i < 10; ++ i)
+		{
+			if(slots[i][strlen(slots[i]) - 1] == '|')
+	        {
+				strdel(slots[i], strlen(slots[i]) - 1, strlen(slots[i]));
+			}
+			sscanf(slots[i], "p<,>dd", GunMenuWeapons[i][0], GunMenuWeapons[i][1]);
 	    }
 
 	    db_next_row(res);
@@ -16996,15 +17065,20 @@ LoadConfig()
 	    db_next_row(res);
 	#else
 	    db_get_field_assoc(res, "Value", iString, sizeof(iString)); // GunMenuWeapons
+	    printf("res:  %s", iString);
 	    new slots[10][20];
 	    sscanf(iString, "p|ssssssssss", slots[0], slots[1], slots[2], slots[3], slots[4], slots[5], slots[6], slots[7], slots[8], slots[9]);
 
-	    db_next_row(res);
-
-	    for(new i=0; i < 10; ++i) {
-	        if(slots[i][strlen(slots[i])-1] == '|') strdel(slots[i], strlen(slots[i]) - 1, strlen(slots[i]));
-	        sscanf(slots[i], "p,dd", GunMenuWeapons[i][0], GunMenuWeapons[i][1]);
+	    for(new i = 0; i < 10; ++ i)
+		{
+		    if(slots[i][strlen(slots[i])-1] == '|')
+			{
+				strdel(slots[i], strlen(slots[i]) - 1, strlen(slots[i]));
+			}
+			sscanf(slots[i], "p,dd", GunMenuWeapons[i][0], GunMenuWeapons[i][1]);
 	    }
+	    
+	    db_next_row(res);
 
 	    db_get_field_assoc(res, "Value", iString, sizeof(iString));
 	    sscanf(iString, "p,ff", RoundAR, RoundHP);
@@ -17565,8 +17639,10 @@ public SpawnConnectedPlayer(playerid, team)
 		PlayerTextDrawShow(playerid, FPSPingPacket);
 		PlayerTextDrawShow(playerid, RoundKillDmgTDmg);
 
+		#if ANTICHEAT == 1
 		if(AntiCheat == true)
 			TextDrawShowForPlayer(playerid, ACText);	//actxt
+		#endif
 		TextDrawSetString(WebText, WebString);  //webtxt
 	    TextDrawShowForPlayer(playerid, WebText);    //webtxt
 
@@ -20043,6 +20119,8 @@ stock PauseRound() {
 		PlayerTextDrawSetString(i, FPSPingPacket,iString);
 		TextDrawSetString(PauseTD,iString);    //pausetxt
 		TextDrawShowForAll(PauseTD);  //pausetxt
+		if(GetPlayerWeapon(i) == WEAPON_PARACHUTE)
+			Player[i][ToGiveParachute] = true;
 		if(Player[i][Playing] == true)
 		{
 
@@ -20057,11 +20135,12 @@ stock PauseRound() {
 		GetVehicleVelocity(g, VehicleVelc[g][0], VehicleVelc[g][1], VehicleVelc[g][2]);
 
 
-
+	#if ANTICHEAT == 1
 	if(AntiCheat) {
 		SendClientMessageToAll(-1, "{FFFF00}** "COL_PRIM"Checking all players for 2 PC trick");
 	}
-
+	#endif
+	
 	RoundPaused = true;
 
 	if(ESLMode == true) {
@@ -20384,6 +20463,22 @@ stock StorePlayerVariablesMin(playerid) {
 
 			format(SaveVariables[i][pName], 24, Player[playerid][Name]);
 			format(SaveVariables[i][pNameWithoutTag], 24, Player[playerid][NameWithoutTag]);
+			
+			if(GetPlayerWeapon(playerid) == WEAPON_PARACHUTE)
+			    SaveVariables[i][HadParachute] = 1;
+			else
+			    SaveVariables[i][HadParachute] = 0;
+			
+			if(IsPlayerInAnyVehicle(playerid))
+			{
+			    SaveVariables[i][pVehicleID] = GetPlayerVehicleID(playerid);
+			    SaveVariables[i][pSeatID] = GetPlayerVehicleSeat(playerid);
+			}
+			else
+			{
+			    SaveVariables[i][pVehicleID] = -1;
+			    SaveVariables[i][pSeatID] = -1;
+			}
 
 			break;
 		} else continue;
@@ -20465,7 +20560,23 @@ stock StorePlayerVariables(playerid) {
 			SaveVariables[i][RoundID]   =   Current;
 			SaveVariables[i][ToBeAdded] =   true;
 			SaveVariables[i][CheckScore] = 	true;
+			
+			if(GetPlayerWeapon(playerid) == WEAPON_PARACHUTE)
+			    SaveVariables[i][HadParachute] = 1;
+			else
+			    SaveVariables[i][HadParachute] = 0;
 
+			if(IsPlayerInAnyVehicle(playerid))
+			{
+			    SaveVariables[i][pVehicleID] = GetPlayerVehicleID(playerid);
+			    SaveVariables[i][pSeatID] = GetPlayerVehicleSeat(playerid);
+			}
+			else
+			{
+			    SaveVariables[i][pVehicleID] = -1;
+			    SaveVariables[i][pSeatID] = -1;
+			}
+			
 			if(Player[playerid][ToAddInRound] == true || (RoundMints == ConfigRoundTime-1 && RoundSeconds > 30)) SaveVariables[i][WasCrashedInStart] = true;
 
 			if(ESLMode == true) SaveVariables[i][PauseWait] = true;
@@ -20703,8 +20814,33 @@ stock LoadPlayerVariables(playerid)
 
 					    format(iString, sizeof(iString), "%s%s{FFFFFF} has selected (%s%s{FFFFFF} and %s%s{FFFFFF}).", TextColor[Player[playerid][Team]], Player[playerid][Name], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][0]], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][1]]);
 					}
+					
+					if(SaveVariables[i][HadParachute] == 1)
+					{
+					    GivePlayerWeapon(playerid, WEAPON_PARACHUTE, 1);
+					    SetPlayerArmedWeapon(playerid, WEAPON_PARACHUTE);
+					}
+					else
+						SetPlayerArmedWeapon(playerid, 0);
+						
+					if(SaveVariables[i][pVehicleID] != -1)
+					{
+					    new ct = 0;
+					    for(new j = 0; j < MAX_VEHICLES; j ++)
+					    {
+					        if(j == SaveVariables[i][pVehicleID])
+					        {
+					            foreach(new k : Player)
+					            {
+					                if(GetPlayerVehicleID(k) == SaveVariables[i][pVehicleID] && GetPlayerVehicleSeat(k) == SaveVariables[i][pSeatID])
+					                    ct ++;
+					            }
+					        }
+					    }
+					    if(ct == 0)
+					        PutPlayerInVehicle(playerid, SaveVariables[i][pVehicleID], SaveVariables[i][pSeatID]);
+					}
 
-					SetPlayerArmedWeapon(playerid, 0);
 		            TimesPicked[Player[playerid][Team]][listitem-1]++;
 		            Player[playerid][WeaponPicked] = listitem;
 
@@ -20780,11 +20916,11 @@ stock LoadPlayerVariables(playerid)
 	        format(iString,sizeof(iString),""COL_PRIM"Re-added player {FFFFFF}%s. "COL_PRIM"Variables successfully loaded.", Player[playerid][Name]);
 	    	SendClientMessageToAll(-1, iString);
 
-#if SKINICONS == 1
+			#if SKINICONS == 1
             if(ShowIcons == true) {
 		    	SetTimer("UpdateAliveForAll", 2000, false);
 			}
-#endif
+			#endif
 
 			if(Player[playerid][TextPos] == false) format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDamage ~r~%.0f~n~%sTotal Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[playerid][RoundKills], MAIN_TEXT_COLOUR, Player[playerid][RoundDamage], MAIN_TEXT_COLOUR, Player[playerid][TotalDamage]);
 			else format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDmg ~r~%.0f~n~%sT. Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[playerid][RoundKills], MAIN_TEXT_COLOUR, Player[playerid][RoundDamage], MAIN_TEXT_COLOUR, Player[playerid][TotalDamage]);
@@ -21196,54 +21332,8 @@ stock pProfile(playerid) {
 }
 */
 
-forward OnPlayerSprinting(playerid);
-public OnPlayerSprinting(playerid)
-{
-    Player[playerid][Sprinting] = 0;
-}
-
 public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 {
-    if(newkeys & KEY_SPRINT)
-    {
-       if (GetPlayerAnimationIndex(playerid) == 1231)
-       {
-	          new now = GetTickCount();
-
-	          if (now - Player[playerid][last] < 120)
-	          {
-					if (Player[playerid][KBuing] < 20)
-					{
-						Player[playerid][KBuing] = Player[playerid][KBuing] + 1;
-					}
-					else
-					{
-						new string[160];
-						format(string, sizeof string, ""COL_PRIM"Keybind detection: {FFFFFF}%s "COL_PRIM"is probably using sprint macros {FFFFFF}("COL_PRIM"pressed key 8x a second{FFFFFF}"COL_PRIM".)", Player[playerid][Name]);
-						SendClientMessageToAll(-1, string);
-						SendClientMessage(playerid, -1, ""COL_PRIM"Warning: {FFFFFF}Stop using keybind or you'll get kicked!");
-
-						Player[playerid][Sprinting]++;
-						KillTimer(SprintTimer[playerid]);
-						SprintTimer[playerid] = SetTimerEx("OnPlayerSprinting", 5000, false, "i", playerid);
-
-						if(Player[playerid][Sprinting] >= 2)
-						{
-						    Player[playerid][IsKicked] = true;
-						    SetTimerEx("OnPlayerKicked", 500, false, "i", playerid);
-						    return 1;
-						}
-						Player[playerid][KBuing] = 0;
-					}
-	          }
-			  else
-			  {
-					Player[playerid][KBuing] = 0;
-			  }
-			  Player[playerid][last] = now;
-		}
-    }
-
 	if(newkeys == 160 && (GetPlayerWeapon(playerid) == 0 || GetPlayerWeapon(playerid) == 1) && !IsPlayerInAnyVehicle(playerid)){
 		SyncPlayer(playerid);
 		return 1;
@@ -21560,7 +21650,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 
 	if(Current != -1 && Player[playerid][Playing] == true)
 	{
-		if(Player[playerid][Level] > 1)
+		if(Player[playerid][Level] > 0)
 	    {
 			if(PRESSED(65536))
 			{
@@ -21743,7 +21833,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 forward OnScriptUpdate();
 public OnScriptUpdate()
 {
-	if(DidSomeoneTimeout)
+    if(DidSomeoneTimeout)
 	{
 	    DidSomeoneTimeout = false;
 	    RecountPlayersOnCP();
@@ -21768,10 +21858,9 @@ public OnScriptUpdate()
 
     if(RoundPaused == true && ESLMode == true && RoundUnpausing == false) ESLPauseTime--;
 
-
-	foreach(new i : Player) {
-
-	    #if XMAS == 1
+    foreach(new i : Player)
+	{
+        #if XMAS == 1
 		if(GetPlayerWeapon(i) == WEAPON_SNIPER)
 		{
 		    cmd_removehat(i, "_");
@@ -21912,7 +22001,7 @@ public OnScriptUpdate()
 		//duel
 		if(Player[i][InDuel] == true && Player[i][NetCheck] == 1)
 		{
-			if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5) {
+			if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5  && Player[i][FPSCheck] == 1) {
 			    Player[i][FPSKick]++;
 			    format(iString,sizeof(iString),"{CCCCCC}Low FPS! Warning %d/7", Player[i][FPSKick]);
 			    SendClientMessage(i, -1, iString);
@@ -21931,7 +22020,7 @@ public OnScriptUpdate()
 			}
 
 
-			if(pPacket >= Max_Packetloss && Player[i][FakePacketRenovation] == false){
+			if(pPacket >= Max_Packetloss && Player[i][FakePacketRenovation] == false && Player[i][PLCheck] == 1){
 			    Player[i][PacketKick]++;
 			    format(iString,sizeof(iString),"{CCCCCC}High PL! Warning %d/15", Player[i][PacketKick]);
 			    SendClientMessage(i, -1, iString);
@@ -21948,7 +22037,7 @@ public OnScriptUpdate()
 			    Player[i][PacketKick] = 0;
 			}
 
-			if(pPing >= Max_Ping){
+			if(pPing >= Max_Ping && Player[i][PingCheck] == 1){
 			    Player[i][PingKick]++;
 			    format(iString,sizeof(iString),"{CCCCCC}High Ping! Warning %d/10", Player[i][PingKick]);
 			    SendClientMessage(i, -1, iString);
@@ -22045,7 +22134,7 @@ public OnScriptUpdate()
 
 
 	   		if(Player[i][NetCheck] == 1) {
-				if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5) {
+				if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5 && Player[i][FPSCheck] == 1) {
 				    Player[i][FPSKick]++;
 			    	format(iString,sizeof(iString),"{CCCCCC}Low FPS! Warning %d/7", Player[i][FPSKick]); //will help to know when you cross limit
 			    	SendClientMessage(i, -1, iString);
@@ -22063,7 +22152,7 @@ public OnScriptUpdate()
 				}
 
 
-				if(pPacket >= Max_Packetloss && Player[i][FakePacketRenovation] == false){
+				if(pPacket >= Max_Packetloss && Player[i][FakePacketRenovation] == false && Player[i][PLCheck] == 1){
 				    Player[i][PacketKick]++;
 			    	format(iString,sizeof(iString),"{CCCCCC}High PL! Warning %d/15", Player[i][PacketKick]); //will help to know when you cross limit
 			    	SendClientMessage(i, -1, iString);
@@ -22079,7 +22168,7 @@ public OnScriptUpdate()
 				    Player[i][PacketKick] = 0;
 				}
 
-				if(pPing >= Max_Ping){
+				if(pPing >= Max_Ping && Player[i][PingCheck] == 1){
 					Player[i][PingKick]++;
 			    	format(iString,sizeof(iString),"{CCCCCC}High Ping! Warning %d/10", Player[i][PingKick]); //will help to know when you cross limit
 			    	SendClientMessage(i, -1, iString);
@@ -22523,7 +22612,14 @@ public UnpauseRound()
 			if(Player[i][Playing] == true)
 			{
 				TogglePlayerControllableEx(i, true);
-				SetPlayerArmedWeapon(i, 0);
+				if(!Player[i][ToGiveParachute])
+					SetPlayerArmedWeapon(i, 0);
+				else
+				{
+				    GivePlayerWeapon(i, WEAPON_PARACHUTE, 1);
+				    SetPlayerArmedWeapon(i, WEAPON_PARACHUTE);
+				    Player[i][ToGiveParachute] = false;
+				}
 			}
 			Player[i][VoteToUnpause] = false;
 
@@ -23515,6 +23611,12 @@ public OnBaseStart(BaseID)
 
 
 	    if(Player[i][ToAddInRound] == true) {
+	    
+			if(Player[i][Team] != ATTACKER && Player[i][Team] != DEFENDER && Player[i][Team] != REFEREE)
+			{
+			    Player[i][ToAddInRound] = false;
+			    continue;
+	        }
             HideEndRoundTextDraw(i);
 
 			if(Player[i][Spectating] == true) StopSpectate(i);
@@ -25081,6 +25183,7 @@ SpectatePlayer(playerid, specid) {
 	}
 	Player[playerid][AntiLag] = false;
 	Player[playerid][InHeadShot] = false;
+	HideTargetInfo(playerid);
 
 	new OldSpecID = -1;
 
@@ -25265,9 +25368,6 @@ SpectatePlayer(playerid, specid) {
 	}
 
 	RadarFix();
-	KillTimer(TargetInfoTimer[playerid]);
-	TargetInfoTimer[playerid] = SetTimerEx("HideTargetInfo", 2000, false, "i", playerid);
-
     return 1;
 }
 
