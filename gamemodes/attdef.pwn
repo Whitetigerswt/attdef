@@ -1,19 +1,21 @@
 /*
 
-	v2.5.3
+	v2.6
 	
 	- Removed anti-macros system and all of its components.
 	- Removed old AC system and all of its components.
 	- The mighty new Anti-Cheat is now set up and working.
 	- Fixed old bug: you're now given a parachute on round-unpause if you get one before pause/crash.
 	- Fixed old bug: players now are re-spawned in their vehicles after crash or sudden leave.
+	- You should not get hit while picking weapons from gunmenu now.
+	- Added a new command /reconnect for admins to make players relog.
 	
 
 */
 
 
-new 	GM_VERSION[6] =		"2.5.3"; // Don't forget to change the length
-#define GM_NAME				"Attack-Defend v2.5.3 (B)"
+new 	GM_VERSION[6] =		"2.6.0"; // Don't forget to change the length
+#define GM_NAME				"Attack-Defend v2.6 (B)"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -687,7 +689,10 @@ enum PlayerVariables {
 	LastEditWeaponSlot,
 	WeaponStat[55],
 	PlayerTypeByWeapon[32],
-	bool:ToGiveParachute
+	bool:ToGiveParachute,
+	WorldBeforeWeaponMenu,
+	bool:SetToReconnect,
+	IpToReconnect[16]
 
 }
 new Player[MAX_PLAYERS][PlayerVariables];
@@ -3472,6 +3477,7 @@ public OnPlayerConnect(playerid)
 	Player[playerid][ShowSpecs] = true;
 	Player[playerid][blockedall] = false;
 	Player[playerid][HasVoted] = false;
+	Player[playerid][SetToReconnect] = false;
 
 	noclipdata[playerid][cameramode] 	= 	CAMERA_MODE_NONE;
 	noclipdata[playerid][lrold]	   	 	= 	0;
@@ -3858,6 +3864,13 @@ public OnPlayerSpawn(playerid)
 
 public OnPlayerDisconnect(playerid, reason)
 {
+	if(Player[playerid][SetToReconnect] == true)
+	{
+	    Player[playerid][SetToReconnect] = false;
+		SendRconCommand(sprintf("unbanip %s", Player[playerid][IpToReconnect]));
+		SendRconCommand("reloadbans");
+	}
+
 	if(reason == 0)
         DidSomeoneTimeout = true;
         
@@ -4880,8 +4893,10 @@ public OnPlayerUpdate(playerid)
 
 	Player[playerid][PauseCount] = 0;
 
-	if(RoundPaused == true) {
-        if(Player[playerid][Playing] == true && GetPlayerState(playerid) == PLAYER_STATE_DRIVER && VehiclePos[playerid][0] != 0.0 && VehiclePos[playerid][1] != 0.0) {
+	if(RoundPaused == true)
+	{
+        if(Player[playerid][Playing] == true && GetPlayerState(playerid) == PLAYER_STATE_DRIVER && VehiclePos[playerid][0] != 0.0 && VehiclePos[playerid][1] != 0.0)
+		{
             SetVehiclePos(GetPlayerVehicleID(playerid), VehiclePos[playerid][0], VehiclePos[playerid][1], VehiclePos[playerid][2]);
 		}
 	}
@@ -4904,7 +4919,7 @@ public OnPlayerUpdate(playerid)
 */
 	// Target info
 
-	if(ToggleTargetInfo == true && Player[playerid][Style] == 1)
+	if(ToggleTargetInfo == true)
 	{
 		ShowTargetInfo(playerid, GetPlayerTargetPlayer(playerid));
 	}
@@ -5058,7 +5073,7 @@ public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY
 
 public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart)
 {
-	if(ToggleTargetInfo == true && Player[playerid][Style] == 1)
+	if(ToggleTargetInfo == true)
 	{
 	    ShowTargetInfo(playerid, damagedid);
 	}
@@ -5171,7 +5186,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		}
 	}
 
-	if(ToggleTargetInfo == true && Player[issuerid][Style] == 1)
+	if(ToggleTargetInfo == true)
 	{
 	    ShowTargetInfo(issuerid, playerid);
 	}
@@ -6046,6 +6061,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				TogglePlayerControllableEx(playerid, false);
 	        else
 				TogglePlayerControllableEx(playerid, true);
+				
+            SetPlayerVirtualWorld(playerid, Player[playerid][WorldBeforeWeaponMenu]);
 		}
 		return 1;
 	}
@@ -7685,6 +7702,8 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Removed anti-macros system and all of its components.");
 	strcat(string, "\n{FFFFFF}- Removed old AC system and all of its components.");
 	strcat(string, "\n{FFFFFF}- The mighty new Anti-Cheat is now set up and working.");
+	strcat(string, "\n{FFFFFF}- Added a new command /reconnect for admins to make players relog.");
+	strcat(string, "\n{FFFFFF}- You should not get hit while picking weapons from gunmenu now.");
 	strcat(string, "\n{FFFFFF}- Bug-fix: you're now given a parachute on round-unpause if you get one before pause/crash.");
 	strcat(string, "\n{FFFFFF}- Bug-fix: players now are re-spawned in their vehicles after crash or sudden leave.");
 	strcat(string, "\n{FFFFFF}- ");
@@ -7753,7 +7772,7 @@ CMD:acmds(playerid, params[])
 
 	if(Player[playerid][Level] > 2) {
 		strcat(string, "\n\n"COL_PRIM"Level 3:");
-		strcat(string, "\n{FFFFFF}/kick   /ban   /unbanip   /ac   /end   /limit   /muteall   /unmuteall   /aka");
+		strcat(string, "\n{FFFFFF}/kick   /ban   /unbanip   /ac   /end   /limit   /muteall   /unmuteall   /aka  /reconnect");
 	}
 
 	if(Player[playerid][Level] > 3) {
@@ -7767,6 +7786,26 @@ CMD:acmds(playerid, params[])
 	}
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Admin Commands", string, "OK","");
+	return 1;
+}
+
+CMD:reconnect(playerid, params[])
+{
+    if(Player[playerid][Level] < 3) return SendErrorMessage(playerid,"You must be level 3 to use this command.");
+	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/reconnect [Player ID]");
+
+	new pID;
+	pID = strval(params);
+
+	if(!IsPlayerConnected(pID) || IsPlayerNPC(pID)) return SendErrorMessage(playerid,"That player is not connected or is an NPC.");
+	
+	if(Player[pID][SetToReconnect] == true)
+		return SendErrorMessage(playerid, "That player is already set to reconnect.");
+		
+    SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has set {FFFFFF}%s "COL_PRIM"to reconnect to the server.", Player[playerid][Name], Player[pID][Name]));
+    Player[pID][SetToReconnect] = true;
+	GetPlayerIp(playerid, Player[pID][IpToReconnect], 16);
+	SendRconCommand(sprintf("banip %s", Player[pID][IpToReconnect]));
 	return 1;
 }
 
@@ -7879,7 +7918,7 @@ CMD:credits(playerid, params[])
 	strcat(string, "\n{00BBFF}Most of textdraws by: {FFFFFF}Insanity & Niko_boy");
 	strcat(string, "\n{00BBFF}Duel Arena by: {FFFFFF}Jeffy892");
 	strcat(string, "\n{00BBFF}Allowed By: {FFFFFF}Deloera");
-	strcat(string, "\n{00BBFF}Debugging and testing of 2.5: {FFFFFF}[KHK]Tecumseh");
+	strcat(string, "\n{00BBFF}Beta testing of 2.5.+: {FFFFFF}[KHK]Tecumseh");
 	strcat(string, "\n\n{FFFFFF}For suggestions and bug reports, visit: {00BBFF}http://sixtytiger.com/forum/index.php?board=15.0");
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Credits", string, "OK","");
@@ -14789,6 +14828,7 @@ CMD:style(playerid, params[])
 		    SendClientMessage(playerid, -1, "{FFFFFF}You have changed your textdraw style to: "COL_PRIM"1 (Normal textdraws)");
 		}
 	}
+	StyleTextDrawFix(playerid);
 	return 1;
 }
 
@@ -17065,7 +17105,6 @@ LoadConfig()
 	    db_next_row(res);
 	#else
 	    db_get_field_assoc(res, "Value", iString, sizeof(iString)); // GunMenuWeapons
-	    printf("res:  %s", iString);
 	    new slots[10][20];
 	    sscanf(iString, "p|ssssssssss", slots[0], slots[1], slots[2], slots[3], slots[4], slots[5], slots[6], slots[7], slots[8], slots[9]);
 
@@ -17723,6 +17762,31 @@ public SpawnConnectedPlayer(playerid, team)
 // Stocks
 //------------------------------------------------------------------------------
 
+stock StyleTextDrawFix(playerid)
+{
+	if(Current != -1)
+	{
+		switch(Player[playerid][Style])
+		{
+		    case 0:
+		    {
+				HideRoundStats(playerid);
+		        TextDrawShowForPlayer(playerid, RoundStats);
+		    }
+		    case 1:
+		    {
+		        TextDrawHideForPlayer(playerid, RoundStats);
+		        ShowRoundStats(playerid);
+		    }
+		}
+	}
+	else
+	{
+	    HideRoundStats(playerid);
+	    TextDrawHideForPlayer(playerid, RoundStats);
+	}
+	return 1;
+}
 
 stock RecountPlayersOnCP()
 {
@@ -20815,32 +20879,6 @@ stock LoadPlayerVariables(playerid)
 					    format(iString, sizeof(iString), "%s%s{FFFFFF} has selected (%s%s{FFFFFF} and %s%s{FFFFFF}).", TextColor[Player[playerid][Team]], Player[playerid][Name], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][0]], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][1]]);
 					}
 					
-					if(SaveVariables[i][HadParachute] == 1)
-					{
-					    GivePlayerWeapon(playerid, WEAPON_PARACHUTE, 1);
-					    SetPlayerArmedWeapon(playerid, WEAPON_PARACHUTE);
-					}
-					else
-						SetPlayerArmedWeapon(playerid, 0);
-						
-					if(SaveVariables[i][pVehicleID] != -1)
-					{
-					    new ct = 0;
-					    for(new j = 0; j < MAX_VEHICLES; j ++)
-					    {
-					        if(j == SaveVariables[i][pVehicleID])
-					        {
-					            foreach(new k : Player)
-					            {
-					                if(GetPlayerVehicleID(k) == SaveVariables[i][pVehicleID] && GetPlayerVehicleSeat(k) == SaveVariables[i][pSeatID])
-					                    ct ++;
-					            }
-					        }
-					    }
-					    if(ct == 0)
-					        PutPlayerInVehicle(playerid, SaveVariables[i][pVehicleID], SaveVariables[i][pSeatID]);
-					}
-
 		            TimesPicked[Player[playerid][Team]][listitem-1]++;
 		            Player[playerid][WeaponPicked] = listitem;
 
@@ -20869,12 +20907,25 @@ stock LoadPlayerVariables(playerid)
 						TogglePlayerControllableEx(playerid, false);
 			        else
 						TogglePlayerControllableEx(playerid, true);
-
 				}
 				else
 				{
 				    ShowPlayerWeaponMenu(playerid, Player[playerid][Team]);
                 }
+                
+                if(SaveVariables[i][HadParachute] == 1)
+				{
+				    GivePlayerWeapon(playerid, WEAPON_PARACHUTE, 1);
+				    SetPlayerArmedWeapon(playerid, WEAPON_PARACHUTE);
+				}
+				else
+					SetPlayerArmedWeapon(playerid, 0);
+
+				if(SaveVariables[i][pVehicleID] != -1)
+				{
+				    SetTimerEx("RespawnInVehicleAfterComeBack", 500, false, "ddd", playerid, SaveVariables[i][pVehicleID], SaveVariables[i][pSeatID]);
+				}
+
 				//ShowPlayerWeaponMenu(playerid, Player[playerid][Team]);
 				SetPlayerCheckpoint(playerid, BCPSpawn[Current][0], BCPSpawn[Current][1], BCPSpawn[Current][2], 2);
 				GangZoneShowForPlayer(playerid, CPZone, 0xFF000044);
@@ -20967,6 +21018,8 @@ stock LoadPlayerVariables(playerid)
 				}
 
 			}
+			
+			StyleTextDrawFix(playerid);
 
 			ResetSaveVariables(i);
 
@@ -20977,6 +21030,22 @@ stock LoadPlayerVariables(playerid)
 	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has spawned as: {FFFFFF}%s", Player[playerid][Name], TeamName[Player[playerid][Team]]);
 	SendClientMessageToAll(-1, iString);
 
+	return 1;
+}
+
+forward RespawnInVehicleAfterComeBack(playerid, vehicleid, seatid);
+public RespawnInVehicleAfterComeBack(playerid, vehicleid, seatid)
+{
+    new ct = 0;
+	foreach(new k : Player)
+	{
+		if(GetPlayerVehicleID(k) == vehicleid && GetPlayerVehicleSeat(k) == seatid)
+	    	ct ++;
+	}
+    if(ct == 0)
+    {
+        PutPlayerInVehicle(playerid, vehicleid, seatid);
+	}
 	return 1;
 }
 
@@ -21008,6 +21077,10 @@ stock ResetSaveVariables(i) {
     SaveVariables[i][ToBeAdded] = false;
     SaveVariables[i][CheckScore] = false;
     SaveVariables[i][PauseWait] = false;
+    SaveVariables[i][pVehicleID] = -1;
+    SaveVariables[i][pSeatID] = -1;
+    SaveVariables[i][HadParachute] = 0;
+    
 }
 
 stock ClearPlayerVariables()
@@ -22544,7 +22617,7 @@ public OnScriptUpdate()
 	            ElapsedTime++;
 			}
 
-			format(iString,sizeof(iString),"~r~%s  ~r~~h~%d   ~l~(~r~~h~%.0f~l~)			   	            ~l~%d:%02d			   	            ~b~~h~%s  ~b~~h~%d   ~l~(~b~~h~%.0f~l~)~n~",TeamName[ATTACKER],PlayersAlive[ATTACKER],TeamHP[ATTACKER],RoundMints,RoundSeconds,TeamName[DEFENDER],PlayersAlive[DEFENDER],TeamHP[DEFENDER]);
+			format(iString,sizeof(iString),"~r~%s  ~r~~h~%d   ~w~(~r~~h~%.0f~w~)			   	            ~w~%d:%02d			   	            ~b~~h~%s  ~b~~h~%d   ~w~(~b~~h~%.0f~w~)~n~",TeamName[ATTACKER],PlayersAlive[ATTACKER],TeamHP[ATTACKER],RoundMints,RoundSeconds,TeamName[DEFENDER],PlayersAlive[DEFENDER],TeamHP[DEFENDER]);
 	        TextDrawSetString(RoundStats, iString);
 
 			format( iString, sizeof(iString),"~w~%d:%02d", RoundMints,	RoundSeconds );
@@ -24058,6 +24131,9 @@ ShowPlayerWeaponMenu(playerid, team)
 	TogglePlayerControllableEx(playerid, false);
 
 	ResetPlayerWeapons(playerid);
+	
+	Player[playerid][WorldBeforeWeaponMenu] = GetPlayerVirtualWorld(playerid);
+	SetPlayerVirtualWorld(playerid, playerid + 100);
 
 	if(Player[playerid][WeaponPicked] > 0){
  		TimesPicked[Player[playerid][Team]][Player[playerid][WeaponPicked]-1]--;
