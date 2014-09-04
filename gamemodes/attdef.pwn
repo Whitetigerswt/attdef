@@ -10,6 +10,7 @@
 	- You should not get hit while picking weapons from gunmenu now.
 	- Added a new command /reconnect for admins to make players relog.
 	
+	- Fuck you hoes, 62 here
 
 */
 
