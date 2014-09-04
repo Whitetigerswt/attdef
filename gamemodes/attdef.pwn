@@ -7804,7 +7804,7 @@ CMD:reconnect(playerid, params[])
 		
     SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has set {FFFFFF}%s "COL_PRIM"to reconnect to the server.", Player[playerid][Name], Player[pID][Name]));
     Player[pID][SetToReconnect] = true;
-	GetPlayerIp(playerid, Player[pID][IpToReconnect], 16);
+	GetPlayerIp(pID, Player[pID][IpToReconnect], 16);
 	SendRconCommand(sprintf("banip %s", Player[pID][IpToReconnect]));
 	return 1;
 }
@@ -21906,7 +21906,7 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 forward OnScriptUpdate();
 public OnScriptUpdate()
 {
-    if(DidSomeoneTimeout)
+	if(DidSomeoneTimeout)
 	{
 	    DidSomeoneTimeout = false;
 	    RecountPlayersOnCP();
