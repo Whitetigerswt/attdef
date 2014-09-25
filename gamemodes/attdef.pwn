@@ -9,6 +9,8 @@
 	- Fixed old bug: players now are re-spawned in their vehicles after crash or sudden leave.
 	- You should not get hit while picking weapons from gunmenu now.
 	- Added a new command /reconnect for admins to make players relog.
+	- Added /p and /u commands for quick pause/unpause
+	- Fixed /afk bug allowing non-admins to set anyone afk
 	
 	- Fuck you hoes, 62 here
 
@@ -12355,6 +12357,7 @@ CMD:afk(playerid, params[])
 	if(isnull(params)) pID = playerid;
 	else {
 		if(!IsNumeric(params)) return SendUsageMessage(playerid,"/afk [Player ID (Optional)]");
+		if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
 		pID = strval(params);
 	}
     if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player is not connected.");
