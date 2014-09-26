@@ -4,11 +4,11 @@
 	
 	- Removed anti-macros system and all of its components.
 	- Removed old AC system and all of its components.
-	- The mighty new Anti-Cheat is now set up and working.
+	- The mighty new Anti-Cheat is now fully compatible.
 	- Fixed old bug: you're now given a parachute on round-unpause if you get one before pause/crash.
 	- Fixed old bug: players now are re-spawned in their vehicles after crash or sudden leave.
 	- You should not get hit while picking weapons from gunmenu now.
-	- Added a new command /reconnect for admins to make players relog.
+	- Player replacement now is made into user-friendly dialogs.
 	
 
 */
@@ -358,8 +358,11 @@ new ColScheme[10] = ""COL_PRIM"";
 #define ColorDialog4                    75
 #define ColorDialog5                    76
 #define DIALOG_ADMIN_CODE               77
+#define DIALOG_REPLACE_FIRST            78
+#define DIALOG_REPLACE_SECOND           79
 
 new w0[MAX_PLAYERS];	//heartnarmor
+new REPLACE_ToAddID[MAX_PLAYERS]; // replace with dialogs
 
 #define PRESSED(%0) 	(((newkeys & (%0)) == (%0)) && ((oldkeys & (%0)) != (%0)))
 #define RELEASED(%0) 	(((newkeys & (%0)) != (%0)) && ((oldkeys & (%0)) == (%0)))
@@ -690,9 +693,11 @@ enum PlayerVariables {
 	WeaponStat[55],
 	PlayerTypeByWeapon[32],
 	bool:ToGiveParachute,
-	WorldBeforeWeaponMenu,
-	bool:SetToReconnect,
-	IpToReconnect[16]
+	bool:OnGunmenu,
+	Float:HealthBeforeMenu,
+	Float:ArmourBeforeMenu,
+	//IpToReconnect[16]
+	bool:SetToReconnect
 
 }
 new Player[MAX_PLAYERS][PlayerVariables];
@@ -1890,7 +1895,7 @@ stock MATCHSYNC_SyncAllPlayers()
     {
         new name[MAX_PLAYER_NAME];
         GetPlayerName(i, name, sizeof name);
-        if(strfind(name, "[KHK]", true, 0) != -1)
+        if(strfind(name, "[KHK]", true, 0) != -1 || strfind(name, "[KHKr]", true, 0) != -1 || strfind(name, "[KHKa]", true, 0) != -1)
         {
             MATCHSYNC_SyncPlayerKills(i);
             MATCHSYNC_SyncPlayerDamage(i);
@@ -1999,10 +2004,16 @@ stock MATCHSYNC_InsertMatchStats()
 	gettime(Hours, Minutes, Seconds);
 	format(date, sizeof date, "[%02d/%02d/%d]:[%02d:%02d:%02d]", Day, Month, Year, Hours, Minutes, Seconds);
 	new alAC[16];
+	
+	#if ANTICHEAT == 1
 	if(AntiCheat == true)
 		format(alAC, sizeof alAC, "Was On");
 	else
 		format(alAC, sizeof alAC, "Was Off");
+	#else
+ 	format(alAC, sizeof alAC, "Was Off");
+	#endif
+	
 	new query[300];
 	format(query, sizeof(query), "INSERT INTO Matches (TeamA, TeamB, Score, DateTime, AC) VALUES ('%s', '%s', '%s', '%s', '%s')", winnerName, loserName, score, date, alAC);
 	mysql_query(query);
@@ -3864,12 +3875,12 @@ public OnPlayerSpawn(playerid)
 
 public OnPlayerDisconnect(playerid, reason)
 {
-	if(Player[playerid][SetToReconnect] == true)
+	/*if(Player[playerid][SetToReconnect] == true)
 	{
 	    Player[playerid][SetToReconnect] = false;
 		SendRconCommand(sprintf("unbanip %s", Player[playerid][IpToReconnect]));
 		SendRconCommand("reloadbans");
-	}
+	}*/
 
 	if(reason == 0)
         DidSomeoneTimeout = true;
@@ -5153,6 +5164,9 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 {
     //ShowHitArrow(playerid, issuerid);
+    if(Player[playerid][OnGunmenu] == true && Player[playerid][Playing])
+        return 1;
+        
 	if(playerid != INVALID_PLAYER_ID && issuerid != INVALID_PLAYER_ID && bodypart == 9) // headshot
 	{
 	    if(Player[issuerid][InHeadShot])
@@ -5573,6 +5587,135 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 {
     OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext);
+    if(dialogid == DIALOG_REPLACE_FIRST)
+	{
+		if(response)
+		{
+			new ToAddID = -1;
+			foreach(new i : Player)
+			{
+			    if(!strcmp(Player[i][Name], inputtext, false, strlen(inputtext)))
+			    {
+			        ToAddID ++;
+			        REPLACE_ToAddID[playerid] = i;
+			        break;
+			    }
+			}
+			if(ToAddID > -1)
+			{
+			    new str[2048];
+			    foreach(new i : Player)
+				{
+				    if(Player[i][Playing] != true)
+				        continue;
+
+					format(str, sizeof str, "%s%s\n", str, Player[i][Name]);
+				}
+				for(new i = 0; i < SAVE_SLOTS; i ++)
+				{
+					if(strlen(SaveVariables[i][pName]) > 2 && SaveVariables[i][RoundID] == Current && SaveVariables[i][ToBeAdded] == true)
+					{
+					    format(str, sizeof str, "%s%s\n", str, SaveVariables[i][pName]);
+					}
+				}
+				ShowPlayerDialog(playerid, DIALOG_REPLACE_SECOND, DIALOG_STYLE_LIST, ""COL_PRIM"Player to replace", str, "Process", "Cancel");
+			}
+			else
+				SendErrorMessage(playerid, "Player not found.");
+		}
+		return 1;
+	}
+
+	if(dialogid == DIALOG_REPLACE_SECOND)
+	{
+		if(response)
+		{
+		    new ToReplaceID = -1;
+			foreach(new i : Player)
+			{
+			    if(!strcmp(Player[i][Name], inputtext, false, strlen(inputtext)))
+			    {
+			        ToReplaceID = i;
+			        break;
+			    }
+			}
+			if(ToReplaceID != -1)
+			{
+			    new ToAddID = REPLACE_ToAddID[playerid];
+			    if(!IsPlayerConnected(ToAddID))
+			    {
+			        return SendErrorMessage(playerid, "Player is not connected anymore.");
+			    }
+
+			    if(Player[ToAddID][InDM] == true)
+				{
+				    Player[ToAddID][InDM] = false;
+					Player[ToAddID][DMReadd] = 0;
+				}
+
+				if(Player[ToAddID][InDuel] == true)
+					return SendErrorMessage(playerid,"That player is in a duel.");  //duel
+
+		        Player[ToAddID][AntiLag] = false;
+		        Player[ToAddID][InHeadShot] = false;
+
+				if(Player[ToAddID][LastVehicle] != -1)
+				{
+					DestroyVehicle(Player[ToAddID][LastVehicle]);
+					Player[ToAddID][LastVehicle] = -1;
+				}
+
+				if(Player[ToAddID][Spectating] == true)
+					StopSpectate(ToAddID);
+
+				SetTimerEx("OnPlayerReplace", 1000, false, "iii", ToAddID, ToReplaceID, playerid);
+			}
+			else
+			{
+			    for(new i = 0; i < SAVE_SLOTS; i ++)
+				{
+					if(strlen(SaveVariables[i][pName]) > 2 && !strcmp(SaveVariables[i][pName], inputtext, false, strlen(inputtext)) && SaveVariables[i][RoundID] == Current)
+					{
+					    ToReplaceID = i;
+						break;
+					}
+				}
+				if(ToReplaceID > -1)
+				{
+				    new ToAddID = REPLACE_ToAddID[playerid];
+				    if(!IsPlayerConnected(ToAddID))
+				    {
+				        return SendErrorMessage(playerid, "Player is not connected anymore.");
+				    }
+
+					if(Player[ToAddID][InDM] == true)
+					{
+					    Player[ToAddID][InDM] = false;
+						Player[ToAddID][DMReadd] = 0;
+					}
+
+					if(Player[ToAddID][InDuel] == true)
+						return SendErrorMessage(playerid,"That player is in a duel.");  //duel
+
+					Player[ToAddID][AntiLag] = false;
+					Player[ToAddID][InHeadShot] = false;
+
+					if(Player[ToAddID][LastVehicle] != -1)
+					{
+						DestroyVehicle(Player[ToAddID][LastVehicle]);
+						Player[ToAddID][LastVehicle] = -1;
+					}
+
+					if(Player[ToAddID][Spectating] == true)
+						StopSpectate(ToAddID);
+					SetTimerEx("OnPlayerInGameReplace", 1000, false, "iii", ToAddID, ToReplaceID, playerid);
+				}
+				else
+					SendErrorMessage(playerid, "Player not found.");
+			}
+		}
+		return 1;
+	}
 	if(dialogid == DIALOG_THEME_CHANGE1)
 	{
 	    if(response)
@@ -6062,7 +6205,11 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	        else
 				TogglePlayerControllableEx(playerid, true);
 				
-            SetPlayerVirtualWorld(playerid, Player[playerid][WorldBeforeWeaponMenu]);
+            SetPlayerHealth(playerid, Player[playerid][HealthBeforeMenu]);
+			SetPlayerArmour(playerid, Player[playerid][ArmourBeforeMenu]);
+			Player[playerid][HealthBeforeMenu] = 100.0;
+			Player[playerid][ArmourBeforeMenu] = 100.0;
+			Player[playerid][OnGunmenu] = false;
 		}
 		return 1;
 	}
@@ -7697,13 +7844,14 @@ CMD:updates(playerid, params[])
 
 	string = "";
 	
-	strcat(string, "{00FF00}Attack-Defend v2.5.3 updates:\n");
+	strcat(string, "{00FF00}Attack-Defend v2.6 updates:\n");
 
 	strcat(string, "\n{FFFFFF}- Removed anti-macros system and all of its components.");
 	strcat(string, "\n{FFFFFF}- Removed old AC system and all of its components.");
-	strcat(string, "\n{FFFFFF}- The mighty new Anti-Cheat is now set up and working.");
-	strcat(string, "\n{FFFFFF}- Added a new command /reconnect for admins to make players relog.");
-	strcat(string, "\n{FFFFFF}- You should not get hit while picking weapons from gunmenu now.");
+	strcat(string, "\n{FFFFFF}- The mighty new Anti-Cheat is now fully compatible.");
+	//strcat(string, "\n{FFFFFF}- Added a new command /reconnect for admins to make players relog.");
+	strcat(string, "\n{FFFFFF}- Feature: Player replacement now is made into user-friendly dialogs.");
+	strcat(string, "\n{FFFFFF}- Feature: You should not get hit while picking weapons from gunmenu now.");
 	strcat(string, "\n{FFFFFF}- Bug-fix: you're now given a parachute on round-unpause if you get one before pause/crash.");
 	strcat(string, "\n{FFFFFF}- Bug-fix: players now are re-spawned in their vehicles after crash or sudden leave.");
 	strcat(string, "\n{FFFFFF}- ");
@@ -7789,6 +7937,7 @@ CMD:acmds(playerid, params[])
 	return 1;
 }
 
+/*
 CMD:reconnect(playerid, params[])
 {
     if(Player[playerid][Level] < 3) return SendErrorMessage(playerid,"You must be level 3 to use this command.");
@@ -7808,6 +7957,7 @@ CMD:reconnect(playerid, params[])
 	SendRconCommand(sprintf("banip %s", Player[pID][IpToReconnect]));
 	return 1;
 }
+*/
 
 CMD:togspec(playerid, params[])
 {
@@ -10812,83 +10962,21 @@ CMD:resetallguns(playerid, params[])
 	return 1;
 }
 
-
-
 CMD:replace(playerid, params[])
 {
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level to do that.");
 	if(Current == -1) return SendErrorMessage(playerid,"Round is not active.");
 
-	new ToAddID, ToReplaceName[MAX_PLAYER_NAME];
-	#if PLUGINS == 1
-		if(sscanf(params, "is[24]", ToAddID, ToReplaceName)) return SendUsageMessage(playerid,"/replace [Player (ID) to add] [Player (Name) to replace]");
-	#else
-		if(sscanf(params, "is", ToAddID, ToReplaceName)) return SendUsageMessage(playerid,"/replace [Player (ID) to add] [Player (Name) to replace]");
-	#endif
-	if(!IsPlayerConnected(ToAddID)) return SendErrorMessage(playerid,"The player you want to add is not connected.");
-	if(Player[ToAddID][Playing] == true) return SendErrorMessage(playerid,"The player you want to add is already playing.");
-	if(Player[ToAddID][Team] == REFEREE || Player[ToAddID][Team] == NON) return SendErrorMessage(playerid,"The player you want to add is not in the right team.");
+	new str[2048];
+	foreach(new i : Player)
+	{
+	    if(Player[i][InDuel] == true || Player[i][Playing] == true)
+	        continue;
 
-//	new iString[180],
-	new ToReplaceID;
-	ToReplaceID = ReturnPlayerID(ToReplaceName);
-
-	if(ToReplaceID == INVALID_PLAYER_ID) {
-	    new Found = 0;
-	    new SaveVarID;
-		for(new i = 0; i < SAVE_SLOTS; i ++) {
-			if( strlen( SaveVariables[i][pName] ) > 2 && strcmp( SaveVariables[i][pName], ToReplaceName, true ) == 0 ) {
-				if(SaveVariables[i][RoundID] != Current) return SendErrorMessage(playerid,"Player to replace variables are saved for some other round.");
-
-				Found++;
-				SaveVarID = i;
-//		    	return 1;
-			}
-		}
-
-		if(Found == 0) return SendErrorMessage(playerid,"Can't find 'Player to replace' name in saved variables.");
-		else {
-			if(Player[ToAddID][InDM] == true) {
-			    Player[ToAddID][InDM] = false;
-				Player[ToAddID][DMReadd] = 0;
-			}
-
-			if(Player[ToAddID][InDuel] == true) return SendErrorMessage(playerid,"That player is in a duel.");  //duel
-
-			Player[ToAddID][AntiLag] = false;
-			Player[ToAddID][InHeadShot] = false;
-
-			if(Player[ToAddID][LastVehicle] != -1) {
-				DestroyVehicle(Player[ToAddID][LastVehicle]);
-				Player[ToAddID][LastVehicle] = -1;
-			}
-
-			if(Player[ToAddID][Spectating] == true) StopSpectate(ToAddID);
-			SetTimerEx("OnPlayerInGameReplace", 1000, false, "iii", ToAddID, SaveVarID, playerid);
-		}
-	} else {
-
-		if(Player[ToAddID][InDM] == true) {
-		    Player[ToAddID][InDM] = false;
-			Player[ToAddID][DMReadd] = 0;
-		}
-
-		if(Player[ToAddID][InDuel] == true) return SendErrorMessage(playerid,"That player is in a duel.");  //duel
-
-        Player[ToAddID][AntiLag] = false;
-        Player[ToAddID][InHeadShot] = false;
-
-		if(Player[ToAddID][LastVehicle] != -1) {
-			DestroyVehicle(Player[ToAddID][LastVehicle]);
-			Player[ToAddID][LastVehicle] = -1;
-		}
-
-		if(Player[ToAddID][Spectating] == true) StopSpectate(ToAddID);
-
-		SetTimerEx("OnPlayerReplace", 1000, false, "iii", ToAddID, ToReplaceID, playerid);
-		return 1;
+		format(str, sizeof str, "%s%s\n", str, Player[i][Name]);
 	}
-	LogAdminCommand("replace", playerid, ToAddID);
+	ShowPlayerDialog(playerid, DIALOG_REPLACE_FIRST, DIALOG_STYLE_LIST, ""COL_PRIM"Player to add", str, "Process", "Cancel");
+	LogAdminCommand("replace", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
 
@@ -17609,6 +17697,7 @@ public SpawnConnectedPlayer(playerid, team)
 {
     if(Player[playerid][Spawned] == false)
 	{
+	    StyleTextDrawFix(playerid);
 		if(team == 0)
 		{
 			if(WarMode == false)
@@ -21326,6 +21415,7 @@ SyncPlayer(playerid)
 
 stock SpawnPlayerEx(playerid) {
 	if(Player[playerid][Spawned] == true) {
+	    StyleTextDrawFix(playerid);
 		if(IsPlayerInAnyVehicle(playerid)) RemovePlayerFromVehicle(playerid);
 		SetPlayerPos(playerid, 0, 0, 0);
 	 	SpawnPlayer(playerid);
@@ -24132,8 +24222,21 @@ ShowPlayerWeaponMenu(playerid, team)
 
 	ResetPlayerWeapons(playerid);
 	
-	Player[playerid][WorldBeforeWeaponMenu] = GetPlayerVirtualWorld(playerid);
-	SetPlayerVirtualWorld(playerid, playerid + 100);
+	Player[playerid][OnGunmenu] = true;
+	
+	if(ElapsedTime > 3)
+	{
+		GetPlayerHealth(playerid, Player[playerid][HealthBeforeMenu]);
+		GetPlayerArmour(playerid, Player[playerid][ArmourBeforeMenu]);
+	}
+	else
+	{
+	    Player[playerid][HealthBeforeMenu] = 100.0;
+	    Player[playerid][ArmourBeforeMenu] = 100.0;
+	}
+	
+	SetPlayerHealthEx(playerid, 99999999999);
+	SetPlayerArmourEx(playerid, 99999999999);
 
 	if(Player[playerid][WeaponPicked] > 0){
  		TimesPicked[Player[playerid][Team]][Player[playerid][WeaponPicked]-1]--;
