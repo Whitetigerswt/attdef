@@ -8,16 +8,10 @@
 	- Fixed old bug: you're now given a parachute on round-unpause if you get one before pause/crash.
 	- Fixed old bug: players now are re-spawned in their vehicles after crash or sudden leave.
 	- You should not get hit while picking weapons from gunmenu now.
-<<<<<<< HEAD
 	- Player replacement now is made into user-friendly dialogs.
-=======
-	- Added a new command /reconnect for admins to make players relog.
 	- Added /p and /u commands for quick pause/unpause
 	- Fixed /afk bug allowing non-admins to set anyone afk
->>>>>>> origin/master
 	
-	- Fuck you hoes, 62 here
-
 */
 
 
@@ -368,12 +362,8 @@ new ColScheme[10] = ""COL_PRIM"";
 #define DIALOG_REPLACE_FIRST            78
 #define DIALOG_REPLACE_SECOND           79
 
-<<<<<<< HEAD
 new w0[MAX_PLAYERS];	//heartnarmor
 new REPLACE_ToAddID[MAX_PLAYERS]; // replace with dialogs
-=======
-new w0[MAX_PLAYERS];	
->>>>>>> origin/master
 
 #define PRESSED(%0) 	(((newkeys & (%0)) == (%0)) && ((oldkeys & (%0)) != (%0)))
 #define RELEASED(%0) 	(((newkeys & (%0)) != (%0)) && ((oldkeys & (%0)) == (%0)))
@@ -7819,10 +7809,12 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Removed old AC system and all of its components.");
 	strcat(string, "\n{FFFFFF}- The mighty new Anti-Cheat is now fully compatible.");
 	//strcat(string, "\n{FFFFFF}- Added a new command /reconnect for admins to make players relog.");
+	strcat(string, "\n{FFFFFF}- Added /p and /u commands for quick round pause/unpause.");
 	strcat(string, "\n{FFFFFF}- Feature: Player replacement now is made into user-friendly dialogs.");
 	strcat(string, "\n{FFFFFF}- Feature: You should not get hit while picking weapons from gunmenu now.");
 	strcat(string, "\n{FFFFFF}- Bug-fix: you're now given a parachute on round-unpause if you get one before pause/crash.");
 	strcat(string, "\n{FFFFFF}- Bug-fix: players now are re-spawned in their vehicles after crash or sudden leave.");
+	strcat(string, "\n{FFFFFF}- Fixed /afk bug allowing non-admins to set anyone to afk mode.");
 	strcat(string, "\n{FFFFFF}- ");
 	
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
@@ -10921,79 +10913,11 @@ CMD:replace(playerid, params[])
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level to do that.");
 	if(Current == -1) return SendErrorMessage(playerid,"Round is not active.");
 
-<<<<<<< HEAD
 	new str[2048];
 	foreach(new i : Player)
 	{
 	    if(Player[i][InDuel] == true || Player[i][Playing] == true)
 	        continue;
-=======
-	new ToAddID, ToReplaceName[MAX_PLAYER_NAME];
-	#if PLUGINS == 1
-		if(sscanf(params, "is[24]", ToAddID, ToReplaceName)) return SendUsageMessage(playerid,"/replace [Player (ID) to add] [Player (Name) to replace]");
-	#else
-		if(sscanf(params, "is", ToAddID, ToReplaceName)) return SendUsageMessage(playerid,"/replace [Player (ID) to add] [Player (Name) to replace]");
-	#endif
-	if(!IsPlayerConnected(ToAddID)) return SendErrorMessage(playerid,"The player you want to add is not connected.");
-	if(Player[ToAddID][Playing] == true) return SendErrorMessage(playerid,"The player you want to add is already playing.");
-	if(Player[ToAddID][Team] == REFEREE || Player[ToAddID][Team] == NON) return SendErrorMessage(playerid,"The player you want to add is not in the right team.");
-
-//	new iString[180],
-	new ToReplaceID;
-	ToReplaceID = ReturnPlayerID(ToReplaceName);
-
-	if(ToReplaceID == INVALID_PLAYER_ID) {
-	    new Found = 0;
-	    new SaveVarID;
-		for(new i = 0; i < SAVE_SLOTS; i ++) {
-			if( strlen( SaveVariables[i][pName] ) > 2 && strcmp( SaveVariables[i][pName], ToReplaceName, true ) == 0 ) {
-				if(SaveVariables[i][RoundID] != Current) return SendErrorMessage(playerid,"Player to replace variables are saved for some other round.");
-
-				Found++;
-				SaveVarID = i;
-//		    	return 1;
-			}
-		}
-
-		if(Found == 0) return SendErrorMessage(playerid,"Can't find 'Player to replace' name in saved variables.");
-		else {
-			if(Player[ToAddID][InDM] == true) {
-			    Player[ToAddID][InDM] = false;
-				Player[ToAddID][DMReadd] = 0;
-			}
-
-			if(Player[ToAddID][InDuel] == true) return SendErrorMessage(playerid,"That player is in a duel.");
-
-			Player[ToAddID][AntiLag] = false;
-			Player[ToAddID][InHeadShot] = false;
-
-			if(Player[ToAddID][LastVehicle] != -1) {
-				DestroyVehicle(Player[ToAddID][LastVehicle]);
-				Player[ToAddID][LastVehicle] = -1;
-			}
-
-			if(Player[ToAddID][Spectating] == true) StopSpectate(ToAddID);
-			SetTimerEx("OnPlayerInGameReplace", 1000, false, "iii", ToAddID, SaveVarID, playerid);
-		}
-	} else {
-
-		if(Player[ToAddID][InDM] == true) {
-		    Player[ToAddID][InDM] = false;
-			Player[ToAddID][DMReadd] = 0;
-		}
-
-		if(Player[ToAddID][InDuel] == true) return SendErrorMessage(playerid,"That player is in a duel.");
-
-        Player[ToAddID][AntiLag] = false;
-        Player[ToAddID][InHeadShot] = false;
-
-		if(Player[ToAddID][LastVehicle] != -1) {
-			DestroyVehicle(Player[ToAddID][LastVehicle]);
-			Player[ToAddID][LastVehicle] = -1;
-		}
-
-		if(Player[ToAddID][Spectating] == true) StopSpectate(ToAddID);
->>>>>>> origin/master
 
 		format(str, sizeof str, "%s%s\n", str, Player[i][Name]);
 	}
