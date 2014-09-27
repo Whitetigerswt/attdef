@@ -11,6 +11,7 @@
 	- Player replacement now is made into user-friendly dialogs.
 	- Added /p and /u commands for quick pause/unpause
 	- Fixed /afk bug allowing non-admins to set anyone afk
+	- Fixed length of /cmds dialog
 	
 */
 
@@ -930,8 +931,8 @@ new bool:ShowIcons = true;
 #endif
 new bool:AutoBal = true;
 new bool:AntiSpam = true;
-new bool:ShortCuts = false; //shortcutonoff
-new bool:AutoPause = true;  //autopause
+new bool:ShortCuts = false;
+new bool:AutoPause = true;
 new bool:LobbyGuns = true;
 new bool:DidSomeoneTimeout = false;
 new AnnTimer;
@@ -3910,7 +3911,7 @@ public OnPlayerDisconnect(playerid, reason)
 		    PlayerNoLeadTeam(playerid);
 		    StorePlayerVariables(playerid);
 			if(Player[playerid][DontPause] == false && AutoPause == true && Current != -1)
-			{	//autopause
+			{
 
 				if(ESLMode == true) {
 				 	TimedOutPlayers ++;
@@ -4671,12 +4672,12 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 						}
 
 						vehicleid = CreateVehicle(VehicleModel, VehiclePoss[0], VehiclePoss[1], VehiclePoss[2], VehiclePoss[3], VehicleColor, VehicleColor, -1);
-						//numplate
+						
 						new plate[32];
 						format(plate, sizeof(plate), "%s", Player[playerid][NameWithoutTag]);
 					    SetVehicleNumberPlate(vehicleid, plate);
 					    SetVehicleToRespawn(vehicleid);
-					    //numplate
+					    
 						LinkVehicleToInterior(vehicleid, GetPlayerInterior(playerid));
 						SetVehicleVirtualWorld(vehicleid, GetPlayerVirtualWorld(playerid));
 				        SetVehicleVelocity(vehicleid, VehicleVelocity[0], VehicleVelocity[1], VehicleVelocity[2]);
@@ -7824,7 +7825,7 @@ CMD:updates(playerid, params[])
 
 CMD:cmds(playerid, params[])
 {
-	new string[1024];
+	new string[1200];
 
 	string = "";
 	strcat(string, "\n{FFFFFF}Use {FFFF00}! {FFFFFF}for team chat");
@@ -7886,12 +7887,12 @@ CMD:acmds(playerid, params[])
 
 	if(Player[playerid][Level] > 3) {
 		strcat(string, "\n\n"COL_PRIM"Level 4:");
-		strcat(string, "\n{FFFFFF}/acar   /banip   /mainspawn  /spray  /deletegraff  /clearadmcmd");
+		strcat(string, "\n{FFFFFF}/acar   /banip   /mainspawn   /spray   /deletegraff   /clearadmcmd");
 	}
 
 	if(Player[playerid][Level] > 4) {
 		strcat(string, "\n\n"COL_PRIM"Level 5:");
-		strcat(string, "\n{FFFFFF}/setlevel   /config   /base   /website   /themes   /deleteacc   /setacclevel  /permac  /permlock  ");
+		strcat(string, "\n{FFFFFF}/setlevel   /config   /base   /website   /themes   /deleteacc   /setacclevel   /permac   /permlock  ");
 	}
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Admin Commands", string, "OK","");
@@ -8119,7 +8120,6 @@ CMD:lobbyguns(playerid, params[])
 }
 
 
-//autopause
 CMD:autopause(playerid, params[])
 {
 	if(Player[playerid][Level] < 1 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
@@ -8139,7 +8139,6 @@ CMD:autopause(playerid, params[])
     LogAdminCommand("autopause", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
-//autopause
 
 
 CMD:ann(playerid, params[])
@@ -13504,12 +13503,12 @@ CMD:acar(playerid, params[])
 	}
 
  	new MyVehicle = CreateVehicle(veh, Pos[0], Pos[1], Pos[2], Pos[3], -1, -1, -1); //Creates the specific vehicle u were looking for (veh).
-//numplate
+
 	new plate[32];
 	format(plate, sizeof(plate), "%s", Player[playerid][NameWithoutTag]);
     SetVehicleNumberPlate(MyVehicle, plate);
     SetVehicleToRespawn(MyVehicle);
-//numplate
+
     LinkVehicleToInterior(MyVehicle, GetPlayerInterior(playerid)); //Links vehicle interior to the current player interior.
 	SetVehicleVirtualWorld(MyVehicle, GetPlayerVirtualWorld(playerid)); //Sets vehicle virtual world the the current virtual world of the player.
 	PutPlayerInVehicle(playerid, MyVehicle, 0); //Puts player in the driver seat.
@@ -13619,12 +13618,12 @@ CMD:car(playerid, params[])
 	}
 
  	new MyVehicle = CreateVehicle(veh, Pos[0], Pos[1], Pos[2], Pos[3], -1, -1, -1); //Creates the specific vehicle u were looking for (veh).
-//numplate
+
 	new plate[32];
 	format(plate, sizeof(plate), "%s", Player[playerid][NameWithoutTag]);
     SetVehicleNumberPlate(MyVehicle, plate);
     SetVehicleToRespawn(MyVehicle);
-//numplate
+
     LinkVehicleToInterior(MyVehicle, GetPlayerInterior(playerid)); //Links vehicle interior to the current player interior.
 	SetVehicleVirtualWorld(MyVehicle, GetPlayerVirtualWorld(playerid)); //Sets vehicle virtual world the the current virtual world of the player.
 	PutPlayerInVehicle(playerid, MyVehicle, 0); //Puts player in the driver seat.
