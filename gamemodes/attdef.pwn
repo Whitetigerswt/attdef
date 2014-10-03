@@ -12,6 +12,11 @@
 	- Added /p and /u commands for quick pause/unpause
 	- Fixed /afk bug allowing non-admins to set anyone afk
 	- Fixed length of /cmds dialog
+	- Removed reconnect command from /acmds.
+	- Added debug messages to help me fix a death bug.
+	- Improved match sync system. Hope I will release it this version.
+	- Added a new command /reloaddb to reload the SQLite database.
+	- A sound is now played when a player makes a pause or an unpause request.
 	
 */
 
@@ -1933,7 +1938,9 @@ stock MATCHSYNC_UpdateAllPlayers(when)
 	{
 	    if((strlen(TeamName[ATTACKER]) <= 3 && !strcmp(TeamName[ATTACKER], "KHK", true, 3)) || (strlen(TeamName[DEFENDER]) <= 3 && !strcmp(TeamName[DEFENDER], "KHK", true, 3)))
 		{
+		    SendClientMessageToAll(-1, ""COL_PRIM"Match-sync: {FFFFFF}Syncing all players data before updating!");
 			MATCHSYNC_SyncAllPlayers();
+			SendClientMessageToAll(-1, ""COL_PRIM"Match-sync: {FFFFFF}Updating all players data...");
 		    foreach(new i : Player)
 		    {
 		        new name[MAX_PLAYER_NAME];
@@ -1970,6 +1977,7 @@ stock MATCHSYNC_UpdateAllPlayers(when)
 					}
 		        }
 		    }
+		    SendClientMessageToAll(-1, ""COL_PRIM"Match-sync: {FFFFFF}Synced and updated all players data successfully!");
 		}
 	}
 	return 1;
@@ -1977,6 +1985,7 @@ stock MATCHSYNC_UpdateAllPlayers(when)
 
 stock MATCHSYNC_InsertMatchStats()
 {
+    SendClientMessageToAll(-1, ""COL_PRIM"Match-sync: {FFFFFF}Uploading match stats to the MySQL database!");
 	new winnerName[16], loserName[16], score[16];
 	if(TeamScore[ATTACKER] > TeamScore[DEFENDER])
 	{
@@ -2016,6 +2025,7 @@ stock MATCHSYNC_InsertMatchStats()
 	new query[300];
 	format(query, sizeof(query), "INSERT INTO Matches (TeamA, TeamB, Score, DateTime, AC) VALUES ('%s', '%s', '%s', '%s', '%s')", winnerName, loserName, score, date, alAC);
 	mysql_query(query);
+	SendClientMessageToAll(-1, ""COL_PRIM"Match-sync: {FFFFFF}Match stats has been uploaded successfully!");
 }
 
 #endif
@@ -3101,6 +3111,7 @@ public OnGameModeInit()
 
     db_close(sqliteconnection);
 	sqliteconnection = db_open("AAD.db");
+	SetDatabaseToReload();
 
 	// Get info about our columns in the Players table
 	new DBResult:res = db_query(sqliteconnection, "PRAGMA table_info(Players)");
@@ -6167,7 +6178,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				TogglePlayerControllableEx(playerid, false);
 	        else
 				TogglePlayerControllableEx(playerid, true);
-				
+
+			SendClientMessageToAll(-1, sprintf("[DEBUG]: Set ID %d's health to %.1f and armour to %.1f", playerid, Player[playerid][HealthBeforeMenu], Player[playerid][ArmourBeforeMenu]));
             SetPlayerHealth(playerid, Player[playerid][HealthBeforeMenu]);
 			SetPlayerArmour(playerid, Player[playerid][ArmourBeforeMenu]);
 			Player[playerid][HealthBeforeMenu] = 100.0;
@@ -7809,10 +7821,11 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Removed anti-macros system and all of its components.");
 	strcat(string, "\n{FFFFFF}- Removed old AC system and all of its components.");
 	strcat(string, "\n{FFFFFF}- The mighty new Anti-Cheat is now fully compatible.");
-	//strcat(string, "\n{FFFFFF}- Added a new command /reconnect for admins to make players relog.");
 	strcat(string, "\n{FFFFFF}- Added /p and /u commands for quick round pause/unpause.");
+	strcat(string, "\n{FFFFFF}- Added a new command /reloaddb to reload the SQLite database.");
 	strcat(string, "\n{FFFFFF}- Feature: Player replacement now is made into user-friendly dialogs.");
 	strcat(string, "\n{FFFFFF}- Feature: You should not get hit while picking weapons from gunmenu now.");
+	strcat(string, "\n{FFFFFF}- Feature: A sound is now played when a player makes a pause or an unpause request.");
 	strcat(string, "\n{FFFFFF}- Bug-fix: you're now given a parachute on round-unpause if you get one before pause/crash.");
 	strcat(string, "\n{FFFFFF}- Bug-fix: players now are re-spawned in their vehicles after crash or sudden leave.");
 	strcat(string, "\n{FFFFFF}- Fixed /afk bug allowing non-admins to set anyone to afk mode.");
@@ -7882,7 +7895,7 @@ CMD:acmds(playerid, params[])
 
 	if(Player[playerid][Level] > 2) {
 		strcat(string, "\n\n"COL_PRIM"Level 3:");
-		strcat(string, "\n{FFFFFF}/kick   /ban   /unbanip   /ac   /end   /limit   /muteall   /unmuteall   /aka   /reconnect");
+		strcat(string, "\n{FFFFFF}/kick   /ban   /unbanip   /ac   /end   /limit   /muteall   /unmuteall   /aka  /reloaddb");
 	}
 
 	if(Player[playerid][Level] > 3) {
@@ -11898,6 +11911,36 @@ CMD:help(playerid, params[])
 
 	ShowPlayerDialog(playerid,DIALOG_SERVER_HELP,DIALOG_STYLE_MSGBOX,"{0044FF}Server Help", HelpString, "OK","");
 
+	return 1;
+}
+
+new bool:DatabaseSetToReload = false;
+
+forward ReloadDatabase();
+public ReloadDatabase()
+{
+    sqliteconnection = db_open("AAD.db");
+    DatabaseSetToReload = false;
+    SendClientMessageToAll(-1, ""COL_PRIM"SQLite database has been reloaded successfully.");
+	return 1;
+}
+
+SetDatabaseToReload(playerid = INVALID_PLAYER_ID)
+{
+	if(playerid != INVALID_PLAYER_ID)
+		SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has set the SQLite database to reload.", Player[playerid][Name]));
+	DatabaseSetToReload = true;
+	db_close(sqliteconnection);
+	SetTimer("ReloadDatabase", 1000, false);
+	return 1;
+}
+
+CMD:reloaddb(playerid, params[])
+{
+    if(Player[playerid][Level] < 3 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
+	if(DatabaseSetToReload == true)
+		return SendErrorMessage(playerid, "Database is already set to reload.");
+	SetDatabaseToReload(playerid);
 	return 1;
 }
 
@@ -21778,6 +21821,8 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					SendErrorMessage(playerid,"Please wait.");
 					return 0;
 				}
+				foreach(new i : Player)
+				    PlayerPlaySound(i, 1133, 0.0, 0.0, 0.0);
 				Player[playerid][lastChat] = GetTickCount();
 				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"is asking for a pause!", Player[playerid][Name]));
 			}
@@ -21788,6 +21833,8 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					SendErrorMessage(playerid,"Please wait.");
 					return 0;
 				}
+				foreach(new i : Player)
+				    PlayerPlaySound(i, 1133, 0.0, 0.0, 0.0);
 				Player[playerid][lastChat] = GetTickCount();
 				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"is asking for an unpause!", Player[playerid][Name]));
 			}
