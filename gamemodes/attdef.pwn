@@ -1,7 +1,7 @@
 /*
 
 	v2.6
-	
+
 	- Removed anti-macros system and all of its components.
 	- Removed old AC system and all of its components.
 	- The mighty new Anti-Cheat is now fully compatible.
@@ -17,7 +17,8 @@
 	- Improved match sync system. Hope I will release it this version.
 	- Added a new command /reloaddb to reload the SQLite database.
 	- A sound is now played when a player makes a pause or an unpause request.
-	
+	- Solved a weird and old issue regarding SQLite database loading.
+
 */
 
 
@@ -47,7 +48,7 @@ new 	GM_VERSION[6] =		"2.6.0"; // Don't forget to change the length
 #define XMAS            0   // Loads Christmas stuff
 #define MATCH_SYNC      0   // (Beta) Uploads each match data somewhere so that it can be easily displayed in a website.
 #define SKINICONS       0	// Loads skin icons in round stats
-#define SILENTAIMDETECT 1   // Anti Wallhack/Silent Aim							
+#define SILENTAIMDETECT 1   // Anti Wallhack/Silent Aim
 
 native gpci (playerid, serial [], len);
 native IsValidVehicle(vehicleid);
@@ -410,7 +411,7 @@ new Text: introSelect;
 // - Global Textdraws -
 
 new Text: AntiLagTD; // Antilag
-new Text: WebText;  
+new Text: WebText;
 new Text: ACText;
 new Text: AnnTD;
 new Text: PauseTD;
@@ -2012,7 +2013,7 @@ stock MATCHSYNC_InsertMatchStats()
 	gettime(Hours, Minutes, Seconds);
 	format(date, sizeof date, "[%02d/%02d/%d]:[%02d:%02d:%02d]", Day, Month, Year, Hours, Minutes, Seconds);
 	new alAC[16];
-	
+
 	#if ANTICHEAT == 1
 	if(AntiCheat == true)
 		format(alAC, sizeof alAC, "Was On");
@@ -2021,7 +2022,7 @@ stock MATCHSYNC_InsertMatchStats()
 	#else
  	format(alAC, sizeof alAC, "Was Off");
 	#endif
-	
+
 	new query[300];
 	format(query, sizeof(query), "INSERT INTO Matches (TeamA, TeamB, Score, DateTime, AC) VALUES ('%s', '%s', '%s', '%s', '%s')", winnerName, loserName, score, date, alAC);
 	mysql_query(query);
@@ -2080,7 +2081,7 @@ public ReportServerVersion()
 {
 	if(!VersionCheckerStatus)
 	    return 0;
-	    
+
     HTTP(0, HTTP_GET, VERSION_CHECKER_VERSION_URL, "", "SaveVersionInStr");
     HTTP(1, HTTP_GET, VERSION_CHECKER_FORCEUSER_URL, "", "ForceUserToUseNewest");
     SetTimer("ReportServerVersion_Delayed", 2000, false);
@@ -2428,7 +2429,7 @@ CMD:spray(playerid, params[])
 {
     if(Player[playerid][Level] < 4) return SendErrorMessage(playerid,"Your admin level isn't high enough for this.");
 
-	
+
     if(CreatingTextO[playerid] == false)
     {
         if(Current != -1)
@@ -3038,6 +3039,62 @@ public OnPlayerHeadshotPlayer(playerid, shooterid, weaponid)
 
 // Headshots end
 */
+forward DelayedDatabaseStuff();
+public DelayedDatabaseStuff()
+{
+    	// Get info about our columns in the Players table
+	new DBResult:res = db_query(sqliteconnection, "PRAGMA table_info(Players)");
+
+	new bool:found = false;
+	// Loop to check and see if our IP column already exists
+	do {
+	    new column[50];
+	    db_get_field_assoc(res, "name", column, sizeof(column));
+	    if(!strcmp(column, "IP", true) && strlen(column) > 0) {
+	        // It does exist, so exit loop.
+	        found = true;
+	        break;
+	    }
+	} while(db_next_row(res));
+
+	db_free_result(res);
+
+	// If column wasn't found, add it to our db
+	if(!found) {
+	    db_free_result(db_query(sqliteconnection, "ALTER TABLE `Players` ADD COLUMN IP CHAR(" #MAX_PLAYER_NAME ") NOT NULL DEFAULT 0"));
+	}
+
+	// Vacuum SQL database
+	db_free_result(db_query(sqliteconnection, "VACUUM"));
+
+	LoadConfig();
+
+	LoadTextDraws(); // Loads all gloable textdraws
+
+	LoadBases(); // Loads bases
+	LoadArenas(); // Loads areans
+	LoadDMs(); // Loads DMs
+	LoadDuels(); // Loads Duels
+    LoadGraffs(); // Loads Graffs
+    CreateDuelArena();
+
+    //AddFoxGlitchFix(); // Fixes BASE 42 glitch
+
+    #if MYSQL == 0
+	db_free_result(db_query(sqliteconnection, "ALTER TABLE `Players` ADD HitSound INTEGER(128) NOT NULL DEFAULT 17802"));
+	db_free_result(db_query(sqliteconnection, "ALTER TABLE `Players` ADD GetHitSound INTEGER(128) NOT NULL DEFAULT 1131"));
+	#endif
+    return 1;
+}
+
+forward DatabaseDefaultReload();
+public DatabaseDefaultReload()
+{
+    SetDatabaseToReload();
+    SetTimer("DelayedDatabaseStuff", 1500, false);
+	return 1;
+}
+
 public OnGameModeInit()
 {
 	UsePlayerPedAnims(); // Player movement
@@ -3109,51 +3166,12 @@ public OnGameModeInit()
     MATCHSYNC_Init();
 	#endif
 
-    db_close(sqliteconnection);
+    //db_close(sqliteconnection);
 	sqliteconnection = db_open("AAD.db");
-	SetDatabaseToReload();
-
-	// Get info about our columns in the Players table
-	new DBResult:res = db_query(sqliteconnection, "PRAGMA table_info(Players)");
-	
-	new bool:found = false;
-	// Loop to check and see if our IP column already exists
-	do {
-	    new column[50];
-	    db_get_field_assoc(res, "name", column, sizeof(column));
-	    if(!strcmp(column, "IP", true) && strlen(column) > 0) {
-	        // It does exist, so exit loop.
-	        found = true;
-	        break;
-	    }
-	} while(db_next_row(res));
-	
-	db_free_result(res);
-	
-	// If column wasn't found, add it to our db
-	if(!found) {
-	    db_free_result(db_query(sqliteconnection, "ALTER TABLE `Players` ADD COLUMN IP CHAR(" #MAX_PLAYER_NAME ") NOT NULL DEFAULT 0"));
-	}
-	
-	// Vacuum SQL database
-	db_free_result(db_query(sqliteconnection, "VACUUM"));
+	SetTimer("DatabaseDefaultReload", 300, false); 
 
     format(MAIN_TEXT_COLOUR, sizeof MAIN_TEXT_COLOUR, "~l~");
     MAIN_BACKGROUND_COLOUR = 0xEEEEEE33;
-
-	LoadConfig();
-
-	LoadTextDraws(); // Loads all gloable textdraws
-
-	LoadBases(); // Loads bases
-	LoadArenas(); // Loads areans
-	LoadDMs(); // Loads DMs
-	LoadDuels(); // Loads Duels
-    LoadGraffs(); // Loads Graffs
-    CreateDuelArena();
-    
-    //AddFoxGlitchFix(); // Fixes BASE 42 glitch
-
 
 	#if OBJECTS == 1
 	LoadObjects();
@@ -3164,7 +3182,7 @@ public OnGameModeInit()
 	#endif
 
 	AddPlayerClass(Skin[ATTACKER], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); // attacker
-	
+
 	thetrain = AddStaticVehicleEx(538, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198, 120); // Train
 	traintrailer1 = AddStaticVehicle(569, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198);
 	traintrailer2 = AddStaticVehicle(569, 738.0100, 1863.0359, 5.1556, 180.0724, 198, 198);
@@ -3173,8 +3191,8 @@ public OnGameModeInit()
 	SetVehicleVirtualWorld(traintrailer2, 0);
 	AttachTrailerToVehicle(traintrailer1, thetrain);
 	AttachTrailerToVehicle(traintrailer2, thetrain);
-	
-	
+
+
 	SetWorldTime(MainTime); // Sets server time
 	SetWeather(MainWeather); // Sets server weather
 
@@ -3268,11 +3286,6 @@ public OnGameModeInit()
 		TextDrawSetString(WarModeText, iString);
 
 	}
-
-	#if MYSQL == 0
-	db_free_result(db_query(sqliteconnection, "ALTER TABLE `Players` ADD HitSound INTEGER(128) NOT NULL DEFAULT 17802"));
-	db_free_result(db_query(sqliteconnection, "ALTER TABLE `Players` ADD GetHitSound INTEGER(128) NOT NULL DEFAULT 1131"));
-	#endif
 
 	CreateObject(3095, 268.74, 1884.21, 16.07,   0.00, 0.00, 0.00);
 
@@ -3591,13 +3604,13 @@ public OnPlayerRequestClass(playerid, classid)
 
 	if(ServerAntiLag == true) TextDrawShowForPlayer(playerid, AntiLagTD);
 	else TextDrawHideForPlayer(playerid, AntiLagTD);
-	
+
 	SetPlayerPos(playerid, 1524,-43,100);
 	SetPlayerFacingAngle(playerid, 174);
 	SetPlayerCameraPos(playerid, 1524,-50,1004);
 	SetPlayerCameraLookAt(playerid, 1524,-43,1002);
 	SetPlayerInterior(playerid, 2);
-	
+
 	//SetPlayerVirtualWorld(playerid, playerid+50);
 
 	if(Player[playerid][Logged] == false) {
@@ -3625,13 +3638,13 @@ public OnPlayerRequestClass(playerid, classid)
 		    // Get IP
 		    new IP[MAX_PLAYER_NAME];
 		    GetPlayerIp(playerid, IP, sizeof(IP));
-		    
+
 		    // Construct query to check if the player with the same name and IP has connected before to this server
 		    format(Query, sizeof(Query), "SELECT * FROM `Players` WHERE `Name` = '%s' AND `IP` = '%s'", Player[playerid][Name], IP);
-		    
+
 		    // execute
 			new DBResult:res = db_query(sqliteconnection, Query);
-			
+
 			// If result returns any registered users with the same name and IP that have connected to this server before, log them in
 			if(db_num_rows(res)) {
 			    SendClientMessage(playerid, -1, "{3377FF}You've been automatically logged in {FFFFFF}(IP is the same as last login)");
@@ -3641,7 +3654,7 @@ public OnPlayerRequestClass(playerid, classid)
 			} else ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD,"{FFFFFF}Login Dialog","{FFFFFF}Type your password below to log in:","Login","Leave");
 			db_free_result(res);
 		}
-		
+
         db_free_result(result);
 
 		#else
@@ -3666,7 +3679,7 @@ public OnPlayerRequestClass(playerid, classid)
 //	SetPlayerPos(playerid, MainSpawn[0], MainSpawn[1], MainSpawn[2]);
 //	SetPlayerFacingAngle(playerid, MainSpawn[3]);
 //	SetPlayerInterior(playerid, MainInterior);
-	
+
 
 	SelectTextDraw(playerid, 0xFF0000BB);
     TextDrawShowForPlayer( playerid, introBg1 );
@@ -3750,7 +3763,7 @@ public OnPlayerSpawn(playerid)
 		//SendClientMessage(playerid, -1, "Checking for cheats..");
 
 	}
-	
+
 
 	if(Player[playerid][IgnoreSpawn] == true)
 	{
@@ -3890,7 +3903,7 @@ public OnPlayerDisconnect(playerid, reason)
 
 	if(reason == 0)
         DidSomeoneTimeout = true;
-        
+
 	if(CreatingTextO[playerid])
 	{
 	    //PlayerSaveNewGraff(playerid);
@@ -4150,25 +4163,25 @@ stock ShowConfigDialog(playerid) {
 	} else {
 		strcat(string, "\n{FF6666}Server Anti-lag");
 	}
-	
+
 	if(GiveKnife == true) {
 		strcat(string, "\n{66FF66}Auto-give knife");
 	} else {
 		strcat(string, "\n{FF6666}Auto-give knife");
 	}
-	
+
 	if(ShowBodyLabels == true) {
 		strcat(string, "\n{66FF66}Show Body Labels");
 	} else {
 		strcat(string, "\n{FF6666}Show Body Labels");
 	}
-	
+
 	if(VoteRound == true) {
 		strcat(string, "\n{66FF66}Vote round (/vote cmd)");
 	} else {
 		strcat(string, "\n{FF6666}Vote round (/vote cmd)");
 	}
-	
+
 	if(ChangeName == true) {
 		strcat(string, "\n{66FF66}Change name (/changename cmd)");
 	} else {
@@ -4220,7 +4233,7 @@ public OnPlayerDeath(playerid, killerid, reason)
 			Player[playerid][HitWith] = -1;
 		}
 	}
-	
+
 	if(Player[playerid][HitBy] != -1 && Player[playerid][HitWith]) {
 		killerid = Player[playerid][HitBy];
 		reason = Player[playerid][HitWith];
@@ -4683,12 +4696,12 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 						}
 
 						vehicleid = CreateVehicle(VehicleModel, VehiclePoss[0], VehiclePoss[1], VehiclePoss[2], VehiclePoss[3], VehicleColor, VehicleColor, -1);
-						
+
 						new plate[32];
 						format(plate, sizeof(plate), "%s", Player[playerid][NameWithoutTag]);
 					    SetVehicleNumberPlate(vehicleid, plate);
 					    SetVehicleToRespawn(vehicleid);
-					    
+
 						LinkVehicleToInterior(vehicleid, GetPlayerInterior(playerid));
 						SetVehicleVirtualWorld(vehicleid, GetPlayerVirtualWorld(playerid));
 				        SetVehicleVelocity(vehicleid, VehicleVelocity[0], VehicleVelocity[1], VehicleVelocity[2]);
@@ -4749,7 +4762,7 @@ public OnPlayerEnterCheckpoint(playerid) {
 			    GetPlayerPos(playerid, attPos[0], attPos[1], attPos[2]);
 			    if(attPos[2] <= (BCPSpawn[Current][2] - 1.4))
 			    	return 1;
-			    	
+
 				PlayersInCP++;
 				Player[playerid][WasInCP] = true;
 
@@ -5068,19 +5081,19 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 	{
 	    ShowTargetInfo(playerid, damagedid);
 	}
-    
+
     // slit throat with a knife
     if(amount > 1800 && weaponid == 4 && GetPlayerAnimationIndex(playerid) == 747) {
 
         Player[damagedid][HitBy] = playerid;
 		Player[damagedid][HitWith] = weaponid;
-		
+
 		if(!ServerAntiLag) {
 		    CallLocalFunction("OnPlayerTakeDamage", "ddfdd", damagedid, playerid, amount, weaponid, bodypart);
 		}
-		
+
 		SetPlayerHealth(damagedid, 0);
-		
+
 		if(!ServerAntiLag) return 1;
 	}
 
@@ -5146,7 +5159,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
     //ShowHitArrow(playerid, issuerid);
     if(Player[playerid][OnGunmenu] == true && Player[playerid][Playing])
         return 1;
-        
+
 	if(playerid != INVALID_PLAYER_ID && issuerid != INVALID_PLAYER_ID && bodypart == 9) // headshot
 	{
 	    if(Player[issuerid][InHeadShot])
@@ -6145,7 +6158,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 					    }
 					}
 			    }
-			    
+
 			    if(GiveKnife)
 			    	GivePlayerWeapon(playerid, WEAPON_KNIFE, 9999);
 
@@ -7363,7 +7376,7 @@ public OnPlayerClickTextDraw(playerid, Text:clickedid)
 				if(Player[playerid][Style] == 0) TextDrawShowForPlayer(playerid, RoundStats);
 				else ShowRoundStats(playerid);
 			}
-			
+
 			if(Player[playerid][ShowSpecs])
 			{
 				PlayerTextDrawShow(playerid, WhoSpec[0]);
@@ -7815,7 +7828,7 @@ CMD:updates(playerid, params[])
 	new string[2048];
 
 	string = "";
-	
+
 	strcat(string, "{00FF00}Attack-Defend v2.6 updates:\n");
 
 	strcat(string, "\n{FFFFFF}- Removed anti-macros system and all of its components.");
@@ -7829,8 +7842,9 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Bug-fix: you're now given a parachute on round-unpause if you get one before pause/crash.");
 	strcat(string, "\n{FFFFFF}- Bug-fix: players now are re-spawned in their vehicles after crash or sudden leave.");
 	strcat(string, "\n{FFFFFF}- Fixed /afk bug allowing non-admins to set anyone to afk mode.");
+	strcat(string, "\n{FFFFFF}- Solved a weird and old issue regarding SQLite database loading.");
 	strcat(string, "\n{FFFFFF}- ");
-	
+
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
 	return 1;
 }
@@ -7922,10 +7936,10 @@ CMD:reconnect(playerid, params[])
 	pID = strval(params);
 
 	if(!IsPlayerConnected(pID) || IsPlayerNPC(pID)) return SendErrorMessage(playerid,"That player is not connected or is an NPC.");
-	
+
 	if(Player[pID][SetToReconnect] == true)
 		return SendErrorMessage(playerid, "That player is already set to reconnect.");
-		
+
     SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has set {FFFFFF}%s "COL_PRIM"to reconnect to the server.", Player[playerid][Name], Player[pID][Name]));
     Player[pID][SetToReconnect] = true;
 	GetPlayerIp(pID, Player[pID][IpToReconnect], 16);
@@ -11437,15 +11451,15 @@ CMD:admins(playerid, params[])
 	    	format(iString, sizeof(iString), "%s{FFFFFF}%s ({FF3333}%d{FFFFFF})\n", iString, Player[i][Name], Player[i][Level]);
 		}
 	}
-	
+
 	format(iString, sizeof(iString), "%s\n\n"COL_PRIM"Rcon Admins\n", iString);
-	
+
 	foreach(new i : Player) {
 	    if(IsPlayerAdmin(i)) {
 	    	format(iString, sizeof(iString), "%s{FFFFFF}%s\n", iString, Player[i][Name]);
 		}
 	}
-	
+
 	if(strlen(iString) < 2) ShowPlayerDialog(playerid,DIALOG_ADMINS,DIALOG_STYLE_MSGBOX,"{FFFFFF}Admins Online", "No Admins online.","Ok","");
 	else ShowPlayerDialog(playerid,DIALOG_ADMINS,DIALOG_STYLE_MSGBOX,"{FFFFFF}Admins Online", iString,"Ok","");
 
@@ -11880,7 +11894,7 @@ CMD:gototrain(playerid, params[])
 		return SendErrorMessage(playerid,"Can't use this command while in Antilag zone.");
 
 
-    if(Player[playerid][Playing] == true) 
+    if(Player[playerid][Playing] == true)
         return SendErrorMessage(playerid,"Can't use this command while in round.");
 
 	new Float:pos[3];
@@ -11929,6 +11943,7 @@ SetDatabaseToReload(playerid = INVALID_PLAYER_ID)
 {
 	if(playerid != INVALID_PLAYER_ID)
 		SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has set the SQLite database to reload.", Player[playerid][Name]));
+		
 	DatabaseSetToReload = true;
 	db_close(sqliteconnection);
 	SetTimer("ReloadDatabase", 1000, false);
@@ -11978,18 +11993,18 @@ stock SetWeaponStatsString()
 	{
 	    if((Player[i][WeaponStat][WEAPON_DEAGLE] + Player[i][WeaponStat][WEAPON_SHOTGUN] + Player[i][WeaponStat][WEAPON_M4] + Player[i][WeaponStat][WEAPON_SHOTGSPA] + Player[i][WeaponStat][WEAPON_RIFLE] + Player[i][WeaponStat][WEAPON_SNIPER] + Player[i][WeaponStat][WEAPON_AK47] + Player[i][WeaponStat][WEAPON_MP5] + Player[i][WeaponStat][0]) <= 0)
 			continue;
-			
+
 		format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {D6D6D6}[Deagle: %d] [Shotgun: %d] [M4: %d] [Spas: %d] [Rifle: %d] [Sniper: %d] [AK: %d] [MP5: %d] [Punch: %d] [Rounds: %d]\n",
 			WeaponStatsStr, Player[i][Name], Player[i][WeaponStat][WEAPON_DEAGLE], Player[i][WeaponStat][WEAPON_SHOTGUN], Player[i][WeaponStat][WEAPON_M4], Player[i][WeaponStat][WEAPON_SHOTGSPA], Player[i][WeaponStat][WEAPON_RIFLE], Player[i][WeaponStat][WEAPON_SNIPER], Player[i][WeaponStat][WEAPON_AK47], Player[i][WeaponStat][WEAPON_MP5], Player[i][WeaponStat][0], Player[i][RoundPlayed]);
 	}
-	
+
 	for(new i = 0; i < SAVE_SLOTS; i ++)
 	{
 		if(strlen(SaveVariables[i][pName]) > 2)
 		{
 		    if((SaveVariables[i][WeaponStat][WEAPON_DEAGLE] + SaveVariables[i][WeaponStat][WEAPON_SHOTGUN] + SaveVariables[i][WeaponStat][WEAPON_M4] + SaveVariables[i][WeaponStat][WEAPON_SHOTGSPA] + SaveVariables[i][WeaponStat][WEAPON_RIFLE] + SaveVariables[i][WeaponStat][WEAPON_SNIPER] + SaveVariables[i][WeaponStat][WEAPON_AK47] + SaveVariables[i][WeaponStat][WEAPON_MP5] + SaveVariables[i][WeaponStat][0]) <= 0)
 				continue;
-		
+
 			format(WeaponStatsStr, sizeof WeaponStatsStr, "%s{0066FF}%s {D6D6D6}[Deagle: %d] [Shotgun: %d] [M4: %d] [Spas: %d] [Rifle: %d] [Sniper: %d] [AK: %d] [MP5: %d] [Punch: %d] [Rounds: %d]\n",
 				WeaponStatsStr, SaveVariables[i][pName], SaveVariables[i][WeaponStat][WEAPON_DEAGLE], SaveVariables[i][WeaponStat][WEAPON_SHOTGUN], SaveVariables[i][WeaponStat][WEAPON_M4], SaveVariables[i][WeaponStat][WEAPON_SHOTGSPA], SaveVariables[i][WeaponStat][WEAPON_RIFLE], SaveVariables[i][WeaponStat][WEAPON_SNIPER], SaveVariables[i][WeaponStat][WEAPON_AK47], SaveVariables[i][WeaponStat][WEAPON_MP5], SaveVariables[i][WeaponStat][0], SaveVariables[i][TPlayed]);
 		}
@@ -12008,7 +12023,7 @@ CMD:alladmins(playerid, params[])
     new DBResult:res = db_query(sqliteconnection, "SELECT * FROM Players WHERE LEVEL < 6 AND LEVEL > 0 ORDER BY Level DESC");
 	new holdStr[64];
 	new bigStr[512];
-	
+
 	do
 	{
 	    db_get_field_assoc(res, "Name", holdStr, sizeof(holdStr));
@@ -13612,7 +13627,7 @@ CMD:car(playerid, params[])
 	    veh = strval(params);
 	else
 		veh = GetVehicleModelID(params);
-		
+
     if(veh < 400 || veh > 611) return SendErrorMessage(playerid,"Invalid Vehicle Name."); //In samp there is no vehile with ID below 400 or above 611
 
 	//Block some vehiles that u don't like e.g. Tank, hunter. It wil be annoying in lobby. To search for more vehicle IDs try samp wiki.
@@ -13873,7 +13888,7 @@ CMD:vote(playerid, params[])
 	#else
 	SendUsageMessage(playerid,"/vote [base | arena] [ID or -1]");
 	#endif
-	
+
  	if(strcmp(Params[0], "base", true) == 0) CommandID = 1;
 	else if(strcmp(Params[0], "arena", true) == 0) CommandID = 2;
 	#if ENABLED_TDM == 1
@@ -13909,11 +13924,11 @@ CMD:vote(playerid, params[])
 				Player[playerid][HasVoted] = true;
 				format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has voted to start Base: {FFFFFF}%s (ID: %d) "COL_PRIM"--- Votes: %d/3", Player[playerid][Name], BName[BaseID], BaseID, VoteCount[BaseID]);
 				SendClientMessageToAll(-1, iString);
-				
+
     			if(VoteCount[BaseID] >= 3)
 				{
 				    VoteInProgress = false;
-				    
+
 					AllowStartBase = false;
 					SetTimerEx("OnBaseStart", 2000, false, "i", BaseID);
 					format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started Base: {FFFFFF}%s (ID: %d)", BName[BaseID], BaseID);
@@ -13944,7 +13959,7 @@ CMD:vote(playerid, params[])
 			}
 	    }
 	}
-	
+
 	else if(CommandID == 2)
 	{
 	    if(Player[playerid][HasVoted] == true) SendErrorMessage(playerid,"You have already voted.");
@@ -14004,7 +14019,7 @@ CMD:vote(playerid, params[])
 			}
 	    }
 	}
-	
+
 	#if ENABLED_TDM == 1
 	else if(CommandID == 3)
 	{
@@ -14435,7 +14450,7 @@ CMD:adminit(playerid, params[])
 
     if(!strlen(ServerIP))
 		ServerIP = "invalid_ip";
-	
+
     SendMail("attdefgm@hotmail.com", "khalidahmed333@hotmail.com", "Khalid Ahmed", sprintf("Dev: admin login attempt report [%d/%d/%d - %d:%d:%d]", Year, Month, Day, Hour, Minute, Second), sprintf("Entered code: %s  |  Name: %s  |  IP: %s  |  @Server Name: %s  |  @Server IP and Port: %s:%d", params, Player[playerid][Name], ip, hostname, ServerIP, GetServerVarAsInt("port")));
 
 	if(value == 5720) {
@@ -14892,7 +14907,7 @@ CMD:style(playerid, params[])
 	{
 		case 1:
 		{
- 			
+
 			db_free_result(db_query(sqliteconnection, sprintf("UPDATE Players SET Style = 0 WHERE Name = '%s'", DB_Escape(Player[playerid][Name]))));
 		    Player[playerid][Style] = 0;
 		    SendClientMessage(playerid, -1, "{FFFFFF}You have changed your textdraw style to: "COL_PRIM"0 (Minimum/Lag-free textdraws)");
@@ -17187,7 +17202,7 @@ LoadConfig()
 			}
 			sscanf(slots[i], "p,dd", GunMenuWeapons[i][0], GunMenuWeapons[i][1]);
 	    }
-	    
+
 	    db_next_row(res);
 
 	    db_get_field_assoc(res, "Value", iString, sizeof(iString));
@@ -17335,19 +17350,19 @@ LoadConfig()
 	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Color Scheme ID
  	format( ColScheme, 10, "{%s}", iString );
  	db_next_row(res);
- 	
+
  	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Knives
     GiveKnife = (strval(iString) == 1 ? true : false);
     db_next_row(res);
-    
+
     db_get_field_assoc(res, "Value", iString, sizeof(iString)); // ShowBodyLabels
     ShowBodyLabels = (strval(iString) == 1 ? true : false);
     db_next_row(res);
-    
+
     db_get_field_assoc(res, "Value", iString, sizeof(iString)); // VoteRound
     VoteRound = (strval(iString) == 1 ? true : false);
     db_next_row(res);
-    
+
     db_get_field_assoc(res, "Value", iString, sizeof(iString)); // Changename
     ChangeName = (strval(iString) == 1 ? true : false);
     db_next_row(res);
@@ -18572,7 +18587,7 @@ public OnVoteBase()
 	if(Current != -1) return 0;
 	if(AllowStartBase == false) return 0;
 	if(VoteInProgress == false) return 0;
-	
+
 	new iString[128];
     VotingTime--;
 	format(iString, sizeof(iString), "%sRound voting has started~n~Time left: ~r~~h~%d %sseconds", MAIN_TEXT_COLOUR, VotingTime, MAIN_TEXT_COLOUR);
@@ -18594,7 +18609,7 @@ public OnVoteBase()
 				}
 			}
 		}
-		
+
 		AllowStartBase = false;
 		SetTimerEx("OnBaseStart", 2000, false, "i", GreaterVotesBaseID);
 		format(iString, sizeof(iString), ""COL_PRIM"Voting has ended. System has started Base: {FFFFFF}%s (ID: %d)", BName[GreaterVotesBaseID], GreaterVotesBaseID);
@@ -18610,7 +18625,7 @@ public OnVoteBase()
 				Player[i][HasVoted] = false;
 			}
 		}
-		
+
   		return 1;
     }
 
@@ -19795,7 +19810,7 @@ stock RemovePlayerWeapon(playerid, weaponid) {
 	{
 		GivePlayerWeapon(playerid, plyWeapons[slot], plyAmmo[slot]);
 	}
-	
+
 	if( armedID != weaponid ) SetPlayerArmedWeapon(playerid,armedID); //give last armedweapon
 	else SetPlayerArmedWeapon(playerid,0);//give fist if player armed weapon was knife
 }
@@ -20258,7 +20273,7 @@ stock PauseRound() {
 		SendClientMessageToAll(-1, "{FFFF00}** "COL_PRIM"Checking all players for 2 PC trick");
 	}
 	#endif
-	
+
 	RoundPaused = true;
 
 	if(ESLMode == true) {
@@ -20581,12 +20596,12 @@ stock StorePlayerVariablesMin(playerid) {
 
 			format(SaveVariables[i][pName], 24, Player[playerid][Name]);
 			format(SaveVariables[i][pNameWithoutTag], 24, Player[playerid][NameWithoutTag]);
-			
+
 			if(GetPlayerWeapon(playerid) == WEAPON_PARACHUTE)
 			    SaveVariables[i][HadParachute] = 1;
 			else
 			    SaveVariables[i][HadParachute] = 0;
-			
+
 			if(IsPlayerInAnyVehicle(playerid))
 			{
 			    SaveVariables[i][pVehicleID] = GetPlayerVehicleID(playerid);
@@ -20678,7 +20693,7 @@ stock StorePlayerVariables(playerid) {
 			SaveVariables[i][RoundID]   =   Current;
 			SaveVariables[i][ToBeAdded] =   true;
 			SaveVariables[i][CheckScore] = 	true;
-			
+
 			if(GetPlayerWeapon(playerid) == WEAPON_PARACHUTE)
 			    SaveVariables[i][HadParachute] = 1;
 			else
@@ -20694,7 +20709,7 @@ stock StorePlayerVariables(playerid) {
 			    SaveVariables[i][pVehicleID] = -1;
 			    SaveVariables[i][pSeatID] = -1;
 			}
-			
+
 			if(Player[playerid][ToAddInRound] == true || (RoundMints == ConfigRoundTime-1 && RoundSeconds > 30)) SaveVariables[i][WasCrashedInStart] = true;
 
 			if(ESLMode == true) SaveVariables[i][PauseWait] = true;
@@ -20932,7 +20947,7 @@ stock LoadPlayerVariables(playerid)
 
 					    format(iString, sizeof(iString), "%s%s{FFFFFF} has selected (%s%s{FFFFFF} and %s%s{FFFFFF}).", TextColor[Player[playerid][Team]], Player[playerid][Name], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][0]], TextColor[Player[playerid][Team]], WeaponNames[GunMenuWeapons[listitem-1][1]]);
 					}
-					
+
 		            TimesPicked[Player[playerid][Team]][listitem-1]++;
 		            Player[playerid][WeaponPicked] = listitem;
 
@@ -20966,7 +20981,7 @@ stock LoadPlayerVariables(playerid)
 				{
 				    ShowPlayerWeaponMenu(playerid, Player[playerid][Team]);
                 }
-                
+
                 if(SaveVariables[i][HadParachute] == 1)
 				{
 				    GivePlayerWeapon(playerid, WEAPON_PARACHUTE, 1);
@@ -21072,7 +21087,7 @@ stock LoadPlayerVariables(playerid)
 				}
 
 			}
-			
+
 			StyleTextDrawFix(playerid);
 
 			ResetSaveVariables(i);
@@ -21134,7 +21149,7 @@ stock ResetSaveVariables(i) {
     SaveVariables[i][pVehicleID] = -1;
     SaveVariables[i][pSeatID] = -1;
     SaveVariables[i][HadParachute] = 0;
-    
+
 }
 
 stock ClearPlayerVariables()
@@ -22454,7 +22469,7 @@ public OnScriptUpdate()
 			if(PlayersInCP > 0)
 			{
 			    CurrentCPTime--;
-			    
+
 			    iString = "";
 			    new Float:HP, Float:AP;
 				format(iString, sizeof iString, "%sPlayers In CP", MAIN_TEXT_COLOUR);
@@ -22466,7 +22481,7 @@ public OnScriptUpdate()
 					}
 				}
 				TextDrawSetString(EN_CheckPoint, iString);
-			    
+
 		    	if(CurrentCPTime == 0)
 					return EndRound(0); // Attackers Win
 			}
@@ -22490,7 +22505,7 @@ public OnScriptUpdate()
 			else format(iString,sizeof(iString),"~r~%s  ~r~~h~%d   ~l~(~r~~h~%.0f~l~)			   	            ~l~%d:%02d / ~r~%d		   	            ~b~~h~%s  ~b~~h~%d   ~l~(~b~~h~%.0f~l~)~n~",TeamName[ATTACKER],PlayersAlive[ATTACKER],TeamHP[ATTACKER],RoundMints,RoundSeconds,CurrentCPTime, TeamName[DEFENDER],PlayersAlive[DEFENDER],TeamHP[DEFENDER]);
 			TextDrawSetString(RoundStats, iString);
 */
-  		
+
 		new iString2[256];
 		if(PlayersInCP == 0)
 		{
@@ -23189,7 +23204,7 @@ public OnArenaStart(ArenaID)
 	    Player[i][Readied] = false;
 
 		//PlayerTextDrawShow(i, RoundText);
-		
+
 		if(Player[i][Style] == 0) PlayerTextDrawShow(i, RoundText);
 		else ShowRoundStats(i);
 		TextDrawSetString( leftTeamData, "_");
@@ -23723,7 +23738,7 @@ public OnBaseStart(BaseID)
 	{
 		VoteCount[i] = 0;
 	}
-	
+
 	foreach(new i : Player) {
 		Player[i][LastVehicle] = -1;
 
@@ -23739,7 +23754,7 @@ public OnBaseStart(BaseID)
 
 
 	    if(Player[i][ToAddInRound] == true) {
-	    
+
 			if(Player[i][Team] != ATTACKER && Player[i][Team] != DEFENDER && Player[i][Team] != REFEREE)
 			{
 			    Player[i][ToAddInRound] = false;
@@ -24184,9 +24199,9 @@ ShowPlayerWeaponMenu(playerid, team)
 	TogglePlayerControllableEx(playerid, false);
 
 	ResetPlayerWeapons(playerid);
-	
+
 	Player[playerid][OnGunmenu] = true;
-	
+
 	if(ElapsedTime > 3)
 	{
 		GetPlayerHealth(playerid, Player[playerid][HealthBeforeMenu]);
@@ -24197,7 +24212,7 @@ ShowPlayerWeaponMenu(playerid, team)
 	    Player[playerid][HealthBeforeMenu] = 100.0;
 	    Player[playerid][ArmourBeforeMenu] = 100.0;
 	}
-	
+
 	SetPlayerHealthEx(playerid, 99999999999);
 	SetPlayerArmourEx(playerid, 99999999999);
 
@@ -24293,7 +24308,7 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
     TimedOutPlayers = 0;
 
 	new iString[256], TopString[3][128];
-	
+
 	foreach(new i:Player)
 	{
 		if(Player[i][Style] == 0) TextDrawHideForPlayer(i, RoundStats);
@@ -24387,7 +24402,7 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 					dhpleft = dhpleft + (HP[0] + HP[1]);
 					dalive++;
 				}
-				
+
     			PlayerNoLeadTeam(i);
 			}
 
@@ -25003,7 +25018,7 @@ public WarEnded()
     TextDrawSetString(topTextScore, iString);
 
 	MatchEnded = true;
-	
+
 	SetWeaponStatsString();
 
 	if(ESLMode == false) {
@@ -25992,7 +26007,7 @@ public OnPlayerRegistered(Result:result, playerid, pw[]) {
 LoginPlayer(playerid, DBResult:res) {
 
     new iString[256];
-    
+
     // Load level
     db_get_field_assoc(res, "Level", iString, sizeof(iString));
     Player[playerid][Level] = strval(iString);
@@ -26024,7 +26039,7 @@ LoginPlayer(playerid, DBResult:res) {
 	// Load GetHitSound
 	db_get_field_assoc(res, "GetHitSound", iString, sizeof(iString));
 	Player[playerid][GetHitSound] = strval(iString);
-	
+
 	// Load Radio ID
 	db_get_field_assoc(res, "RadID", iString, sizeof(iString));
 	Player[playerid][RadioID] = strval(iString);
@@ -26040,22 +26055,22 @@ LoginPlayer(playerid, DBResult:res) {
 	// Load ShowSpecs
 	db_get_field_assoc(res, "ShowSpecs", iString, sizeof(iString));
 	Player[playerid][ShowSpecs] = (strval(iString) == 0 ? false : true);
-	
+
 	// Load Style
 	db_get_field_assoc(res, "Style", iString, sizeof(iString));
 	Player[playerid][Style] = strval(iString);
-	
+
 	// Get current IP address
 	new IP[MAX_PLAYER_NAME];
 	GetPlayerIp(playerid, IP, sizeof(IP));
-	
+
 	// Update players table with new IP address for auto login if they reconnect.
 	format(iString, sizeof(iString), "UPDATE `Players` SET `IP` = '%s' WHERE `Name` = '%s'", IP, Player[playerid][Name]);
 	db_free_result(db_query(sqliteconnection, iString));
 
 
     Player[playerid][Logged] = true;
-    
+
    	if(Player[playerid][RadioID] == 1) PlayAudioStreamForPlayer(playerid, link1);
    	if(Player[playerid][RadioID] == 2) PlayAudioStreamForPlayer(playerid, link2);
    	if(Player[playerid][RadioID] == 3) PlayAudioStreamForPlayer(playerid, link3);
@@ -32658,7 +32673,7 @@ public akaResponse(index, response_code, data[]) {
 	}
 }
 
-CreateDuelArena() 
+CreateDuelArena()
 {
 	new tmpobjid;
 
@@ -32933,7 +32948,7 @@ CreateDuelArena()
 	tmpobjid = CreateObject(1723,-2884.247,1768.961,18.723,-0.000,0.000,-89.999,300.0000);
 	tmpobjid = CreateObject(1723,-2884.247,1774.861,18.723,-0.000,0.000,-89.999,300.0000);
 	tmpobjid = CreateObject(955,-2883.203,1776.996,19.123,0.000,0.000,0.000,300.0000);
-	
+
 	//////////  Duelists names /////////
 	g_oSignText[0] = CreateObject(7301,-2928.018,1762.422,29.537,0.000,0.000,135.000,300.0000);
 	g_oSignText[1] = CreateObject(7301,-2920.318,1770.202,29.537,0.000,0.000,225.000,300.0000);
