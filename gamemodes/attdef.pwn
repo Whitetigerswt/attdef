@@ -8948,6 +8948,8 @@ CMD:base(playerid, params[])
 		    }
 		    db_free_result(res);
 
+		    if(BaseID > MAX_BASES) return SendErrorMessage(playerid,"To many bases already created.");
+
 			format(iString, sizeof(iString), "INSERT INTO Bases (ID, AttSpawn, CPSpawn, DefSpawn, Interior, Name) VALUES (%d, 0, 0, 0, 0, 'No Name')", BaseID);
 			db_free_result(db_query(sqliteconnection, iString));
 
