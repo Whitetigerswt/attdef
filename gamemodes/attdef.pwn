@@ -23,7 +23,7 @@
 
 
 new 	GM_VERSION[6] =		"2.6.0"; // Don't forget to change the length
-#define GM_NAME				"Attack-Defend v2.6 (B)"
+#define GM_NAME				"Attack-Defend v2.6 (b)"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -2042,6 +2042,8 @@ stock MATCHSYNC_InsertMatchStats()
 #define VERSION_IS_BEHIND       		0
 #define VERSION_IS_UPTODATE     		1
 
+#define VERSION_CHECKER_METHOD          1 // (1 for new method which is good when updates are more frequent - 0 for old method)
+
 new VersionReport = -1;
 new bool:VersionCheckerStatus = false, bool:ForceUserToNewestVersion = false;
 new LatestVersionStr[64], LatestVersionChangesStr[512];
@@ -2140,6 +2142,7 @@ stock ReportVersion()
 	if(!VersionCheckerStatus)
 		return -1;
 
+	#if VERSION_CHECKER_METHOD == 0
 	// spliting the version str on the website
 	new first[VERSION_CHAR_LENGTH], second[VERSION_CHAR_LENGTH], third[VERSION_CHAR_LENGTH];
 	format(first, sizeof first, "");
@@ -2217,6 +2220,13 @@ stock ReportVersion()
 			}
 		}
 	}
+	#endif
+	#if VERSION_CHECKER_METHOD == 1
+	if(strcmp(GM_VERSION, LatestVersionStr, true) != 0)
+	{
+		return VERSION_IS_BEHIND;
+	}
+	#endif
 
 	return VERSION_IS_UPTODATE;
 }
