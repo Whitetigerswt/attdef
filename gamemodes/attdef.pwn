@@ -18,12 +18,13 @@
 	- Added a new command /reloaddb to reload the SQLite database.
 	- A sound is now played when a player makes a pause or an unpause request.
 	- Solved a weird and old issue regarding SQLite database loading.
+	- Fixed a major bug that some hackers exploited to hunt servers down.
 
 */
 
 
 new 	GM_VERSION[6] =		"2.6.0"; // Don't forget to change the length
-#define GM_NAME				"Attack-Defend v2.6 (b)"
+#define GM_NAME				"Attack-Defend v2.6 (b2)"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -2051,7 +2052,7 @@ stock InitVersionChecker(timer = true, moreinfo = false)
 {
 	if(timer)
 	{
-		SetTimer("ReportServerVersion", 6 * 60 * 60 * 1000, true);
+		SetTimer("ReportServerVersion", 1 * 60 * 60 * 1000, true);
 	}
 	if(moreinfo)
 	{
@@ -5909,6 +5910,12 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	    if(response) {
 			if(isnull(inputtext)) return ShowPlayerDialog(playerid, DIALOG_REGISTER, DIALOG_STYLE_PASSWORD,"{FFFFFF}Registration Dialog","{FFFFFF}Type your password below to register:","Register","Leave");
 
+			if(strfind(inputtext, "%", true) != -1)
+			{
+			    ShowPlayerDialog(playerid, DIALOG_REGISTER, DIALOG_STYLE_PASSWORD,"{FFFFFF}Registration Dialog","{FFFFFF}Type your password below to register:","Register","Leave");
+			    return SendErrorMessage(playerid, "This character '%' is disallowed in user passwords.");
+			}
+			
 			#if MYSQL == 0
 
 			    new HashPass[140];
@@ -5971,6 +5978,12 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	if(dialogid == DIALOG_LOGIN) {
 	    if(response) {
 			if(isnull(inputtext)) return ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD,"{FFFFFF}Login Dialog","{FFFFFF}Type your password below to log in:","Login","Leave");
+
+            if(strfind(inputtext, "%", true) != -1)
+			{
+			    ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD,"{FFFFFF}Login Dialog","{FFFFFF}Type your password below to log in:","Login","Leave");
+				return SendErrorMessage(playerid, "This character '%' is disallowed in user passwords.");
+			}
 
 			#if MYSQL == 0
 			//new CurrentPassword[140];
@@ -7853,6 +7866,7 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Bug-fix: players now are re-spawned in their vehicles after crash or sudden leave.");
 	strcat(string, "\n{FFFFFF}- Fixed /afk bug allowing non-admins to set anyone to afk mode.");
 	strcat(string, "\n{FFFFFF}- Solved a weird and old issue regarding SQLite database loading.");
+	strcat(string, "\n{FFFFFF}- Fixed a major bug that some hackers exploited to hunt servers down.");
 	strcat(string, "\n{FFFFFF}- ");
 
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
@@ -8067,8 +8081,7 @@ CMD:credits(playerid, params[])
 	strcat(string, "\n{00BBFF}Most of textdraws by: {FFFFFF}Insanity & Niko_boy");
 	strcat(string, "\n{00BBFF}Duel Arena by: {FFFFFF}Jeffy892");
 	strcat(string, "\n{00BBFF}Allowed By: {FFFFFF}Deloera");
-	strcat(string, "\n{00BBFF}Beta testing of 2.5.+: {FFFFFF}[KHK]Tecumseh");
-	strcat(string, "\n\n{FFFFFF}For suggestions and bug reports, visit: {00BBFF}http://sixtytiger.com/forum/index.php?board=15.0");
+	strcat(string, "\n\n{FFFFFF}For suggestions and bug reports, visit: {00BBFF}www.sixtytiger.com");
 
 	ShowPlayerDialog(playerid,DIALOG_HELPS,DIALOG_STYLE_MSGBOX,""COL_PRIM"Credits", string, "OK","");
 	return 1;
