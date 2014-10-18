@@ -19,6 +19,7 @@
 	- A sound is now played when a player makes a pause or an unpause request.
 	- Solved a weird and old issue regarding SQLite database loading.
 	- Fixed a major bug that some hackers exploited to hunt servers down.
+	- Fixed gunmenu death bug: players died right after picking weapons from menu.
 
 */
 
@@ -6215,11 +6216,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	        else
 				TogglePlayerControllableEx(playerid, true);
 
-			SendClientMessageToAll(-1, sprintf("[DEBUG]: Set ID %d's health to %.1f and armour to %.1f", playerid, Player[playerid][HealthBeforeMenu], Player[playerid][ArmourBeforeMenu]));
-            SetPlayerHealth(playerid, Player[playerid][HealthBeforeMenu]);
+			SetPlayerHealth(playerid, Player[playerid][HealthBeforeMenu]);
 			SetPlayerArmour(playerid, Player[playerid][ArmourBeforeMenu]);
-			Player[playerid][HealthBeforeMenu] = 100.0;
-			Player[playerid][ArmourBeforeMenu] = 100.0;
 			Player[playerid][OnGunmenu] = false;
 		}
 		return 1;
@@ -7853,7 +7851,7 @@ CMD:updates(playerid, params[])
 	string = "";
 
 	strcat(string, "{00FF00}Attack-Defend v2.6 updates:\n");
-
+    
 	strcat(string, "\n{FFFFFF}- Removed anti-macros system and all of its components.");
 	strcat(string, "\n{FFFFFF}- Removed old AC system and all of its components.");
 	strcat(string, "\n{FFFFFF}- The mighty new Anti-Cheat is now fully compatible.");
@@ -7867,6 +7865,8 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Fixed /afk bug allowing non-admins to set anyone to afk mode.");
 	strcat(string, "\n{FFFFFF}- Solved a weird and old issue regarding SQLite database loading.");
 	strcat(string, "\n{FFFFFF}- Fixed a major bug that some hackers exploited to hunt servers down.");
+	strcat(string, "\n{FFFFFF}- Fixed gunmenu death bug: players died right after picking weapons from menu.");
+	strcat(string, "\n{FFFFFF}- ");
 	strcat(string, "\n{FFFFFF}- ");
 
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
@@ -10255,6 +10255,8 @@ CMD:ready(playerid, params[])
 			    if(CanPlay(i)) {
 					TogglePlayerControllableEx(i, false);
 					Player[i][ToAddInRound] = true;
+					Player[i][HealthBeforeMenu] = 100.0;
+    				Player[i][ArmourBeforeMenu] = 100.0;
 				}
 			}
 		} else if(playersReady == (attackers+defenders) && attackers == defenders && OneOnOne == true) {
@@ -10273,6 +10275,8 @@ CMD:ready(playerid, params[])
 			    if(CanPlay(i)) {
 					TogglePlayerControllableEx(i, false);
 					Player[i][ToAddInRound] = true;
+					Player[i][HealthBeforeMenu] = 100.0;
+    				Player[i][ArmourBeforeMenu] = 100.0;
 				}
 			}
 		}
@@ -12480,6 +12484,8 @@ CMD:rr(playerid, params[])
 			PlayerTextDrawHide(i, RoundText);
 			TogglePlayerControllableEx(i, false);
 			Player[i][ToAddInRound] = true;
+			Player[i][HealthBeforeMenu] = 100.0;
+			Player[i][ArmourBeforeMenu] = 100.0;
 		}
 	}
 
@@ -13884,6 +13890,8 @@ CMD:random(playerid, params[])
 	    if(CanPlay(i)) {
 	        TogglePlayerControllableEx(i, false); // Pause all the players.
 			Player[i][ToAddInRound] = true;
+			Player[i][HealthBeforeMenu] = 100.0;
+    		Player[i][ArmourBeforeMenu] = 100.0;
 		}
 	}
 
@@ -13966,6 +13974,8 @@ CMD:vote(playerid, params[])
 					        TogglePlayerControllableEx(i, false);
 							Player[i][ToAddInRound] = true;
 							Player[i][HasVoted] = false;
+							Player[i][HealthBeforeMenu] = 100.0;
+    						Player[i][ArmourBeforeMenu] = 100.0;
 						}
 					}
 				}
@@ -14026,6 +14036,8 @@ CMD:vote(playerid, params[])
 					        TogglePlayerControllableEx(i, false);
 							Player[i][ToAddInRound] = true;
 							Player[i][HasVoted] = false;
+							Player[i][HealthBeforeMenu] = 100.0;
+    						Player[i][ArmourBeforeMenu] = 100.0;
 						}
 					}
 				}
@@ -14087,6 +14099,8 @@ CMD:vote(playerid, params[])
 					        TogglePlayerControllableEx(i, false);
 							Player[i][ToAddInRound] = true;
 							Player[i][HasVoted] = false;
+							Player[i][HealthBeforeMenu] = 100.0;
+    						Player[i][ArmourBeforeMenu] = 100.0;
 						}
 					}
 				}
@@ -14206,6 +14220,8 @@ CMD:randomint(playerid, params[])
 	    if(CanPlay(i)) {
 	        TogglePlayerControllableEx(i, false); // Pause all the players.
 	        Player[i][ToAddInRound] = true;
+	        Player[i][HealthBeforeMenu] = 100.0;
+    		Player[i][ArmourBeforeMenu] = 100.0;
 		}
 	}
 
@@ -14389,6 +14405,8 @@ CMD:start(playerid, params[])
 	    if(CanPlay(i)) {
 	        TogglePlayerControllableEx(i, false); // Pause all the players.
 			Player[i][ToAddInRound] = true;
+			Player[i][HealthBeforeMenu] = 100.0;
+    		Player[i][ArmourBeforeMenu] = 100.0;
 		}
 	}
 
@@ -18648,6 +18666,8 @@ public OnVoteBase()
 				TogglePlayerControllableEx(i, false);
 				Player[i][ToAddInRound] = true;
 				Player[i][HasVoted] = false;
+				Player[i][HealthBeforeMenu] = 100.0;
+    			Player[i][ArmourBeforeMenu] = 100.0;
 			}
 		}
 
@@ -18756,6 +18776,8 @@ public OnVoteTDM()
 				TogglePlayerControllableEx(i, false);
 				Player[i][ToAddInRound] = true;
 				Player[i][HasVoted] = false;
+				Player[i][HealthBeforeMenu] = 100.0;
+    			Player[i][ArmourBeforeMenu] = 100.0;
 			}
 		}
 
@@ -21780,6 +21802,8 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					    if(CanPlay(i)) {
 							TogglePlayerControllableEx(i, false);
 							Player[i][ToAddInRound] = true;
+							Player[i][HealthBeforeMenu] = 100.0;
+    						Player[i][ArmourBeforeMenu] = 100.0;
 						}
 					}
 				} else if(playersReady == (attackers+defenders) && attackers == defenders && OneOnOne == true) {
@@ -21798,6 +21822,8 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					    if(CanPlay(i)) {
 							TogglePlayerControllableEx(i, false);
 							Player[i][ToAddInRound] = true;
+							Player[i][HealthBeforeMenu] = 100.0;
+    						Player[i][ArmourBeforeMenu] = 100.0;
 						}
 					}
 				}
@@ -23481,7 +23507,8 @@ SpawnPlayersInArena()
 			SetPlayerArmourEx(i, RoundAR);
 			SetPlayerHealthEx(i, RoundHP);
 
-
+            Player[i][HealthBeforeMenu] = RoundHP;
+			Player[i][ArmourBeforeMenu] = RoundAR;
 
 			switch(Player[i][Team]) {
 			    case ATTACKER: {
@@ -23672,6 +23699,8 @@ public AddPlayerToArena(playerid)
 		}
 	}
 
+    Player[playerid][HealthBeforeMenu] = 100.0;
+    Player[playerid][ArmourBeforeMenu] = 100.0;
 
 	GivePlayerArenaWeapons(playerid);
 
@@ -24002,8 +24031,8 @@ SpawnPlayersInBase()
 			SetPlayerArmourEx(i, RoundAR);
 			SetPlayerHealthEx(i, RoundHP);
 
-
-
+            Player[i][HealthBeforeMenu] = RoundHP;
+			Player[i][ArmourBeforeMenu] = RoundAR;
 
 	        SetPlayerVirtualWorld(i, 2); //Set player virtual world to something different that that for lobby and DM so that they don't collide with each other. e.g. You shouldn't be able to see players in lobby or DM while you are in base.
 	        SetPlayerInterior(i, BInterior[Current]);
@@ -24153,7 +24182,8 @@ public AddPlayerToBase(playerid)
 
 	SetPlayerArmourEx(playerid, RoundAR);
 	SetPlayerHealthEx(playerid, RoundHP);
-
+    Player[playerid][HealthBeforeMenu] = RoundHP;
+    Player[playerid][ArmourBeforeMenu] = RoundAR;
 
 
 
@@ -24234,8 +24264,8 @@ ShowPlayerWeaponMenu(playerid, team)
 	}
 	else
 	{
-	    Player[playerid][HealthBeforeMenu] = 100.0;
-	    Player[playerid][ArmourBeforeMenu] = 100.0;
+	    Player[playerid][HealthBeforeMenu] = RoundHP;
+	    Player[playerid][ArmourBeforeMenu] = RoundAR;
 	}
 
 	SetPlayerHealthEx(playerid, 99999999999);
