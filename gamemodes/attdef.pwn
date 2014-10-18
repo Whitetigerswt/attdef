@@ -2237,8 +2237,15 @@ CMD:checkversion(playerid, params[])
 {
 	if(!VersionCheckerStatus)
 	    return SendErrorMessage(playerid, "Connection error. Try again later maybe!");
-    ShowPlayerDialog(playerid, 0, DIALOG_STYLE_MSGBOX, "Version Checker",
+	    
+    #if VERSION_CHECKER_METHOD == 1
+	ShowPlayerDialog(playerid, 0, DIALOG_STYLE_MSGBOX, "Version Checker",
+	 sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_NAME, LatestVersionStr), "Okay", "");
+	#endif
+	#if VERSION_CHECKER_METHOD == 0
+	ShowPlayerDialog(playerid, 0, DIALOG_STYLE_MSGBOX, "Version Checker",
 	 sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr), "Okay", "");
+	#endif
 	return 1;
 }
 // version checker <end>
@@ -5914,7 +5921,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			if(strfind(inputtext, "%", true) != -1)
 			{
 			    ShowPlayerDialog(playerid, DIALOG_REGISTER, DIALOG_STYLE_PASSWORD,"{FFFFFF}Registration Dialog","{FFFFFF}Type your password below to register:","Register","Leave");
-			    return SendErrorMessage(playerid, "This character '%' is disallowed in user passwords.");
+			    return SendErrorMessage(playerid, sprintf("This character '%s' is disallowed in user passwords.", "%%"));
 			}
 			
 			#if MYSQL == 0
@@ -5983,7 +5990,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
             if(strfind(inputtext, "%", true) != -1)
 			{
 			    ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD,"{FFFFFF}Login Dialog","{FFFFFF}Type your password below to log in:","Login","Leave");
-				return SendErrorMessage(playerid, "This character '%' is disallowed in user passwords.");
+				return SendErrorMessage(playerid, sprintf("This character '%s' is disallowed in user passwords.", "%%"));
 			}
 
 			#if MYSQL == 0
