@@ -9,9 +9,9 @@
 	- Fixed old bug: players now are re-spawned in their vehicles after crash or sudden leave.
 	- You should not get hit while picking weapons from gunmenu now.
 	- Player replacement now is made into user-friendly dialogs.
-	- Added /p and /u commands for quick pause/unpause
-	- Fixed /afk bug allowing non-admins to set anyone afk
-	- Fixed length of /cmds dialog
+	- Added /p and /u commands for quick pause/unpause.
+	- Fixed /afk bug allowing non-admins to set anyone afk.
+	- Fixed length of /cmds dialog.
 	- Removed reconnect command from /acmds.
 	- Added debug messages to help me fix a death bug.
 	- Improved match sync system. Hope I will release it this version.
@@ -20,6 +20,7 @@
 	- Solved a weird and old issue regarding SQLite database loading.
 	- Fixed a major bug that some hackers exploited to hunt servers down.
 	- Fixed gunmenu death bug: players died right after picking weapons from menu.
+	- Added /getpara (/gp) command to give parachute.
 
 */
 
@@ -270,6 +271,7 @@ new ColScheme[10] = ""COL_PRIM"";
 #define M4              31
 #define RIFLE           33
 #define SNIPER          34
+#define PARACHUTE		46
 
 #define BASE            0
 #define ARENA           1
@@ -7863,6 +7865,7 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Removed old AC system and all of its components.");
 	strcat(string, "\n{FFFFFF}- The mighty new Anti-Cheat is now fully compatible.");
 	strcat(string, "\n{FFFFFF}- Added /p and /u commands for quick round pause/unpause.");
+	strcat(string, "\n{FFFFFF}- Added /getpara (/gp) command to give parachute.");
 	strcat(string, "\n{FFFFFF}- Added a new command /reloaddb to reload the SQLite database.");
 	strcat(string, "\n{FFFFFF}- Feature: Player replacement now is made into user-friendly dialogs.");
 	strcat(string, "\n{FFFFFF}- Feature: You should not get hit while picking weapons from gunmenu now.");
@@ -7872,7 +7875,7 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Fixed /afk bug allowing non-admins to set anyone to afk mode.");
 	strcat(string, "\n{FFFFFF}- Solved a weird and old issue regarding SQLite database loading.");
 	strcat(string, "\n{FFFFFF}- Fixed a major bug that some hackers exploited to hunt servers down.");
-	strcat(string, "\n{FFFFFF}- Fixed gunmenu death bug: players died right after picking weapons from menu.");
+	strcat(string, "\n{FFFFFF}- Fixed gunmenu death bug: Players died right after picking weapons from menu.");
 	strcat(string, "\n{FFFFFF}- ");
 	strcat(string, "\n{FFFFFF}- ");
 
@@ -7902,7 +7905,7 @@ CMD:cmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/duel   /yes   /no   /rq");
 
 	strcat(string, "\n\n"COL_PRIM"Base commands:");
-	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr (/fix)   /para (/rp)   /knife   /vote");
+	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr (/fix)   /para (/rp)   /getpara (/gp)   /knife   /vote");
 
 	strcat(string, "\n\n"COL_PRIM"Player profile commands:");
 	strcat(string, "\n{FFFFFF}/togspecs   /changename   /weather (/w)   /time (/t)   /changepass   /sound   /textdraw   /togspec(all)   /shortcuts   /style");
@@ -11347,9 +11350,23 @@ CMD:explode(playerid,params[])
 	return 1;
 }
 
+CMD:getpara(playerid, params[])
+{
+	GivePlayerWeapon(playerid, PARACHUTE, 1);
+    SendClientMessage(playerid, -1, "{FFFFFF}Parachute given.");
+	return 1;
+}
+
+CMD:gp(playerid, params[])
+{
+	cmd_getpara(playerid, params);
+	return 1;
+}
+
 CMD:para(playerid, params[])
 {
 	RemovePlayerWeapon(playerid, 46);
+    SendClientMessage(playerid, -1, "{FFFFFF}Parachute removed.");
 	return 1;
 }
 
