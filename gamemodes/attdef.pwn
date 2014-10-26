@@ -21,12 +21,15 @@
 	- Fixed a major bug that some hackers exploited to hunt servers down.
 	- Fixed gunmenu death bug: players died right after picking weapons from menu.
 	- Added /getpara (/gp) command to give parachute.
+	- Improved fall protection: HP is now auto-refilled as long as you still have armour.
+	- Fixed a bug that trains disappeared once a round had started.
+	- A board is attached to your heli so you can rape the enemy from the air (Works only with Raindance ID: 563).
+	- Improved Version Checker system a lot and fixed many minor bugs in it.
+	
 
 */
 
-
-new 	GM_VERSION[6] =		"2.6.0"; // Don't forget to change the length
-#define GM_NAME				"Attack-Defend v2.6 (b2)"
+#define GM_NAME				"Attack-Defend v2.6 (rc)"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -116,6 +119,27 @@ enum noclipenum
 new noclipdata[MAX_PLAYERS][noclipenum];
 
 new bool:UpdateAKA = true;
+
+new HeliWoodenBoard[MAX_VEHICLES];
+
+// DestroyVehicle hooked for the sake of disco boards
+stock _HOOKED_DestroyVehicle(vehicleid)
+{
+	if(HeliWoodenBoard[vehicleid] > -1)
+    {
+        DestroyObject(HeliWoodenBoard[vehicleid]);
+        HeliWoodenBoard[vehicleid] = -1;
+    }
+	return DestroyVehicle(vehicleid);
+}
+
+#if defined _ALS_DestroyVehicle
+	#undef DestroyVehicle
+#else
+	#define _ALS_DestroyVehicle
+#endif
+
+#define DestroyVehicle _HOOKED_DestroyVehicle
 
 // Hooked some functions to reject unsafe game-texts.
 stock _HOOKED_GameTextForPlayer(playerid, string[], time, style)
@@ -607,6 +631,7 @@ enum PlayerVariables {
 	bool:blockedall,
 	bool:FakePacketRenovation,
 	bool:HasVoted,
+	bool:PROT_HPAutoRefilled,
 	RadioID,
 	NetCheck,
 	FPSCheck,
@@ -707,7 +732,8 @@ enum PlayerVariables {
 	Float:HealthBeforeMenu,
 	Float:ArmourBeforeMenu,
 	//IpToReconnect[16]
-	bool:SetToReconnect
+	bool:SetToReconnect,
+	ReaddOrAddTickCount
 
 }
 new Player[MAX_PLAYERS][PlayerVariables];
@@ -945,6 +971,7 @@ new bool:ShortCuts = false;
 new bool:AutoPause = true;
 new bool:LobbyGuns = true;
 new bool:DidSomeoneTimeout = false;
+new bool:DatabaseLoading = false;
 new AnnTimer;
 
 
@@ -1812,7 +1839,7 @@ stock MATCHSYNC_Init()
 {
 	mysql_close();
 	mysql_debug(1);
-	mysql_connect("", "", "", "");
+ 	mysql_connect("", "", "", "");
 	return 1;
 }
 
@@ -2048,9 +2075,15 @@ stock MATCHSYNC_InsertMatchStats()
 
 #define VERSION_CHECKER_METHOD          1 // (1 for new method which is good when updates are more frequent - 0 for old method)
 
+#if VERSION_CHECKER_METHOD == 0
+new 	GM_VERSION[6] =		"2.6.0"; // Don't forget to change the length
+#endif
+
 new VersionReport = -1;
 new bool:VersionCheckerStatus = false, bool:ForceUserToNewestVersion = false;
 new LatestVersionStr[64], LatestVersionChangesStr[512];
+new VC_ConnectionFailures = 0;
+
 stock InitVersionChecker(timer = true, moreinfo = false)
 {
 	if(timer)
@@ -2068,12 +2101,31 @@ stock InitVersionChecker(timer = true, moreinfo = false)
 forward ReportServerVersion_Delayed();
 public ReportServerVersion_Delayed()
 {
+    if(!VersionCheckerStatus)
+    {
+        if(VC_ConnectionFailures < 6)
+        {
+            SetTimer("ReportServerVersion_Delayed", 2000, false);
+        }
+	    return 0;
+	}
+	    
     if(VersionReport == VERSION_IS_BEHIND)
  	{
      	SendClientMessageToAll(-1, ""COL_PRIM"Version checker: {FFFFFF}the version used in this server is out-dated. You can visit "COL_PRIM"www.sixtytiger.com {FFFFFF}to get the latest version");
-        SendClientMessageToAll(-1, sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
+        #if VERSION_CHECKER_METHOD == 0
+		SendClientMessageToAll(-1, sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_VERSION, LatestVersionStr));
+		#endif
+		#if VERSION_CHECKER_METHOD == 1
+        SendClientMessageToAll(-1, sprintf(""COL_PRIM"Server version: {FFFFFF}%s "COL_PRIM"| Newest version: {FFFFFF}%s", GM_NAME, LatestVersionStr));
+		#endif
 		if(ForceUserToNewestVersion)
-		    SendClientMessageToAll(-1, ""COL_PRIM"Server is blocked and out of use until it is upgraded to the latest version.");
+		{
+		    foreach(new i : Player)
+		    {
+		        VersionOutdatedKick(i);
+		    }
+		}
 	}
 	/*else
  	{
@@ -2110,8 +2162,15 @@ public ForceUserToUseNewest(index, response_code, data[])
 		}
     }
     else
-        ForceUserToNewestVersion = false;
-    return 1;
+    {
+        if(VC_ConnectionFailures < 6)
+        {
+	        ForceUserToNewestVersion = false;
+	        HTTP(1, HTTP_GET, VERSION_CHECKER_FORCEUSER_URL, "", "ForceUserToUseNewest");
+	        VC_ConnectionFailures ++;
+	 	}
+	}
+	return 1;
 }
 
 forward SaveVersionInStr(index, response_code, data[]);
@@ -2125,8 +2184,15 @@ public SaveVersionInStr(index, response_code, data[])
 		//HTTP(0, HTTP_GET, VERSION_CHECKER_CHANGELOG_URL, "", "SaveChangelogInStr");
     }
     else
-        VersionCheckerStatus = false;
-    return 1;
+    {
+        if(VC_ConnectionFailures < 6)
+        {
+	        VersionCheckerStatus = false;
+	        HTTP(0, HTTP_GET, VERSION_CHECKER_VERSION_URL, "", "SaveVersionInStr");
+	        VC_ConnectionFailures ++;
+		}
+	}
+	return 1;
 }
 
 forward SaveChangelogInStr(index, response_code, data[]);
@@ -2226,7 +2292,7 @@ stock ReportVersion()
 	}
 	#endif
 	#if VERSION_CHECKER_METHOD == 1
-	if(strcmp(GM_VERSION, LatestVersionStr, true) != 0)
+	if(strcmp(GM_NAME, LatestVersionStr, true) != 0)
 	{
 		return VERSION_IS_BEHIND;
 	}
@@ -3105,6 +3171,56 @@ public DelayedDatabaseStuff()
 	db_free_result(db_query(sqliteconnection, "ALTER TABLE `Players` ADD HitSound INTEGER(128) NOT NULL DEFAULT 17802"));
 	db_free_result(db_query(sqliteconnection, "ALTER TABLE `Players` ADD GetHitSound INTEGER(128) NOT NULL DEFAULT 1131"));
 	#endif
+	
+	new iString[180];
+	format(iString, sizeof(iString), "%sRounds ~r~~h~%d~r~/~h~~h~%d", MAIN_TEXT_COLOUR, CurrentRound, TotalRounds);
+	TextDrawSetString(RoundsPlayed, iString);
+
+	#if INTROTEXT == 1
+	format(iString, sizeof(iString), "~r~~h~%s", TeamName[ATTACKER]);
+	TextDrawSetString(introAtt, iString);
+
+	format(iString, sizeof(iString), "~b~~h~%s", TeamName[DEFENDER]);
+	TextDrawSetString(introDef, iString);
+	#endif
+
+	format(iString, sizeof(iString), "~r~%s %s(~r~%d%s)  ~b~~h~%s %s(~b~~h~%d%s)",TeamName[ATTACKER],MAIN_TEXT_COLOUR,TeamScore[ATTACKER],MAIN_TEXT_COLOUR,TeamName[DEFENDER],MAIN_TEXT_COLOUR,TeamScore[DEFENDER],MAIN_TEXT_COLOUR);
+    TextDrawSetString(TeamScoreText, iString);
+
+	for(new i = 0; i < MAX_BASES; i++) RecentBase[i] = -1;
+	for(new i = 0; i < MAX_ARENAS; i++) RecentArena[i] = -1;
+	
+	if(ESLMode == true) {
+	    TeamScore[ATTACKER] = 0;
+	    TeamScore[DEFENDER] = 0;
+
+	    CurrentRound = 0;
+	    if(OneOnOne == false) TotalRounds = 5;
+	    else TotalRounds = 19;
+
+
+
+		TeamName[ATTACKER] = "Alpha";
+		TeamName[ATTACKER_SUB] = "Alpha Sub";
+		TeamName[DEFENDER] = "Beta";
+		TeamName[DEFENDER_SUB] = "Beta Sub";
+
+		format(iString, sizeof(iString), "~r~%s %s(~r~%d%s)  ~b~~h~%s %s(~b~~h~%d%s)",TeamName[ATTACKER],MAIN_TEXT_COLOUR,TeamScore[ATTACKER],MAIN_TEXT_COLOUR,TeamName[DEFENDER],MAIN_TEXT_COLOUR,TeamScore[DEFENDER],MAIN_TEXT_COLOUR);
+	    TextDrawSetString(TeamScoreText, iString);
+
+		format(iString, sizeof(iString), "%sRounds ~r~~h~%d~r~/~h~~h~%d", MAIN_TEXT_COLOUR, CurrentRound, TotalRounds);
+		TextDrawSetString(RoundsPlayed, iString);
+
+    	Max_Packetloss = 2.0;
+		Min_FPS = 35;
+		Max_Ping = 350;
+
+		WarMode = true;
+	   	format(iString, sizeof iString, "%sWar Mode: ~r~ON", MAIN_TEXT_COLOUR);
+		TextDrawSetString(WarModeText, iString);
+
+	}
+	DatabaseLoading = false;
     return 1;
 }
 
@@ -3112,7 +3228,7 @@ forward DatabaseDefaultReload();
 public DatabaseDefaultReload()
 {
     SetDatabaseToReload();
-    SetTimer("DelayedDatabaseStuff", 1500, false);
+    SetTimer("DelayedDatabaseStuff", 200, false);
 	return 1;
 }
 
@@ -3189,7 +3305,8 @@ public OnGameModeInit()
 
     //db_close(sqliteconnection);
 	sqliteconnection = db_open("AAD.db");
-	SetTimer("DatabaseDefaultReload", 300, false); 
+	DatabaseLoading = true;
+	SetTimer("DatabaseDefaultReload", 100, false);
 
     format(MAIN_TEXT_COLOUR, sizeof MAIN_TEXT_COLOUR, "~l~");
     MAIN_BACKGROUND_COLOUR = 0xEEEEEE33;
@@ -3254,59 +3371,10 @@ public OnGameModeInit()
 
     //Exception = "Whitetiger";
 
-	new iString[180];
-	format(iString, sizeof(iString), "%sRounds ~r~~h~%d~r~/~h~~h~%d", MAIN_TEXT_COLOUR, CurrentRound, TotalRounds);
-	TextDrawSetString(RoundsPlayed, iString);
-
-	#if INTROTEXT == 1
-	format(iString, sizeof(iString), "~r~~h~%s", TeamName[ATTACKER]);
-	TextDrawSetString(introAtt, iString);
-
-	format(iString, sizeof(iString), "~b~~h~%s", TeamName[DEFENDER]);
-	TextDrawSetString(introDef, iString);
-	#endif
-
-	format(iString, sizeof(iString), "~r~%s %s(~r~%d%s)  ~b~~h~%s %s(~b~~h~%d%s)",TeamName[ATTACKER],MAIN_TEXT_COLOUR,TeamScore[ATTACKER],MAIN_TEXT_COLOUR,TeamName[DEFENDER],MAIN_TEXT_COLOUR,TeamScore[DEFENDER],MAIN_TEXT_COLOUR);
-    TextDrawSetString(TeamScoreText, iString);
-
-	for(new i = 0; i < MAX_BASES; i++) RecentBase[i] = -1;
-	for(new i = 0; i < MAX_ARENAS; i++) RecentArena[i] = -1;
-
 	SetTimer("OnScriptUpdate", 1000, true); // Timer that updates every second (will be using this for most stuff)
 	SetTimer("FixVsTextDraw", 3000, true);
     //SetTimer("HeadShotCheck", 250, true);
     InitVersionChecker(true, true);
-
-	if(ESLMode == true) {
-	    TeamScore[ATTACKER] = 0;
-	    TeamScore[DEFENDER] = 0;
-
-	    CurrentRound = 0;
-	    if(OneOnOne == false) TotalRounds = 5;
-	    else TotalRounds = 19;
-
-
-
-		TeamName[ATTACKER] = "Alpha";
-		TeamName[ATTACKER_SUB] = "Alpha Sub";
-		TeamName[DEFENDER] = "Beta";
-		TeamName[DEFENDER_SUB] = "Beta Sub";
-
-		format(iString, sizeof(iString), "~r~%s %s(~r~%d%s)  ~b~~h~%s %s(~b~~h~%d%s)",TeamName[ATTACKER],MAIN_TEXT_COLOUR,TeamScore[ATTACKER],MAIN_TEXT_COLOUR,TeamName[DEFENDER],MAIN_TEXT_COLOUR,TeamScore[DEFENDER],MAIN_TEXT_COLOUR);
-	    TextDrawSetString(TeamScoreText, iString);
-
-		format(iString, sizeof(iString), "%sRounds ~r~~h~%d~r~/~h~~h~%d", MAIN_TEXT_COLOUR, CurrentRound, TotalRounds);
-		TextDrawSetString(RoundsPlayed, iString);
-
-    	Max_Packetloss = 2.0;
-		Min_FPS = 35;
-		Max_Ping = 350;
-
-		WarMode = true;
-	   	format(iString, sizeof iString, "%sWar Mode: ~r~ON", MAIN_TEXT_COLOUR);
-		TextDrawSetString(WarModeText, iString);
-
-	}
 
 	CreateObject(3095, 268.74, 1884.21, 16.07,   0.00, 0.00, 0.00);
 
@@ -3317,6 +3385,11 @@ public OnGameModeInit()
 	    MatchRoundsRecord[ i ][ round__ID ] = -1;
 	    MatchRoundsRecord[ i ][ round__type ] = -1;
 	    MatchRoundsRecord[ i ][ round__completed ] = false;
+	}
+	
+	for(new i = 0; i < MAX_VEHICLES; i ++)
+	{
+	    HeliWoodenBoard[i] = -1;
 	}
 
 	return 1;
@@ -3348,14 +3421,29 @@ public VersionOutdatedKick(playerid)
 	return 1;
 }
 
+forward ConnectPlayer(playerid);
+public ConnectPlayer(playerid)
+{
+    OnPlayerConnect(playerid);
+    OnPlayerRequestClass(playerid, 0);
+	return 1;
+}
+
 public OnPlayerConnect(playerid)
 {
-    if(VersionReport == VERSION_IS_BEHIND && ForceUserToNewestVersion == true)
+	if(VersionReport == VERSION_IS_BEHIND && ForceUserToNewestVersion == true)
 	{
 	    SetTimerEx("VersionOutdatedKick", 1000, false, "i", playerid);
 	    return 1;
 	}
-
+	if(DatabaseLoading == true)
+	{
+    	ClearChatForPlayer(playerid);
+		SendClientMessage(playerid, -1, "Please wait! Database loading, you will be connected when it's loaded successfully.");
+		SetTimerEx("ConnectPlayer", 1000, false, "i", playerid);
+		return 1;
+	}
+	
     if(playerid > HighestID)
 		HighestID = playerid;
 
@@ -3394,6 +3482,7 @@ public OnPlayerConnect(playerid)
 	format(iString, sizeof(iString), ""COL_PRIM"Welcome To {FFFFFF}%s", GM_NAME);
     SendClientMessage(playerid, -1, iString);
     SendClientMessage(playerid, -1, ""COL_PRIM"Wanna get started? Use {FFFFFF}/help "COL_PRIM"and {FFFFFF}/cmds");
+    SendClientMessage(playerid, -1, ""COL_PRIM"Stay new and sweep away your old version! Always check for updates: {FFFFFF}/checkversion");
     SendClientMessage(playerid, -1, ""COL_PRIM"Wanna know what our dev team has recently done? Use {FFFFFF}/updates "COL_PRIM"for server updates");
     SendClientMessage(playerid, -1, ""COL_PRIM"Development team: {FFFFFF}062_"COL_PRIM", {FFFFFF}Whitetiger"COL_PRIM"");
     SendClientMessage(playerid, -1, "\t\t{FFFFFF}[KHK]Khalid"COL_PRIM", {FFFFFF}X.K"COL_PRIM" and {FFFFFF}Niko_boy");
@@ -3531,6 +3620,7 @@ public OnPlayerConnect(playerid)
 	Player[playerid][blockedall] = false;
 	Player[playerid][HasVoted] = false;
 	Player[playerid][SetToReconnect] = false;
+	Player[playerid][PROT_HPAutoRefilled] = false;
 
 	noclipdata[playerid][cameramode] 	= 	CAMERA_MODE_NONE;
 	noclipdata[playerid][lrold]	   	 	= 	0;
@@ -3619,6 +3709,10 @@ public OnPlayerConnect(playerid)
 
 public OnPlayerRequestClass(playerid, classid)
 {
+    if(DatabaseLoading == true)
+	{
+		return 1;
+	}
 	Player[playerid][Team] = NON;
     SetPlayerColor(playerid, 0xAAAAAAAA);
     Player[playerid][Spawned] = false;
@@ -4761,6 +4855,21 @@ public OnVehicleSpawn(vehicleid)
 		AttachTrailerToVehicle(traintrailer1, thetrain);
 		AttachTrailerToVehicle(traintrailer2, thetrain);
 	}
+	if(GetVehicleModel(vehicleid) == 563)
+	{
+	    HeliWoodenBoard[vehicleid] = CreateObject(19128,0,0,0,0,0,0,80); // 2988
+		AttachObjectToVehicle(HeliWoodenBoard[vehicleid], vehicleid, 0.0, 6.299995, -1.200000, 0.000000, 0.000000, 0.000000);
+ 	}
+ 	return 1;
+}
+
+public OnVehicleDeath(vehicleid, killerid)
+{
+    if(HeliWoodenBoard[vehicleid] > -1)
+    {
+        DestroyObject(HeliWoodenBoard[vehicleid]);
+        HeliWoodenBoard[vehicleid] = -1;
+    }
 	return 1;
 }
 
@@ -4944,7 +5053,7 @@ public OnPlayerUpdate(playerid)
 */
 	// Target info
 
-	if(ToggleTargetInfo == true)
+	if(ToggleTargetInfo == true && Player[playerid][Spectating] != true)
 	{
 		ShowTargetInfo(playerid, GetPlayerTargetPlayer(playerid));
 	}
@@ -5175,6 +5284,13 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 	return 1;
 }
 
+forward HideAutoRefillText(playerid);
+public HideAutoRefillText(playerid)
+{
+    Player[playerid][PROT_HPAutoRefilled] = false;
+	return 1;
+}
+
 public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 {
     //ShowHitArrow(playerid, issuerid);
@@ -5249,6 +5365,17 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		}
 	}
 
+    // Fall Protection Improvement Part
+	if(issuerid == INVALID_PLAYER_ID && Player[playerid][Playing] == true)
+	{
+		if(Health[1] >= 1.0 && (Health[0] - amount) < RoundHP)
+		{
+			Player[playerid][PROT_HPAutoRefilled] = true;
+			SetTimerEx("HideAutoRefillText", 2000, false, "i", playerid);
+			SetPlayerHealthEx(playerid, RoundHP);
+		}
+	}
+	// <end>
 
 	if(Health[0] > 0) {
 	    if(amount > Health[0]) {
@@ -6225,8 +6352,16 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	        else
 				TogglePlayerControllableEx(playerid, true);
 
-			SetPlayerHealth(playerid, Player[playerid][HealthBeforeMenu]);
-			SetPlayerArmour(playerid, Player[playerid][ArmourBeforeMenu]);
+			if(Player[playerid][HealthBeforeMenu] <= 0.0)
+		    {
+		        SetPlayerHealth(playerid, RoundHP);
+				SetPlayerArmour(playerid, RoundAR);
+		    }
+		    else
+		    {
+ 				SetPlayerHealth(playerid, Player[playerid][HealthBeforeMenu]);
+				SetPlayerArmour(playerid, Player[playerid][ArmourBeforeMenu]);
+			}
 			Player[playerid][OnGunmenu] = false;
 		}
 		return 1;
@@ -7870,14 +8005,17 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Feature: Player replacement now is made into user-friendly dialogs.");
 	strcat(string, "\n{FFFFFF}- Feature: You should not get hit while picking weapons from gunmenu now.");
 	strcat(string, "\n{FFFFFF}- Feature: A sound is now played when a player makes a pause or an unpause request.");
+	strcat(string, "\n{FFFFFF}- A board is attached to your heli so you can rape the enemy from the air \n(Works only with Raindance ID: 563).");
+	strcat(string, "\n{FFFFFF}- Improved fall protection: HP is now auto-refilled as long as you still have armour.");
+	strcat(string, "\n{FFFFFF}- Improved Version Checker system a lot and fixed many minor bugs in it.");
 	strcat(string, "\n{FFFFFF}- Bug-fix: you're now given a parachute on round-unpause if you get one before pause/crash.");
 	strcat(string, "\n{FFFFFF}- Bug-fix: players now are re-spawned in their vehicles after crash or sudden leave.");
 	strcat(string, "\n{FFFFFF}- Fixed /afk bug allowing non-admins to set anyone to afk mode.");
 	strcat(string, "\n{FFFFFF}- Solved a weird and old issue regarding SQLite database loading.");
 	strcat(string, "\n{FFFFFF}- Fixed a major bug that some hackers exploited to hunt servers down.");
 	strcat(string, "\n{FFFFFF}- Fixed gunmenu death bug: Players died right after picking weapons from menu.");
-	strcat(string, "\n{FFFFFF}- ");
-	strcat(string, "\n{FFFFFF}- ");
+	strcat(string, "\n{FFFFFF}- Fixed a bug that trains disappeared once a round had started.");
+	
 
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
 	return 1;
@@ -11999,7 +12137,7 @@ SetDatabaseToReload(playerid = INVALID_PLAYER_ID)
 		
 	DatabaseSetToReload = true;
 	db_close(sqliteconnection);
-	SetTimer("ReloadDatabase", 1000, false);
+	SetTimer("ReloadDatabase", 100, false);
 	return 1;
 }
 
@@ -21380,7 +21518,10 @@ stock ClearKillList() {
 }
 
 stock DestroyAllVehicles() {
-	for(new i = 0; i < MAX_VEHICLES; i++) {
+	for(new i = 0; i < MAX_VEHICLES; i++)
+	{
+	    if(i == thetrain)
+	        continue;
  //       Delete3DTextLabel(Vehicle3DText[i]);
 	    DestroyVehicle(i);
 	}
@@ -22110,15 +22251,27 @@ public OnScriptUpdate()
 		GetPlayerHealth(i, Player[i][pHealth]);
 		GetPlayerArmour(i, Player[i][pArmour]);
 
-		if(FallProtection == false) {
-			format(iString, sizeof(iString), "%s%.0f", MAIN_TEXT_COLOUR, Player[i][pHealth]);
-			PlayerTextDrawSetString(i, HPTextDraw_TD, iString);
-		} else {
-			if(Player[i][Playing] == true) PlayerTextDrawSetString(i, HPTextDraw_TD, sprintf("%sFall Prot.", MAIN_TEXT_COLOUR));
-			else {
+		if(Player[i][PROT_HPAutoRefilled] == false)
+		{
+			if(FallProtection == false)
+			{
 				format(iString, sizeof(iString), "%s%.0f", MAIN_TEXT_COLOUR, Player[i][pHealth]);
-		    	PlayerTextDrawSetString(i, HPTextDraw_TD, iString);
+				PlayerTextDrawSetString(i, HPTextDraw_TD, iString);
 			}
+			else
+			{
+				if(Player[i][Playing] == true)
+					PlayerTextDrawSetString(i, HPTextDraw_TD, sprintf("%sFall Prot.", MAIN_TEXT_COLOUR));
+				else
+				{
+					format(iString, sizeof(iString), "%s%.0f", MAIN_TEXT_COLOUR, Player[i][pHealth]);
+			    	PlayerTextDrawSetString(i, HPTextDraw_TD, iString);
+				}
+			}
+		}
+		else
+		{
+            PlayerTextDrawSetString(i, HPTextDraw_TD, sprintf("%sPROT. HP refilled", MAIN_TEXT_COLOUR));
 		}
 
 		if(Player[i][pArmour] > 0) {
@@ -24209,7 +24362,7 @@ public AddPlayerToBase(playerid)
     Player[playerid][HealthBeforeMenu] = RoundHP;
     Player[playerid][ArmourBeforeMenu] = RoundAR;
 
-
+    Player[playerid][ReaddOrAddTickCount] = GetTickCount();
 
     SetPlayerVirtualWorld(playerid, 2); //Set player virtual world to something different that that for lobby and DM so that they don't collide with each other. e.g. You shouldn't be able to see players in lobby or DM while you are in base.
     SetPlayerInterior(playerid, BInterior[Current]);
@@ -24287,6 +24440,12 @@ ShowPlayerWeaponMenu(playerid, team)
 		GetPlayerArmour(playerid, Player[playerid][ArmourBeforeMenu]);
 	}
 	else
+	{
+	    Player[playerid][HealthBeforeMenu] = RoundHP;
+	    Player[playerid][ArmourBeforeMenu] = RoundAR;
+	}
+	
+	if((GetTickCount() - Player[playerid][ReaddOrAddTickCount]) < 2000)
 	{
 	    Player[playerid][HealthBeforeMenu] = RoundHP;
 	    Player[playerid][ArmourBeforeMenu] = RoundAR;
