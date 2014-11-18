@@ -32883,7 +32883,7 @@ public OnAimbotResponse(index, response_code, data[]) {
 	BanEx(i, "Aimbot");
 
 	new iString[256];
-	format(iString, sizeof(iString), "{FFFFFF}** System ** "COL_PRIM"has banned {FFFFFF}%s "COL_PRIM"| Reason: {FFFFFF}Aimbot", Player[i][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}** System ** "COL_PRIM"has banned {FFFFFF}%s "COL_PRIM"| Reason: {FFFFFF}Aimbot (Not a bug)", Player[i][Name]);
 	SendClientMessageToAll(-1, iString);
 }
 
