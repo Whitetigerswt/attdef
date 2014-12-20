@@ -12789,7 +12789,7 @@ CMD:swap(playerid, params[])
 	SwapTeams();
 
 	new iString[160];
-	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has swaped the teams.", Player[playerid][Name]);
+	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has swapped the teams.", Player[playerid][Name]);
 	SendClientMessage(playerid, -1, iString);
 
 	return 1;
