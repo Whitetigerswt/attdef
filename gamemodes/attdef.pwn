@@ -29,7 +29,7 @@
 
 */
 
-#define GM_NAME				"Attack-Defend v2.6 (rc)"
+#define GM_NAME				"Attack-Defend v2.6 (r)"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -3905,6 +3905,7 @@ public OnPlayerSpawn(playerid)
 	}
 	SetPlayerTime(playerid, 23, 0);
 	PlayRandomXmasSong(playerid);
+	SendClientMessage(playerid, -1, "It's Christmas! Check out /xmascmds for some fun!");
 	#endif
 
 	if(Player[playerid][DMReadd] > 0) {
@@ -26338,7 +26339,7 @@ LoginPlayer(playerid, DBResult:res) {
 
 #if XMAS == 1
 
-#define MAX_SNOW_OBJECTS    1
+#define MAX_SNOW_OBJECTS    3
 #define SNOW_UPDATE_INTERVAL     850
 
 #define MAX_SLOTS MAX_PLAYERS
@@ -26534,14 +26535,22 @@ stock GiveChristmasHat(playerid,number)
 
 CMD:xmascmds(playerid, params[])
 {
-	ShowPlayerDialog(playerid, 9999, DIALOG_STYLE_MSGBOX, "Xmas Commands", "/removehat - /letitsnow - /stopxmasmusic - /snow", "OK", "");
+	ShowPlayerDialog(playerid, 9999, DIALOG_STYLE_MSGBOX, "Xmas Commands", "/xmasmusic - /stopxmasmusic - /snow", "OK", "");
 	return 1;
 }
+
 
 CMD:removehat(playerid, params[])
 {
     if(IsPlayerAttachedObjectSlotUsed(playerid,1))
 		RemovePlayerAttachedObject(playerid,1);
+	return 1;
+}
+
+
+CMD:xmasmusic(playerid, params[])
+{
+	PlayRandomXmasSong(playerid);
 	return 1;
 }
 
