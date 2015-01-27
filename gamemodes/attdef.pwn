@@ -1,35 +1,13 @@
 /*
 
-	v2.6
+	v2.7
 
-	- Removed anti-macros system and all of its components.
-	- Removed old AC system and all of its components.
-	- The mighty new Anti-Cheat is now fully compatible.
-	- Fixed old bug: you're now given a parachute on round-unpause if you get one before pause/crash.
-	- Fixed old bug: players now are re-spawned in their vehicles after crash or sudden leave.
-	- You should not get hit while picking weapons from gunmenu now.
-	- Player replacement now is made into user-friendly dialogs.
-	- Added /p and /u commands for quick pause/unpause.
-	- Fixed /afk bug allowing non-admins to set anyone afk.
-	- Fixed length of /cmds dialog.
-	- Removed reconnect command from /acmds.
-	- Added debug messages to help me fix a death bug.
-	- Improved match sync system. Hope I will release it this version.
-	- Added a new command /reloaddb to reload the SQLite database.
-	- A sound is now played when a player makes a pause or an unpause request.
-	- Solved a weird and old issue regarding SQLite database loading.
-	- Fixed a major bug that some hackers exploited to hunt servers down.
-	- Fixed gunmenu death bug: players died right after picking weapons from menu.
-	- Added /getpara (/gp) command to give parachute.
-	- Improved fall protection: HP is now auto-refilled as long as you still have armour.
-	- Fixed a bug that trains disappeared once a round had started.
-	- A board is attached to your heli so you can rape the enemy from the air (Works only with Raindance ID: 563).
-	- Improved Version Checker system a lot and fixed many minor bugs in it.
-	
-
+	- Other fighting styles are made usable now with the power of /fightstyle.
+	- AC Update allowing functions to be used without the plugin loaded.
+	- Make sure you leave a message to your dead enemies using /deathmessage.
 */
 
-#define GM_NAME				"Attack-Defend v2.6 (r)"
+#define GM_NAME				"Attack-Defend v2.7 (a)"
 
 #include <a_samp>			// Most samp functions (e.g. GetPlayerHealth and etc)
 #include <foreach> 			// Used to loop through all connected players
@@ -117,6 +95,26 @@ enum noclipenum
 	bool:FlyMode
 }
 new noclipdata[MAX_PLAYERS][noclipenum];
+
+new FightStyleIDs[6] =
+{
+	4,
+	5,
+	6,
+	7,
+	15,
+	16
+};
+
+new FightStyleNames[6][11] =
+{
+	"Normal",
+	"Boxing",
+	"KungFu",
+	"Knee-head",
+	"Grab-kick",
+	"Elbow-kick"
+};
 
 new bool:UpdateAKA = true;
 
@@ -576,6 +574,7 @@ new PlayerText: HPTextDraw_TD;
 new PlayerText: BaseID_VS;
 new PlayerText: BITCH;
 new PlayerText: TargetInfoTD;
+new PlayerText: DeathMessage[2]; new DeathMessageStr[MAX_PLAYERS][64];
 
 
 new ThemeChange_listitem[MAX_PLAYERS];
@@ -645,6 +644,7 @@ enum PlayerVariables {
 	LastMsgr,
 	blockedid,
 	Style,
+	FightStyle,
 
 	#if GTA_V_INTRO == 1
 
@@ -3586,6 +3586,8 @@ public OnPlayerConnect(playerid)
     Player[playerid][LastMsgr] = -1;
     Player[playerid][blockedid] = -1;
     Player[playerid][Style] = 1;
+    Player[playerid][FightStyle] = 4;
+    SetPlayerFightingStyle(playerid, Player[playerid][FightStyle]);
 
     Player[playerid][Logged] = false;
     Player[playerid][IgnoreSpawn] = false;
@@ -4390,6 +4392,8 @@ public OnPlayerDeath(playerid, killerid, reason)
 	    }
 	} else if( killerid != INVALID_PLAYER_ID && IsPlayerConnected(killerid)) {
 
+        ShowPlayerDeathMessage(killerid, playerid);
+
 		format(iString, sizeof(iString), "%sYou Killed: %s~h~%s", MAIN_TEXT_COLOUR, TDC[Player[playerid][Team]], Player[playerid][Name]);
         PlayerTextDrawSetString(killerid, DeathText[0], iString);
         PlayerTextDrawShow(killerid, DeathText[0]);
@@ -4398,7 +4402,7 @@ public OnPlayerDeath(playerid, killerid, reason)
         PlayerTextDrawSetString(playerid, DeathText[1], iString);
         PlayerTextDrawShow(playerid, DeathText[1]);
 
-	    SetTimerEx("DeathMessage", 4000, false, "ii", killerid, playerid);
+	    SetTimerEx("DeathMessageF", 4000, false, "ii", killerid, playerid);
 
 		if(Current == -1) SendDeathMessage(killerid, playerid, reason);
 
@@ -5241,8 +5245,8 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 	if(Player[damagedid][PauseCount] > 2) return 1;
 
 	new Float:Health[3], Float:Damage;
-	Health[0] = PlayerHP[damagedid];
-	Health[1] = PlayerAP[damagedid];
+	GetPlayerHealth(damagedid, Health[0]);
+	GetPlayerArmour(damagedid, Health[1]);
 
 	if(Health[0] > 0) {
 	    if(amount > Health[0]) {
@@ -7995,28 +7999,16 @@ CMD:updates(playerid, params[])
 
 	string = "";
 
-	strcat(string, "{00FF00}Attack-Defend v2.6 updates:\n");
+	strcat(string, "{00FF00}Attack-Defend v2.7 updates:\n");
     
-	strcat(string, "\n{FFFFFF}- Removed anti-macros system and all of its components.");
-	strcat(string, "\n{FFFFFF}- Removed old AC system and all of its components.");
-	strcat(string, "\n{FFFFFF}- The mighty new Anti-Cheat is now fully compatible.");
-	strcat(string, "\n{FFFFFF}- Added /p and /u commands for quick round pause/unpause.");
-	strcat(string, "\n{FFFFFF}- Added /getpara (/gp) command to give parachute.");
-	strcat(string, "\n{FFFFFF}- Added a new command /reloaddb to reload the SQLite database.");
-	strcat(string, "\n{FFFFFF}- Feature: Player replacement now is made into user-friendly dialogs.");
-	strcat(string, "\n{FFFFFF}- Feature: You should not get hit while picking weapons from gunmenu now.");
-	strcat(string, "\n{FFFFFF}- Feature: A sound is now played when a player makes a pause or an unpause request.");
-	strcat(string, "\n{FFFFFF}- A board is attached to your heli so you can rape the enemy from the air \n(Works only with Raindance ID: 563).");
-	strcat(string, "\n{FFFFFF}- Improved fall protection: HP is now auto-refilled as long as you still have armour.");
-	strcat(string, "\n{FFFFFF}- Improved Version Checker system a lot and fixed many minor bugs in it.");
-	strcat(string, "\n{FFFFFF}- Bug-fix: you're now given a parachute on round-unpause if you get one before pause/crash.");
-	strcat(string, "\n{FFFFFF}- Bug-fix: players now are re-spawned in their vehicles after crash or sudden leave.");
-	strcat(string, "\n{FFFFFF}- Fixed /afk bug allowing non-admins to set anyone to afk mode.");
-	strcat(string, "\n{FFFFFF}- Solved a weird and old issue regarding SQLite database loading.");
-	strcat(string, "\n{FFFFFF}- Fixed a major bug that some hackers exploited to hunt servers down.");
-	strcat(string, "\n{FFFFFF}- Fixed gunmenu death bug: Players died right after picking weapons from menu.");
-	strcat(string, "\n{FFFFFF}- Fixed a bug that trains disappeared once a round had started.");
-	
+	strcat(string, "\n{FFFFFF}- Other fighting styles are made usable now with the power of /fightstyle.");
+	strcat(string, "\n{FFFFFF}- AC Update allowing functions to be used without the plugin loaded.");
+	strcat(string, "\n{FFFFFF}- Make sure you leave a message to your dead enemies using /deathmessage.");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
 
 	ShowPlayerDialog(playerid, DIALOG_HELPS, DIALOG_STYLE_MSGBOX,""COL_PRIM"Attack-Defend Updates", string, "OK","");
 	return 1;
@@ -8047,7 +8039,7 @@ CMD:cmds(playerid, params[])
 	strcat(string, "\n{FFFFFF}/readd   /gunmenu   /rem   /vr (/fix)   /para (/rp)   /getpara (/gp)   /knife   /vote");
 
 	strcat(string, "\n\n"COL_PRIM"Player profile commands:");
-	strcat(string, "\n{FFFFFF}/togspecs   /changename   /weather (/w)   /time (/t)   /changepass   /sound   /textdraw   /togspec(all)   /shortcuts   /style");
+	strcat(string, "\n{FFFFFF}/togspecs   /changename   /weather (/w)   /time (/t)   /changepass   /sound   /textdraw   /togspec(all)   /shortcuts   /style  /fightstyle");
 
 	strcat(string, "\n\n"COL_PRIM"Chat-related commands:");
 	strcat(string, "\n{FFFFFF}/pm   /r   /blockpm(all)   /nopm(all)   /cchannel   /pchannel   Use "COL_PRIM"# {FFFFFF}to talk in chat channel");
@@ -12117,6 +12109,41 @@ CMD:help(playerid, params[])
 
 	ShowPlayerDialog(playerid,DIALOG_SERVER_HELP,DIALOG_STYLE_MSGBOX,"{0044FF}Server Help", HelpString, "OK","");
 
+	return 1;
+}
+
+CMD:deathmessage(playerid, params[])
+{
+    if(isnull(params)) return SendUsageMessage(playerid,"/deathmessage [Message]");
+	if(strlen(params) <= 3) return SendErrorMessage(playerid,"Too short!");
+	if(strlen(params) > 64) return SendErrorMessage(playerid,"Too long!");
+
+	new iString[128];
+	format(DeathMessageStr[playerid], 64, "%s", params);
+	format(iString, sizeof(iString), "UPDATE `Players` SET `DeathMessage` = '%s' WHERE `Name` = '%s'", DB_Escape(params), DB_Escape(Player[playerid][Name]) );
+	db_free_result(db_query(sqliteconnection, iString));
+	SendClientMessage(playerid, -1, "Death message has been changed successfully!");
+	return 1;
+}
+
+
+CMD:fightstyle(playerid, params[])
+{
+    if(isnull(params) || !IsNumeric(params))
+	{
+		SendUsageMessage(playerid,"/fightstyle [FightStyle ID]");
+		SendClientMessage(playerid, -1, "0 Normal | 1 Boxing | 2 KungFu | 3 Knee-head | 4 Grab-kick | 5 Elbow-kick");
+		return 1;
+	}
+	new fsID = strval(params);
+	if(fsID < 0 || fsID > 5) return SendErrorMessage(playerid,"Invalid FightStyle ID (From 0 to 5 are valid)");
+
+	Player[playerid][FightStyle] = FightStyleIDs[fsID];
+	SetPlayerFightingStyle(playerid, Player[playerid][FightStyle]);
+	new iString[128];
+	format(iString, sizeof(iString), "UPDATE `Players` SET `FightStyle` = '%d' WHERE `Name` = '%s'", Player[playerid][FightStyle], DB_Escape(Player[playerid][Name]) );
+	db_free_result(db_query(sqliteconnection, iString));
+	SendClientMessage(playerid, -1, sprintf(""COL_PRIM"FightStyle changed to: {FFFFFF}%s", FightStyleNames[fsID]));
 	return 1;
 }
 
@@ -17031,6 +17058,27 @@ LoadPlayerTextDraws(playerid)
     PlayerTextDrawSetProportional(playerid, BaseID_VS, 1);
     PlayerTextDrawSetShadow(playerid, BaseID_VS,0);
 */
+    DeathMessage[0] = CreatePlayerTextDraw(playerid, 193.000000, 157.000000, "Random says this to you");
+	PlayerTextDrawBackgroundColor(playerid, DeathMessage[0], -16776961);
+	PlayerTextDrawFont(playerid, DeathMessage[0], 1);
+	PlayerTextDrawLetterSize(playerid, DeathMessage[0], 0.280000, 1.200000);
+	PlayerTextDrawColor(playerid, DeathMessage[0], -1);
+	PlayerTextDrawSetOutline(playerid, DeathMessage[0], 1);
+	PlayerTextDrawSetProportional(playerid, DeathMessage[0], 1);
+	
+	DeathMessage[1] = CreatePlayerTextDraw(playerid, 318.000000, 177.000000, "This is my death message");
+	PlayerTextDrawAlignment(playerid, DeathMessage[1], 2);
+	PlayerTextDrawBackgroundColor(playerid, DeathMessage[1], -16776961);
+	PlayerTextDrawFont(playerid, DeathMessage[1], 2);
+	PlayerTextDrawLetterSize(playerid, DeathMessage[1], 0.270000, 1.200000);
+	PlayerTextDrawColor(playerid, DeathMessage[1], -65281);
+	PlayerTextDrawSetOutline(playerid, DeathMessage[1], 1);
+	PlayerTextDrawSetProportional(playerid, DeathMessage[1], 1);
+	PlayerTextDrawUseBox(playerid, DeathMessage[1], 1);
+	PlayerTextDrawBoxColor(playerid, DeathMessage[1], 153);
+	PlayerTextDrawTextSize(playerid, DeathMessage[1], 794.000000, 271.000000);
+
+	return 1;
 }
 
 
@@ -18044,6 +18092,27 @@ public SpawnConnectedPlayer(playerid, team)
 //------------------------------------------------------------------------------
 // Stocks
 //------------------------------------------------------------------------------
+
+forward HidePlayerDeathMessage(playerid);
+public HidePlayerDeathMessage(playerid)
+{
+    PlayerTextDrawHide(playerid, DeathMessage[0]);
+    PlayerTextDrawHide(playerid, DeathMessage[1]);
+	return 1;
+}
+
+stock ShowPlayerDeathMessage(killerid, playerid)
+{
+	if(strlen(DeathMessageStr[killerid]) <= 0)
+	    return 0;
+	    
+	PlayerTextDrawSetString(playerid, DeathMessage[0], sprintf("A death message to you from %s", Player[killerid][Name]));
+    PlayerTextDrawSetString(playerid, DeathMessage[1], sprintf("%s", DeathMessageStr[killerid]));
+	PlayerTextDrawShow(playerid, DeathMessage[0]);
+    PlayerTextDrawShow(playerid, DeathMessage[1]);
+    SetTimerEx("HidePlayerDeathMessage", 3500, false, "i", playerid);
+	return 1;
+}
 
 stock StyleTextDrawFix(playerid)
 {
@@ -23111,8 +23180,8 @@ public HideHpTextForDef() {
 	return 1;
 }
 
-forward DeathMessage(killerid, playerid);
-public DeathMessage(killerid, playerid) {
+forward DeathMessageF(killerid, playerid);
+public DeathMessageF(killerid, playerid) {
 	PlayerTextDrawHide(killerid, DeathText[0]);
 	PlayerTextDrawHide(playerid, DeathText[1]);
 	return 1;
@@ -26298,6 +26367,15 @@ LoginPlayer(playerid, DBResult:res) {
 	// Load Style
 	db_get_field_assoc(res, "Style", iString, sizeof(iString));
 	Player[playerid][Style] = strval(iString);
+	
+	// Load Fighting Style
+	db_get_field_assoc(res, "FightStyle", iString, sizeof(iString));
+	Player[playerid][FightStyle] = strval(iString);
+	SetPlayerFightingStyle(playerid, Player[playerid][FightStyle]);
+	
+	// Load Death Messages
+	db_get_field_assoc(res, "DeathMessage", iString, sizeof(iString));
+	format(DeathMessageStr[playerid], 64, "%s", iString);
 
 	// Get current IP address
 	new IP[MAX_PLAYER_NAME];
