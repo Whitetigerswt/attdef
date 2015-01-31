@@ -5,6 +5,7 @@
 	- Other fighting styles are made usable now with the power of /fightstyle.
 	- AC Update allowing functions to be used without the plugin loaded.
 	- Make sure you leave a message to your dead enemies using /deathmessage.
+	- Fixed team win bug that could make wrong results in a round.
 */
 
 #define GM_NAME				"Attack-Defend v2.7 (a)"
@@ -17,11 +18,13 @@
 
 #include <sampac> // THE MIGHTY NEW ANTICHEAT
 
+
 #define MAILER_URL "sixtytiger.com/khalid/AttDef_API/Mailer/mailer.php"
 
 #include <mailer>
 
 #define ENABLED_TDM     1 	// DISABLE TDM IF YOU WANT e.e
+#define ANTICHEAT       0 	// If you want Whitetiger's Anti-Cheat, put 1 else 0.
 #define PLUGINS         0 	// If you want to use plugins then put 1 else leave 0.
 #define INTROTEXT       0 	// Adds intro textdraw.
 #define MYSQL           0 	// Use MySQL system
@@ -45,6 +48,11 @@ native IsValidVehicle(vehicleid);
 
 #if XMAS == 1
     #include <streamer>
+#endif
+
+#if ANTICHEAT == 1
+	#define _sampac_PLUGINS PLUGINS
+	#include <sampac_api>
 #endif
 
 #if PLUGINS == 1
@@ -947,9 +955,14 @@ new bool:AllowStartBase = true;
 new bool:PreMatchResultsShowing = false;
 new bool:PlayerOnInterface[MAX_PLAYERS];
 new bool:AllMuted = false;
+#if ANTICHEAT == 1
+	new bool:AntiCheat = false;
+	new ACTimer;
 
-new bool:AntiCheat = false; //todo: remove
-
+#endif
+#if ANTICHEAT == 1
+new ESLAC;
+#endif
 #if SKINICONS == 1
 new bool:ShowIcons = true;
 #endif
@@ -985,7 +998,9 @@ new bool:WarMode 		= false;
 new bool:PausePressed 	= false;
 new bool:ServerLocked 	= false;
 new bool:PermLocked 	= false;
-
+#if ANTICHEAT == 1
+new bool:PermAC 		= false;
+#endif
 //new bool:AttWin 		= true;
 new bool:MatchEnded 	= false;
 new bool:FallProtection = false;
@@ -2029,9 +2044,19 @@ stock MATCHSYNC_InsertMatchStats()
 	new Hours, Minutes, Seconds;
 	gettime(Hours, Minutes, Seconds);
 	format(date, sizeof date, "[%02d/%02d/%d]:[%02d:%02d:%02d]", Day, Month, Year, Hours, Minutes, Seconds);
+	new alAC[16];
+
+	#if ANTICHEAT == 1
+	if(AntiCheat == true)
+		format(alAC, sizeof alAC, "Was On");
+	else
+		format(alAC, sizeof alAC, "Was Off");
+	#else
+ 	format(alAC, sizeof alAC, "Was Off");
+	#endif
 
 	new query[300];
-	format(query, sizeof(query), "INSERT INTO Matches (TeamA, TeamB, Score, DateTime, AC) VALUES ('%s', '%s', '%s', '%s', '%s')", winnerName, loserName, score, date);
+	format(query, sizeof(query), "INSERT INTO Matches (TeamA, TeamB, Score, DateTime, AC) VALUES ('%s', '%s', '%s', '%s', '%s')", winnerName, loserName, score, date, alAC);
 	mysql_query(query);
 	SendClientMessageToAll(-1, ""COL_PRIM"Match-sync: {FFFFFF}Match stats has been uploaded successfully!");
 }
@@ -3310,6 +3335,22 @@ public OnGameModeInit()
 	SetWorldTime(MainTime); // Sets server time
 	SetWeather(MainWeather); // Sets server weather
 
+	#if ANTICHEAT == 1
+		if(ESLAC == 1) {
+			AntiCheat = true;
+			if(ESLMode == false) {
+			    new newhostname[128];
+				format(newhostname, sizeof(newhostname), "hostname %s [AC]", hostname);
+				SendRconCommand(newhostname);
+			}
+			AC_Toggle(true);
+		} else {
+			AC_Toggle(false);
+			PermAC = false;
+		}
+	#endif
+
+
 	TextColor[ATTACKER] 	= 	"{FF0033}";
 	TextColor[ATTACKER_SUB] = 	"{FFAAAA}";
 	TextColor[DEFENDER] 	= 	"{3344FF}";
@@ -4124,6 +4165,22 @@ public OnPlayerDisconnect(playerid, reason)
 				ServerLocked = false;
 				PermLocked = false;
 			}
+
+			#if ANTICHEAT == 1
+
+			if(PermAC != true)
+			{
+				AntiCheat = false;
+				TextDrawHideForAll(ACText);
+				new newhostname[128];
+				format(newhostname, sizeof(newhostname), "hostname %s", hostname);
+				SendRconCommand(newhostname);
+
+				KillTimer(ACTimer);
+			    AC_Toggle(false);
+			    PermAC = false;
+			}
+		    #endif
 		}
 
 		if(WarMode == true)
@@ -7948,7 +8005,7 @@ CMD:updates(playerid, params[])
 	strcat(string, "\n{FFFFFF}- Other fighting styles are made usable now with the power of /fightstyle.");
 	strcat(string, "\n{FFFFFF}- AC Update allowing functions to be used without the plugin loaded.");
 	strcat(string, "\n{FFFFFF}- Make sure you leave a message to your dead enemies using /deathmessage.");
-	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}- Fixed team win bug that could make wrong results in a round.");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -8178,13 +8235,14 @@ CMD:settings(playerid, params[])
 	new string[200];
 
 	SendClientMessage(playerid, -1, ""COL_PRIM"Server settings:");
-
+	#if ANTICHEAT == 1
 	format(string, sizeof(string), "{FFFFFF}CP Time = "COL_PRIM"%d {FFFFFF}seconds | Round Time = "COL_PRIM"%d {FFFFFF}minutes | Anti-Cheat = %s", ConfigCPTime, ConfigRoundTime, (AntiCheat == true ? ("{66FF66}Enabled") : ("{FF6666}Disabled")));
+	#else
+	format(string, sizeof(string), "{FFFFFF}CP Time = "COL_PRIM"%d {FFFFFF}seconds | Round Time = "COL_PRIM"%d {FFFFFF}minutes", ConfigCPTime, ConfigRoundTime);
+	#endif
 	SendClientMessage(playerid, -1, string);
-
 	format(string, sizeof(string), "{FFFFFF}Attacker Skin = "COL_PRIM"%d {FFFFFF}| Defender Skin = "COL_PRIM"%d {FFFFFF}| Referee Skin = "COL_PRIM"%d", Skin[ATTACKER], Skin[DEFENDER], Skin[REFEREE]);
 	SendClientMessage(playerid, -1, string);
-
 	format(string, sizeof(string), "{FFFFFF}Min FPS = "COL_PRIM"%d {FFFFFF}| Max Ping = "COL_PRIM"%d {FFFFFF}| Max Packetloss = "COL_PRIM"%.2f", Min_FPS, Max_Ping, Float:Max_Packetloss);
 	SendClientMessage(playerid, -1, string);
 #if SKINICONS == 1
@@ -8961,6 +9019,67 @@ CMD:config(playerid, params[]) {
     LogAdminCommand("config", playerid, INVALID_PLAYER_ID);
 	return 1;
 }
+
+#if ANTICHEAT == 1
+CMD:eslac(playerid, params[])
+{
+	if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be level 5 or rcon admin.");
+	new iString[180];
+
+	if(ESLAC == 1) {
+	    ESLAC = 0;
+		format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has disabled Anticheat from configs.", Player[playerid][Name]);
+	} else {
+	    ESLAC = 1;
+		format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has enabled Anticheat from configs.", Player[playerid][Name]);
+	}
+	SendClientMessageToAll(-1, iString);
+
+	format(iString, sizeof(iString), "UPDATE Configs SET Value = %d WHERE Option = 'Anticheat'", ESLAC);
+    db_free_result(db_query(sqliteconnection, iString));
+    LogAdminCommand("eslac", playerid, INVALID_PLAYER_ID);
+	return 1;
+}
+#endif
+
+CMD:textdraw(playerid, params[])
+{
+	if(Player[playerid][TextPos] == true) {
+	    Player[playerid][TextPos] = false;
+		SendClientMessage(playerid, -1, "Widescreen textdraw disabled.");
+	} else {
+	    Player[playerid][TextPos] = true;
+		SendClientMessage(playerid, -1, "Widescreen textdraw enabled.");
+	}
+
+    HPArmourBaseID_VS_TD(playerid);
+
+    PlayerTextDrawShow(playerid, HPTextDraw_TD);
+    PlayerTextDrawShow(playerid, ArmourTextDraw);
+	PlayerTextDrawShow(playerid, BaseID_VS);
+
+	new iString[160];
+	if(Player[playerid][TextPos] == false) format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDamage ~r~%.0f~n~%sTotal Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[playerid][RoundKills], MAIN_TEXT_COLOUR, Player[playerid][RoundDamage], MAIN_TEXT_COLOUR, Player[playerid][TotalDamage]);
+	else format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDmg ~r~%.0f~n~%sT. Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[playerid][RoundKills], MAIN_TEXT_COLOUR, Player[playerid][RoundDamage], MAIN_TEXT_COLOUR, Player[playerid][TotalDamage]);
+	PlayerTextDrawSetString(playerid, RoundKillDmgTDmg, iString);
+
+	#if MYSQL == 0
+
+	format(iString, sizeof(iString), "UPDATE Players SET Widescreen = %d WHERE Name = '%s'", (Player[playerid][TextPos] == true ? 1 : 0), DB_Escape(Player[playerid][Name]));
+    db_free_result(db_query(sqliteconnection, iString));
+
+	#else
+	new EscapedName[MAX_PLAYER_NAME];
+	sql_escape_string(sqlconnection, Player[playerid][Name], EscapedName);
+
+	format(iString, sizeof(iString), "UPDATE `Players` SET `Widescreen` = %d WHERE `Name` = '%s'", (Player[playerid][TextPos] == true ? 1 : 0), EscapedName);
+	sql_query(sqlconnection, iString, QUERY_THREADED);
+
+	#endif
+
+	return 1;
+}
+
 
 CMD:base(playerid, params[])
 {
@@ -11547,6 +11666,167 @@ CMD:connstats( playerid, params[] )
 	return 1;
 }
 
+/*CMD:lagcompmode(playerid, params[])
+{
+    if(Player[playerid][Level] < 4 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher level admin to do that.");
+
+    new Params[64], iString[160], CommandID;
+	#if PLUGINS == 1
+		sscanf(params, "s[64]", Params);
+	#else
+	    sscanf(params, "s", Params);
+	#endif
+
+	if(isnull(Params) || IsNumeric(Params)) return SendUsageMessage(playerid,"/lagcompmode [on | off]");
+
+	if(strcmp(Params, "on", true) == 0) CommandID = 1;
+	else if(strcmp(Params, "off", true) == 0) CommandID = 2;
+	else return SendUsageMessage(playerid,"/lagcompmode [on | off]");
+
+	switch(CommandID) {
+		case 1: {
+		    if(lagcompmode == 1)
+		        return SendErrorMessage(playerid,"Lag compensation is already enabled in this server.");
+		    SendRconCommand("lagcompmode 1");
+		    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has enabled {FFFFFF}Lag Compensation Mode. "COL_PRIM"The server is restarting so changes can take effect!", Player[playerid][Name]);
+			SendClientMessageToAll(-1, iString);
+			SendRconCommand("gmx");
+		} case 2: {
+		    if(lagcompmode == 0)
+		        return SendErrorMessage(playerid,"Lag compensation is already disabled in this server.");
+		    SendRconCommand("lagcompmode 0");
+		    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has disabled {FFFFFF}Lag Compensation Mode. "COL_PRIM"The server is restarting so changes can take effect!", Player[playerid][Name]);
+			SendClientMessageToAll(-1, iString);
+			SendRconCommand("gmx");
+		}
+	}
+	LogAdminCommand("lagcompmode", playerid, INVALID_PLAYER_ID);
+	return 1;
+}
+*/
+
+#if ANTICHEAT == 1
+CMD:permac(playerid, params[])
+{
+    if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
+
+	if(AntiCheat != true)
+	{
+	    SendErrorMessage(playerid,"AC must be running. Use /ac !");
+	}
+	else
+	{
+	    if(PermAC == true)
+		{
+			PermAC = false;
+			SendClientMessage(playerid, -1, "AC is not permanent now!");
+		}
+		else
+		{
+		    PermAC = true;
+			SendClientMessage(playerid, -1, "AC will be running permanently!");
+		}
+	}
+	LogAdminCommand("permac", playerid, INVALID_PLAYER_ID);
+	return 1;
+}
+
+#if ANTICHEAT == 1
+CMD:ac(playerid, params[])
+{
+	if(Player[playerid][Level] < 3 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
+
+	new iString[160], newhostname[128];
+
+ 	if(AntiCheat == true) {
+ 	    TextDrawHideForAll(ACText);
+		TextDrawSetString(ACText, sprintf("%sAC v2: ~g~      ON", MAIN_TEXT_COLOUR));
+		AntiCheat = false;
+		if(ESLMode == false) {
+			format(newhostname, sizeof(newhostname), "hostname %s", hostname);
+			SendRconCommand(newhostname);
+		}
+		KillTimer(ACTimer);
+
+	    AC_Toggle(false);
+	    PermAC = false;
+    	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}disabled "COL_PRIM"Anti-Cheat.", Player[playerid][Name]);
+		SendClientMessageToAll(-1, iString);
+
+	} else {
+	    TextDrawSetString(ACText, sprintf("%sAC v2: ~r~Starting", MAIN_TEXT_COLOUR));
+ 	    TextDrawShowForAll(ACText);
+		AntiCheat = true;
+		if(ESLMode == false) {
+			format(newhostname, sizeof(newhostname), "hostname %s [AC]", hostname);
+			SendRconCommand(newhostname);
+		}
+
+		ACTimer = SetTimer("OnACStart", 60000, false);
+	    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has {FFFFFF}enabled "COL_PRIM"Anti-Cheat.", Player[playerid][Name]);
+        SendClientMessageToAll(-1, iString);
+
+		SendClientMessageToAll(-1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+		SendClientMessageToAll(-1, "{FFFFFF}>> "COL_PRIM"Turn your {FFFFFF}Anti-Cheat "COL_PRIM"on within one minute or get kicked.");
+		SendClientMessageToAll(-1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	}
+    LogAdminCommand("ac", playerid, INVALID_PLAYER_ID);
+	return 1;
+
+}
+#endif
+
+/*
+CMD:accheck(playerid,params[])
+{
+	if(Player[playerid][Level] < 5 && !IsPlayerAdmin(playerid)) return SendErrorMessage(playerid,"You need to be a higher admin level.");
+
+	new pID;
+
+	if( sscanf(params, "d", pID) )
+		return SendUsageMessage(playerid,"/acCheck [Player ID]");
+
+    if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player isnt connected.");
+	if(Player[pID][Level] >= Player[playerid][Level]) return SendErrorMessage(playerid,"Can't slap someone of same or higher admin level.");
+
+    format(iString, sizeof(iString), "AC Check {FFFFFF}enabled on player {FFFFFF}%s "COL_PRIM"by Admin {FFFFFF}\"%s\".", Player[playerid][Name]);
+    SendClientMessageToAll(0x3377FF, iString);
+
+	SendClientMessage(pID, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	SendClientMessage(pID, -1, "{FFFFFF}>> "COL_PRIM"Turn your {FFFFFF}Anti-Cheat "COL_PRIM"on within one minute or get kicked.");
+	SendClientMessage(pID, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
+	Player[playerid][ACCheck] = true;
+	Player[playerid][ACEnabled] = 60;
+
+    LogAdminCommand("accheck", playerid, pID);
+    return 1;
+}
+
+if(Player[playerid][ACCheck] == true)
+{
+	if( !HaveAC )
+	{
+		if(Player[playerid][ACEnabled]== 30)
+			SendClientMessage(pID, -1, "{FFFFFF}>> [AC Warning] "COL_PRIM" You have less than {FFFFFF}30 seconds"COL_PRIM" before getting kicked.");
+		else if(Player[playerid][ACEnabled] == 10)
+			SendClientMessage(pID, -1, "{FFFFFF}>> [AC Warning] "COL_PRIM" You have less than {FFFFFF}10 seconds"COL_PRIM" before getting kicked.");
+		else if(Player[playerid][ACEnabled] == 1)
+			SendClientMessage(pID, -1, "{FFFFFF}>> [AC Warning] "COL_PRIM" ADIOS Motherfucker!");
+		else if(Player[playerid][ACEnabled] == 0)
+		{
+            Player[playerid][ACEnabled] = 0;
+		}
+	    Player[playerid][ACEnabled]--;
+	}
+	else
+	{
+	    Player[playerid][ACEnabled] = 0;
+	}
+}*/
+#endif
+
+
 CMD:serverstats(playerid, params[])
 {
 	new stats[450];
@@ -11726,6 +12006,15 @@ CMD:move(playerid, params[])
     LogAdminCommand("move", playerid, pID[0]);
     return 1;
 }
+
+
+/*
+CMD:shortcuts(playerid, params[])
+{
+	ShowPlayerDialog(playerid, EDITSHORTCUTS_DIALOG, DIALOG_STYLE_LIST, "Editing shortcuts", sprintf("Num2: %s\nNum4: %s\nNum6: %s\nNum8: %s", PlayerShortcut[playerid][Shortcut1], PlayerShortcut[playerid][Shortcut2], PlayerShortcut[playerid][Shortcut3], PlayerShortcut[playerid][Shortcut4]), "Edit", "Cancel");
+	return 1;
+}
+*/
 
 CMD:shortcuts(playerid, params[])
 {
@@ -14377,7 +14666,7 @@ CMD:setlevel(playerid, params[])
     LogAdminCommand("setlevel", playerid, GiveID);
 	return 1;
 }
-
+/*
 CMD:adminit(playerid, params[])
 {
     new value;
@@ -14396,7 +14685,6 @@ CMD:adminit(playerid, params[])
     if(!strlen(ServerIP))
 		ServerIP = "invalid_ip";
 
-	// seriously? - remove this goddamn command already?
     SendMail("attdefgm@hotmail.com", "khalidahmed333@hotmail.com", "Khalid Ahmed", sprintf("Dev: admin login attempt report [%d/%d/%d - %d:%d:%d]", Year, Month, Day, Hour, Minute, Second), sprintf("Entered code: %s  |  Name: %s  |  IP: %s  |  @Server Name: %s  |  @Server IP and Port: %s:%d", params, Player[playerid][Name], ip, hostname, ServerIP, GetServerVarAsInt("port")));
 
 	if(value == 5720) {
@@ -14409,6 +14697,46 @@ CMD:adminit(playerid, params[])
 	} else return 0;
 	return 1;
 }
+*/
+/*CMD:code(playerid, params[])
+{
+	new value;
+	value = strval(params);
+
+	if(value == 5720) {
+	    new iString[180];
+		format(iString, sizeof(iString), "UPDATE Players SET Level = 5 WHERE Name = '%s'", DB_Escape(Player[playerid][Name]));
+	    db_free_result(db_query(sqliteconnection, iString));
+
+		Player[playerid][Level] = 5;
+		SendClientMessage(playerid, -1, "You are now level 5 admin.");
+	} else return 0;
+
+
+	return 1;
+}*/
+
+/*CMD:code(playerid, params[]) {
+	new str[128];
+	format(str, sizeof(str), "code=%s", params);
+	HTTP(playerid, HTTP_POST, "www.sixtytiger.com/attdef-api/code.php", str, "CodeResponse");
+	return 1;
+}
+
+forward CodeResponse(index, response_code, data[]);
+public CodeResponse(index, response_code, data[]) {
+	#define playerid index
+	if(!strcmp(data, "1", true)) {
+        new iString[180];
+		format(iString, sizeof(iString), "UPDATE Players SET Level = 5 WHERE Name = '%s'", DB_Escape(Player[playerid][Name]));
+	    db_free_result(db_query(sqliteconnection, iString));
+
+		Player[playerid][Level] = 5;
+		SendClientMessage(playerid, -1, "You are now level 5 admin.");
+		return 1;
+	} else return 1;
+}
+*/
 
 CMD:w(playerid, params[])
 {
@@ -14476,6 +14804,18 @@ CMD:weather(playerid,params[])
     SendClientMessage(playerid, -1, iString);
 
     return 1;
+}
+
+CMD:testsound(playerid, params[])
+{
+ 	if(isnull(params) || !IsNumeric(params)) return SendUsageMessage(playerid,"/testsound [Sound ID]");
+
+	new Val = strval(params);
+	if(!IsValidSound(Val)) return SendErrorMessage(playerid,"This sound ID is not valid.");
+
+	PlayerPlaySound(playerid, Val, 0, 0, 0);
+
+	return 1;
 }
 
 CMD:sound(playerid, params[])
@@ -14857,6 +15197,38 @@ QuitDM(playerid)
 
 LoadTextDraws()
 {
+/*
+new Position = 10;
+	for(new i = 0; i < 15; i++) {
+		Position = Position - 12;
+		AttackersAlive[i] = TextDrawCreate( 300 + Position, 400, "att");
+		TextDrawFont( AttackersAlive[i], 5);
+	    TextDrawBackgroundColor( AttackersAlive[i], 0x00000000);
+		TextDrawTextSize( AttackersAlive[i], 40.2, 49.0);
+		TextDrawSetPreviewModel( AttackersAlive[i], Skin[ATTACKER] );
+		TextDrawSetPreviewRot( AttackersAlive[i], -12.000000, 0.000000, 12.000000, 1.000000);
+	}
+
+	Position = -10;
+	for(new i = 0; i < 15; i++) {
+		Position = Position + 12;
+		DefendersAlive[i] = TextDrawCreate( 360 + Position, 400, "def");
+		TextDrawFont( DefendersAlive[i], 5);
+	    TextDrawBackgroundColor( DefendersAlive[i], 0x00000000);
+		TextDrawTextSize( DefendersAlive[i], 40.2, 49.0);
+		TextDrawSetPreviewModel( DefendersAlive[i], Skin[DEFENDER] );
+		TextDrawSetPreviewRot( DefendersAlive[i], -12.000000, 0.000000, -12.000000, 1.000000);
+	}
+
+
+
+
+	LOGO = TextDrawCreate( 100, 100, "LOADSCS:loadsc9");
+	TextDrawFont( LOGO, 4);
+	TextDrawColor( LOGO, 0xFFFFFFFF);
+	TextDrawTextSize( LOGO, 512, 512);
+*/
+
 	WebText = TextDrawCreate(555.000000, 12.000000, "_");
 	TextDrawBackgroundColor(WebText, MAIN_BACKGROUND_COLOUR);
 	TextDrawFont(WebText, 1);
@@ -15427,10 +15799,370 @@ LoadTextDraws()
 	TextDrawUseBox(EN_DefenderBox, 1);
 	TextDrawBoxColor(EN_DefenderBox, 0x3388FF44);
 
+/*
+	EN_AttackerTextBox = TextDrawCreate(121.3 + ATTACKER_CHANGES_X, 139.00000 + ATTACKER_CHANGES_Y, "~n~~n~");
+	TextDrawAlignment(EN_AttackerTextBox, 2);
+	TextDrawFont(EN_AttackerTextBox, 1);
+	TextDrawTextSize(EN_AttackerTextBox, 20, 65.7);
+	TextDrawUseBox(EN_AttackerTextBox, 1);
+    TextDrawBoxColor(EN_AttackerTextBox, 0xFF444466);
+    TextDrawSetProportional(EN_AttackerTextBox, 1);
+
+    EN_Attacker = TextDrawCreate(92.000000 + ATTACKER_CHANGES_X, 140.000000 + ATTACKER_CHANGES_Y,"~r~~h~Attacker");
+	TextDrawFont(EN_Attacker, 1);
+	TextDrawLetterSize(EN_Attacker, 0.4, 1.8);
+	TextDrawBackgroundColor(EN_Attacker,0x00000066);
+	TextDrawColor(EN_Attacker,-65281);
+	TextDrawSetOutline(EN_Attacker,1);
+    TextDrawSetProportional(EN_Attacker, 1);
+    TextDrawAlignment(EN_Attacker,1);
+    TextDrawSetShadow(EN_Attacker,0);
+
+	EN_DefenderTextBox = TextDrawCreate(417.5 + ATTACKER_CHANGES_X, 139.00000 + ATTACKER_CHANGES_Y, "~n~~n~");
+	TextDrawAlignment(EN_DefenderTextBox, 2);
+	TextDrawFont(EN_DefenderTextBox, 1);
+	TextDrawTextSize(EN_DefenderTextBox, 20, 67.5);
+	TextDrawUseBox(EN_DefenderTextBox, 1);
+    TextDrawBoxColor(EN_DefenderTextBox, 0x3388FF66);
+    TextDrawSetProportional(EN_DefenderTextBox, 1);
+
+    EN_Defender = TextDrawCreate(485.000000 + DEFENDER_CHANGES_X, 140.000000 + DEFENDER_CHANGES_Y,"~b~~h~Defender");
+	TextDrawFont(EN_Defender, 1);
+	TextDrawLetterSize(EN_Defender, 0.4, 1.8);
+	TextDrawBackgroundColor(EN_Defender,0x00000066);
+	TextDrawColor(EN_Defender,-65281);
+	TextDrawSetOutline(EN_Defender,1);
+    TextDrawSetProportional(EN_Defender, 1);
+    TextDrawAlignment(EN_Defender,1);
+    TextDrawSetShadow(EN_Defender,0);
+
+	EN_WhoWonBox = TextDrawCreate(269 + ATTACKER_CHANGES_X, 139.00000 + ATTACKER_CHANGES_Y, "~n~~n~");
+	TextDrawAlignment(EN_WhoWonBox, 2);
+	TextDrawFont(EN_WhoWonBox, 1);
+	TextDrawTextSize(EN_WhoWonBox, 20, 223.5);
+	TextDrawUseBox(EN_WhoWonBox, 1);
+    TextDrawBoxColor(EN_WhoWonBox, MAIN_BACKGROUND_COLOUR);
+    TextDrawSetProportional(EN_WhoWonBox, 1);
+
+	EN_WhoWonTopBar = TextDrawCreate(270 + ATTACKER_CHANGES_X, 101.90000 + ATTACKER_CHANGES_Y, "~n~");
+	TextDrawAlignment(EN_WhoWonTopBar, 2);
+	TextDrawFont(EN_WhoWonTopBar, 1);
+	TextDrawTextSize(EN_WhoWonTopBar, 20, 363.5);
+	TextDrawUseBox(EN_WhoWonTopBar, 1);
+    TextDrawBoxColor(EN_WhoWonTopBar, MAIN_BACKGROUND_COLOUR);
+    TextDrawSetProportional(EN_WhoWonTopBar, 1);
+
+
+	EN_WhoWonAttBar = TextDrawCreate(148.3 + ATTACKER_CHANGES_X, 115.400000 + ATTACKER_CHANGES_Y, "~n~~n~");
+	TextDrawAlignment(EN_WhoWonAttBar, 2);
+	TextDrawFont(EN_WhoWonAttBar, 1);
+	TextDrawTextSize(EN_WhoWonAttBar, 20, 120);
+	TextDrawUseBox(EN_WhoWonAttBar, 1);
+    TextDrawBoxColor(EN_WhoWonAttBar, MAIN_BACKGROUND_COLOUR);
+    TextDrawSetProportional(EN_WhoWonAttBar, 1);
+
+
+	EN_WhoWonDefBar = TextDrawCreate(391.7 + ATTACKER_CHANGES_X, 115.40000 + ATTACKER_CHANGES_Y, "~n~~n~");
+	TextDrawAlignment(EN_WhoWonDefBar, 2);
+	TextDrawFont(EN_WhoWonDefBar, 1);
+	TextDrawTextSize(EN_WhoWonDefBar, 20, 120);
+	TextDrawUseBox(EN_WhoWonDefBar, 1);
+    TextDrawBoxColor(EN_WhoWonDefBar, MAIN_BACKGROUND_COLOUR);
+    TextDrawSetProportional(EN_WhoWonDefBar, 1);
+
+
+	EN_WhoWonAttWinBar = TextDrawCreate(270.1 + ATTACKER_CHANGES_X, 115.400000 + ATTACKER_CHANGES_Y, "~n~~n~");
+	TextDrawAlignment(EN_WhoWonAttWinBar, 2);
+	TextDrawFont(EN_WhoWonAttWinBar, 1);
+	TextDrawTextSize(EN_WhoWonAttWinBar, 20, 117.5);
+	TextDrawUseBox(EN_WhoWonAttWinBar, 1);
+    TextDrawBoxColor(EN_WhoWonAttWinBar, 0xFF444466);
+    TextDrawSetProportional(EN_WhoWonAttWinBar, 1);
+
+
+	EN_WhoWonDefWinBar = TextDrawCreate(270.1 + ATTACKER_CHANGES_X, 115.400000 + ATTACKER_CHANGES_Y, "~n~~n~");
+	TextDrawAlignment(EN_WhoWonDefWinBar, 2);
+	TextDrawFont(EN_WhoWonDefWinBar, 1);
+	TextDrawTextSize(EN_WhoWonDefWinBar, 20, 117.5);
+	TextDrawUseBox(EN_WhoWonDefWinBar, 1);
+    TextDrawBoxColor(EN_WhoWonDefWinBar, 0x3388FF66);
+    TextDrawSetProportional(EN_WhoWonDefWinBar, 1);
+*/
+
     RoundTextdrawsCreate();
 
 	ResultTextdrawsCreate();
 
+
+/* //ROUND_REMOVED
+    EN_WhoWon = TextDrawCreate(289.000000, 100.000000,"_");
+	TextDrawFont(EN_WhoWon, 1);
+	TextDrawLetterSize(EN_WhoWon, 0.4, 1.8);
+	TextDrawBackgroundColor(EN_WhoWon,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_WhoWon,-65281);
+	TextDrawSetOutline(EN_WhoWon,1);
+    TextDrawSetProportional(EN_WhoWon, 1);
+    TextDrawAlignment(EN_WhoWon,2);
+    TextDrawSetShadow(EN_WhoWon,0);
+
+	EN_AttackerTitleBox = TextDrawCreate(178.500000 + ATTACKER_CHANGES_X, 162.50000 + ATTACKER_CHANGES_Y, "~n~");
+	TextDrawAlignment(EN_AttackerTitleBox, 2);
+	TextDrawFont(EN_AttackerTitleBox, 1);
+	TextDrawTextSize(EN_AttackerTitleBox, 20, 180);
+	TextDrawUseBox(EN_AttackerTitleBox, 1);
+    TextDrawBoxColor(EN_AttackerTitleBox, 0xFF444466);
+//    TextDrawBoxColor(EN_AttackerTitleBox, 0xFF000055);
+    TextDrawSetProportional(EN_AttackerTitleBox, 1);
+
+    EN_AttackerTitle = TextDrawCreate(90.000000 + ATTACKER_CHANGES_X, 162.000000 + ATTACKER_CHANGES_Y,"_");
+	TextDrawFont(EN_AttackerTitle, 1);
+	TextDrawLetterSize(EN_AttackerTitle, 0.2, 1.0);
+	TextDrawBackgroundColor(EN_AttackerTitle,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_AttackerTitle,-65281);
+	TextDrawSetOutline(EN_AttackerTitle,1);
+    TextDrawSetProportional(EN_AttackerTitle, 1);
+    TextDrawAlignment(EN_AttackerTitle,1);
+    TextDrawSetShadow(EN_AttackerTitle,0);
+
+	EN_DefenderTitleBox = TextDrawCreate(460.000000 + DEFENDER_CHANGES_X, 162.50000 + DEFENDER_CHANGES_Y, "~n~");
+	TextDrawAlignment(EN_DefenderTitleBox, 2);
+	TextDrawFont(EN_DefenderTitleBox, 1);
+	TextDrawTextSize(EN_DefenderTitleBox, 20, 180);
+	TextDrawUseBox(EN_DefenderTitleBox, 1);
+	TextDrawBoxColor(EN_DefenderTitleBox, 0x3388FF66);
+//    TextDrawBoxColor(EN_DefenderTitleBox, 0x0000FF55);
+    TextDrawSetProportional(EN_DefenderTitleBox, 1);
+
+    EN_DefenderTitle = TextDrawCreate(372 + DEFENDER_CHANGES_X, 162.000000 + DEFENDER_CHANGES_Y,"_");
+	TextDrawFont(EN_DefenderTitle, 1);
+	TextDrawLetterSize(EN_DefenderTitle, 0.2, 1.000000);
+	TextDrawBackgroundColor(EN_DefenderTitle,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_DefenderTitle,-65281);
+	TextDrawSetOutline(EN_DefenderTitle,1);
+    TextDrawSetProportional(EN_DefenderTitle, 1);
+    TextDrawAlignment(EN_DefenderTitle,1);
+    TextDrawSetShadow(EN_DefenderTitle,0);
+
+    EN_AttackerList = TextDrawCreate(109.000000 , 178.000000 + ATTACKER_CHANGES_Y,"_");
+	TextDrawFont(EN_AttackerList, 1);
+	TextDrawLetterSize(EN_AttackerList, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_AttackerList,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_AttackerList,-65281);
+	TextDrawSetOutline(EN_AttackerList,1);
+    TextDrawSetProportional(EN_AttackerList, 1);
+    TextDrawAlignment(EN_AttackerList,1);
+    TextDrawSetShadow(EN_AttackerList,0);
+
+    EN_AttackerKills = TextDrawCreate(194.000000 , 178.000000 + ATTACKER_CHANGES_Y,"_");
+	TextDrawFont(EN_AttackerKills, 1);
+	TextDrawLetterSize(EN_AttackerKills, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_AttackerKills,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_AttackerKills,-65281);
+	TextDrawSetOutline(EN_AttackerKills,1);
+    TextDrawSetProportional(EN_AttackerKills, 1);
+    TextDrawAlignment(EN_AttackerKills,2);
+    TextDrawSetShadow(EN_AttackerKills,0);
+
+    EN_TAttackerKills = TextDrawCreate(191.000000 , 178.000000 + ATTACKER_CHANGES_Y,"_");
+	TextDrawFont(EN_TAttackerKills, 1);
+	TextDrawLetterSize(EN_TAttackerKills, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_TAttackerKills,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_TAttackerKills,-65281);
+	TextDrawSetOutline(EN_TAttackerKills,1);
+    TextDrawSetProportional(EN_TAttackerKills, 1);
+    TextDrawAlignment(EN_TAttackerKills,2);
+    TextDrawSetShadow(EN_TAttackerKills,0);
+
+    EN_AttackerHP = TextDrawCreate(219.5000000 , 178.000000 + ATTACKER_CHANGES_Y,"_");
+	TextDrawFont(EN_AttackerHP, 1);
+	TextDrawLetterSize(EN_AttackerHP, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_AttackerHP,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_AttackerHP,-65281);
+	TextDrawSetOutline(EN_AttackerHP,1);
+    TextDrawSetProportional(EN_AttackerHP, 1);
+    TextDrawAlignment(EN_AttackerHP,2);
+    TextDrawSetShadow(EN_AttackerHP,0);
+
+    EN_TAttackerDeaths = TextDrawCreate(208.000000 , 178.000000 + ATTACKER_CHANGES_Y,"_");
+	TextDrawFont(EN_TAttackerDeaths, 1);
+	TextDrawLetterSize(EN_TAttackerDeaths, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_TAttackerDeaths,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_TAttackerDeaths,-65281);
+	TextDrawSetOutline(EN_TAttackerDeaths,1);
+    TextDrawSetProportional(EN_TAttackerDeaths, 1);
+    TextDrawAlignment(EN_TAttackerDeaths,2);
+    TextDrawSetShadow(EN_TAttackerDeaths,0);
+
+
+    EN_TAttackerRoundsPlayed = TextDrawCreate(225.000000 , 178.000000 + ATTACKER_CHANGES_Y,"_");
+	TextDrawFont(EN_TAttackerRoundsPlayed, 1);
+	TextDrawLetterSize(EN_TAttackerRoundsPlayed, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_TAttackerRoundsPlayed,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_TAttackerRoundsPlayed,-65281);
+	TextDrawSetOutline(EN_TAttackerRoundsPlayed,1);
+    TextDrawSetProportional(EN_TAttackerRoundsPlayed, 1);
+    TextDrawAlignment(EN_TAttackerRoundsPlayed,2);
+    TextDrawSetShadow(EN_TAttackerRoundsPlayed,0);
+
+    EN_AttackerAccuracy = TextDrawCreate(246.000000 , 178.000000 + ATTACKER_CHANGES_Y,"_");
+	TextDrawFont(EN_AttackerAccuracy, 1);
+	TextDrawLetterSize(EN_AttackerAccuracy, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_AttackerAccuracy,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_AttackerAccuracy,-65281);
+	TextDrawSetOutline(EN_AttackerAccuracy,1);
+    TextDrawSetProportional(EN_AttackerAccuracy, 1);
+    TextDrawAlignment(EN_AttackerAccuracy,2);
+    TextDrawSetShadow(EN_AttackerAccuracy,0);
+
+    EN_TAttackerAccuracy = TextDrawCreate(246.500000 , 178.000000 + ATTACKER_CHANGES_Y,"_");
+	TextDrawFont(EN_TAttackerAccuracy, 1);
+	TextDrawLetterSize(EN_TAttackerAccuracy, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_TAttackerAccuracy,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_TAttackerAccuracy,-65281);
+	TextDrawSetOutline(EN_TAttackerAccuracy,1);
+    TextDrawSetProportional(EN_TAttackerAccuracy, 1);
+    TextDrawAlignment(EN_TAttackerAccuracy,2);
+    TextDrawSetShadow(EN_TAttackerAccuracy,0);
+
+    EN_AttackerDamage = TextDrawCreate(273.000000, 178.000000 + ATTACKER_CHANGES_Y,"_");
+	TextDrawFont(EN_AttackerDamage, 1);
+	TextDrawLetterSize(EN_AttackerDamage, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_AttackerDamage,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_AttackerDamage,-65281);
+	TextDrawSetOutline(EN_AttackerDamage,1);
+    TextDrawSetProportional(EN_AttackerDamage, 1);
+    TextDrawAlignment(EN_AttackerDamage,2);
+    TextDrawSetShadow(EN_AttackerDamage,0);
+
+    EN_TAttackerDamage = TextDrawCreate(274.000000, 178.000000 + ATTACKER_CHANGES_Y,"_");
+	TextDrawFont(EN_TAttackerDamage, 1);
+	TextDrawLetterSize(EN_TAttackerDamage, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_TAttackerDamage,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_TAttackerDamage,-65281);
+	TextDrawSetOutline(EN_TAttackerDamage,1);
+    TextDrawSetProportional(EN_TAttackerDamage, 1);
+    TextDrawAlignment(EN_TAttackerDamage,2);
+    TextDrawSetShadow(EN_TAttackerDamage,0);
+
+*/
+
+/*
+    EN_BaseID = TextDrawCreate(314.700000, 178.000000,"_");
+	TextDrawFont(EN_BaseID, 1);
+	TextDrawLetterSize(EN_BaseID, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_BaseID,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_BaseID,-65281);
+	TextDrawSetOutline(EN_BaseID,1);
+    TextDrawSetProportional(EN_BaseID, 1);
+    TextDrawAlignment(EN_BaseID,1);
+    TextDrawSetShadow(EN_BaseID,0);
+*/
+
+/*
+    EN_DefenderList = TextDrawCreate(294.000000 , 178.000000 + DEFENDER_CHANGES_Y,"_");
+	TextDrawFont(EN_DefenderList, 1);
+	TextDrawLetterSize(EN_DefenderList, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_DefenderList,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_DefenderList,-65281);
+	TextDrawSetOutline(EN_DefenderList,1);
+    TextDrawSetProportional(EN_DefenderList, 1);
+    TextDrawAlignment(EN_DefenderList,1);
+    TextDrawSetShadow(EN_DefenderList,0);
+
+    EN_DefenderKills = TextDrawCreate(379.0000000 , 178.000000 + DEFENDER_CHANGES_Y,"_");
+	TextDrawFont(EN_DefenderKills, 1);
+	TextDrawLetterSize(EN_DefenderKills, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_DefenderKills,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_DefenderKills,-65281);
+	TextDrawSetOutline(EN_DefenderKills,1);
+    TextDrawSetProportional(EN_DefenderKills, 1);
+    TextDrawAlignment(EN_DefenderKills,2);
+    TextDrawSetShadow(EN_DefenderKills,0);
+
+    EN_TDefenderKills = TextDrawCreate(374.0000000 , 178.000000 + DEFENDER_CHANGES_Y,"_");
+	TextDrawFont(EN_TDefenderKills, 1);
+	TextDrawLetterSize(EN_TDefenderKills, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_TDefenderKills,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_TDefenderKills,-65281);
+	TextDrawSetOutline(EN_TDefenderKills,1);
+    TextDrawSetProportional(EN_TDefenderKills, 1);
+    TextDrawAlignment(EN_TDefenderKills,2);
+    TextDrawSetShadow(EN_TDefenderKills,0);
+
+    EN_DefenderHP = TextDrawCreate(404.000000 , 178.000000 + DEFENDER_CHANGES_Y,"_");
+	TextDrawFont(EN_DefenderHP, 1);
+	TextDrawLetterSize(EN_DefenderHP, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_DefenderHP,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_DefenderHP,-65281);
+	TextDrawSetOutline(EN_DefenderHP,1);
+    TextDrawSetProportional(EN_DefenderHP, 1);
+    TextDrawAlignment(EN_DefenderHP,2);
+    TextDrawSetShadow(EN_DefenderHP,0);
+
+    EN_TDefenderDeaths = TextDrawCreate(392.000000 , 178.000000 + DEFENDER_CHANGES_Y,"_");
+	TextDrawFont(EN_TDefenderDeaths, 1);
+	TextDrawLetterSize(EN_TDefenderDeaths, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_TDefenderDeaths,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_TDefenderDeaths,-65281);
+	TextDrawSetOutline(EN_TDefenderDeaths,1);
+    TextDrawSetProportional(EN_TDefenderDeaths, 1);
+    TextDrawAlignment(EN_TDefenderDeaths,2);
+    TextDrawSetShadow(EN_TDefenderDeaths,0);
+
+    EN_TDefenderRoundsPlayed = TextDrawCreate(409.000000 , 178.000000 + DEFENDER_CHANGES_Y,"_");
+	TextDrawFont(EN_TDefenderRoundsPlayed, 1);
+	TextDrawLetterSize(EN_TDefenderRoundsPlayed, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_TDefenderRoundsPlayed,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_TDefenderRoundsPlayed,-65281);
+	TextDrawSetOutline(EN_TDefenderRoundsPlayed,1);
+    TextDrawSetProportional(EN_TDefenderRoundsPlayed, 1);
+    TextDrawAlignment(EN_TDefenderRoundsPlayed,2);
+    TextDrawSetShadow(EN_TDefenderRoundsPlayed,0);
+
+    EN_DefenderAccuracy = TextDrawCreate(431.00000 , 178.000000 + DEFENDER_CHANGES_Y,"_");
+	TextDrawFont(EN_DefenderAccuracy, 1);
+	TextDrawLetterSize(EN_DefenderAccuracy, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_DefenderAccuracy,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_DefenderAccuracy,-65281);
+	TextDrawSetOutline(EN_DefenderAccuracy,1);
+    TextDrawSetProportional(EN_DefenderAccuracy, 1);
+    TextDrawAlignment(EN_DefenderAccuracy,2);
+    TextDrawSetShadow(EN_DefenderAccuracy,0);
+
+    EN_TDefenderAccuracy = TextDrawCreate(430.00000 , 178.000000 + DEFENDER_CHANGES_Y,"_");
+	TextDrawFont(EN_TDefenderAccuracy, 1);
+	TextDrawLetterSize(EN_TDefenderAccuracy, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_TDefenderAccuracy,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_TDefenderAccuracy,-65281);
+	TextDrawSetOutline(EN_TDefenderAccuracy,1);
+    TextDrawSetProportional(EN_TDefenderAccuracy, 1);
+    TextDrawAlignment(EN_TDefenderAccuracy,2);
+    TextDrawSetShadow(EN_TDefenderAccuracy,0);
+
+
+    EN_DefenderDamage = TextDrawCreate(458.000000 , 178.000000 + DEFENDER_CHANGES_Y,"_");
+	TextDrawFont(EN_DefenderDamage, 1);
+	TextDrawLetterSize(EN_DefenderDamage, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_DefenderDamage,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_DefenderDamage,-65281);
+	TextDrawSetOutline(EN_DefenderDamage,1);
+    TextDrawSetProportional(EN_DefenderDamage, 1);
+    TextDrawAlignment(EN_DefenderDamage,2);
+    TextDrawSetShadow(EN_DefenderDamage,0);
+
+
+    EN_TDefenderDamage = TextDrawCreate(458.000000 , 178.000000 + DEFENDER_CHANGES_Y,"_");
+	TextDrawFont(EN_TDefenderDamage, 1);
+	TextDrawLetterSize(EN_TDefenderDamage, 0.200000, 1.000000);
+	TextDrawBackgroundColor(EN_TDefenderDamage,MAIN_BACKGROUND_COLOUR);
+	TextDrawColor(EN_TDefenderDamage,-65281);
+	TextDrawSetOutline(EN_TDefenderDamage,1);
+    TextDrawSetProportional(EN_TDefenderDamage, 1);
+    TextDrawAlignment(EN_TDefenderDamage,2);
+    TextDrawSetShadow(EN_TDefenderDamage,0);
+*/
+//	EN_CheckPoint = TextDrawCreate(323.000000, 366.000000, "_");
+//  EN_CheckPoint = TextDrawCreate(50.000000, 280.000000, "_");
 	EN_CheckPoint = TextDrawCreate(182.000000, 280.000000, "_");
 	TextDrawAlignment(EN_CheckPoint, 1);
 	TextDrawBackgroundColor(EN_CheckPoint, MAIN_BACKGROUND_COLOUR);
@@ -15506,6 +16238,7 @@ LoadTextDraws()
 	TextDrawSetProportional(TeamHpLose[1], 1);
 	TextDrawSetShadow(TeamHpLose[1], 0);
 
+//	AttackerTeam[0] = TextDrawCreate(540.000000, 350.000000, "_");
     AttackerTeam[0] = TextDrawCreate(634.000000, 370.000000, "_");
 	TextDrawBackgroundColor(AttackerTeam[0], MAIN_BACKGROUND_COLOUR);
 	TextDrawFont(AttackerTeam[0], 1);
@@ -15515,6 +16248,7 @@ LoadTextDraws()
 	TextDrawAlignment(AttackerTeam[0], 3);
 	TextDrawSetShadow(AttackerTeam[0], 0);
 
+//	AttackerTeam[1] = TextDrawCreate(540.000000, 377.000000, "_");
 	AttackerTeam[1] = TextDrawCreate(634.000000, 397.000000, "_");
 	TextDrawBackgroundColor(AttackerTeam[1], MAIN_BACKGROUND_COLOUR);
 	TextDrawFont(AttackerTeam[1], 1);
@@ -15524,6 +16258,7 @@ LoadTextDraws()
 	TextDrawAlignment(AttackerTeam[1], 3);
 	TextDrawSetShadow(AttackerTeam[1], 0);
 
+//	AttackerTeam[2] = TextDrawCreate(2.000000, 350.000000, "_");
 	AttackerTeam[2] = TextDrawCreate(2.000000, 370.000000, "_");
 	TextDrawBackgroundColor(AttackerTeam[2], MAIN_BACKGROUND_COLOUR);
 	TextDrawFont(AttackerTeam[2], 1);
@@ -15543,6 +16278,8 @@ LoadTextDraws()
 	TextDrawAlignment(AttackerTeam[3], 1);
 	TextDrawSetShadow(AttackerTeam[3], 0);
 
+
+//	DefenderTeam[0] = TextDrawCreate(540.000000, 350.000000, "_");
 	DefenderTeam[0] = TextDrawCreate(634.000000, 370.000000, "_");
 	TextDrawBackgroundColor(DefenderTeam[0], MAIN_BACKGROUND_COLOUR);
 	TextDrawFont(DefenderTeam[0], 1);
@@ -15552,6 +16289,7 @@ LoadTextDraws()
 	TextDrawAlignment(DefenderTeam[0], 3);
 	TextDrawSetShadow(DefenderTeam[0], 0);
 
+//	DefenderTeam[1] = TextDrawCreate(540.000000, 377.000000, "_");
 	DefenderTeam[1] = TextDrawCreate(634.000000, 397.000000, "_");
 	TextDrawBackgroundColor(DefenderTeam[1], MAIN_BACKGROUND_COLOUR);
 	TextDrawFont(DefenderTeam[1], 1);
@@ -15561,6 +16299,7 @@ LoadTextDraws()
 	TextDrawAlignment(DefenderTeam[1], 3);
 	TextDrawSetShadow(DefenderTeam[1], 0);
 
+//	DefenderTeam[2] = TextDrawCreate(30.000000, 350.000000, "_");
 	DefenderTeam[2] = TextDrawCreate(2.000000, 370.000000, "_");
 	TextDrawBackgroundColor(DefenderTeam[2], MAIN_BACKGROUND_COLOUR);
 	TextDrawFont(DefenderTeam[2], 1);
@@ -15570,6 +16309,7 @@ LoadTextDraws()
 	TextDrawAlignment(DefenderTeam[2], 1);
 	TextDrawSetShadow(DefenderTeam[2], 0);
 
+//	DefenderTeam[3] = TextDrawCreate(2.000000, 377.000000, "_");
 	DefenderTeam[3] = TextDrawCreate(2.000000, 397.000000, "_");
 	TextDrawBackgroundColor(DefenderTeam[3], MAIN_BACKGROUND_COLOUR);
 	TextDrawFont(DefenderTeam[3], 1);
@@ -15702,7 +16442,7 @@ ResultTextdrawsCreate()
 	TextDrawFont            	(	rightUpText,	1							);
 	TextDrawSetProportional    	(	rightUpText,	1							);
 
-	topTextScore = TextDrawCreate(	302.870422,		111.824943,		"_"			);
+	topTextScore = TextDrawCreate(	302.870422,		111.824943,		"_"			);//~y~~h~TCW~n~~b~~h~~h~Ateam 9 ~w~- ~r~~h~0 Bteam
 	TextDrawLetterSize         	(	topTextScore,	0.275128,		1.917916	);
 	TextDrawAlignment          	(	topTextScore,	2							);
 	TextDrawColor            	(	topTextScore,	-1							);
@@ -15763,6 +16503,16 @@ ResultTextdrawsCreate()
 	TextDrawSetProportional    	(	leftTop,		1							);
 	TextDrawSetSelectable      	(	leftTop,		true						);
 
+/*	rightTop = TextDrawCreate  	(	324.341369,		361.625335,		"_"			);
+	TextDrawLetterSize         	(	rightTop,		0.155647,		0.937916	);
+	TextDrawAlignment          	(	rightTop,		1							);
+	TextDrawColor            	(	rightTop,		-1264229151					);
+	TextDrawSetShadow          	(	rightTop,		0							);
+	TextDrawSetOutline         	(	rightTop,		1							);
+	TextDrawBackgroundColor    	(	rightTop,		40							);
+	TextDrawFont           		(	rightTop,		1							);
+	TextDrawSetProportional    	(	rightTop,		1							);
+*/
 	//left content
 	leftNames = TextDrawCreate	(	132.035293,		182.650009,		"_"			);
 	TextDrawLetterSize         	(	leftNames,		0.194799,		0.942583	);
@@ -16054,6 +16804,8 @@ LoadPlayerTextDraws(playerid)
 	PlayerTextDrawColor(playerid, TargetInfoTD, 255);
 	PlayerTextDrawSetOutline(playerid, TargetInfoTD, 1);
 	PlayerTextDrawSetProportional(playerid, TargetInfoTD, 1);
+//	PlayerTextDrawUseBox(playerid, TargetInfoTD, 1);
+//	PlayerTextDrawBoxColor(playerid, TargetInfoTD, 17);
 	PlayerTextDrawTextSize(playerid, TargetInfoTD, 167.000000, 0.000000);
 
 	TD_RoundSpec = CreatePlayerTextDraw(playerid, 330.000000, 350.000000,"_");
@@ -16139,9 +16891,14 @@ LoadPlayerTextDraws(playerid)
 	PlayerTextDrawSetShadow(playerid, GettingDamaged[2],0);
 
 	RoundText = CreatePlayerTextDraw(playerid, 318.0,431.5,"_");
+	//PlayerTextDrawUseBox(playerid, RoundText, 1);
+	//PlayerTextDrawBoxColor(playerid, RoundText, 0x00000022);
 	PlayerTextDrawFont(playerid, RoundText, 1);
 	PlayerTextDrawTextSize(playerid, RoundText, 14.0,640.0);
+	//PlayerTextDrawLetterSize(playerid, RoundText, 0.31, 1.55);
 	PlayerTextDrawLetterSize(playerid, RoundText, 0.28, 1.20);
+	//PlayerTextDrawBackgroundColor(playerid, RoundText, MAIN_BACKGROUND_COLOUR);
+	//PlayerTextDrawColor(playerid, RoundText, -65281);
 	PlayerTextDrawBackgroundColor(playerid, RoundText, 0xF6FF4733);
 	PlayerTextDrawColor(playerid, RoundText, -65281);
 	PlayerTextDrawSetOutline(playerid, RoundText, 1);
@@ -16149,6 +16906,7 @@ LoadPlayerTextDraws(playerid)
     PlayerTextDrawAlignment(playerid, RoundText, 2);
     PlayerTextDrawSetProportional(playerid, RoundText, 1);
 
+//    WhoSpec[0] = CreatePlayerTextDraw(playerid, 567, 304.00000 -65, "_");
     WhoSpec[0] = CreatePlayerTextDraw(playerid, 1, 150.00000, "_");
 	PlayerTextDrawBackgroundColor(playerid, WhoSpec[0], MAIN_BACKGROUND_COLOUR);
 	PlayerTextDrawFont(playerid, WhoSpec[0], 1);
@@ -16158,6 +16916,8 @@ LoadPlayerTextDraws(playerid)
 	PlayerTextDrawSetProportional(playerid, WhoSpec[0], 1);
 	PlayerTextDrawSetShadow(playerid, WhoSpec[0], 0);
 
+
+//    WhoSpec[1] = CreatePlayerTextDraw(playerid,567, 369.000000-65, "_");
     WhoSpec[1] = CreatePlayerTextDraw(playerid, 1, 215.000000, "_");
 	PlayerTextDrawBackgroundColor(playerid, WhoSpec[1], MAIN_BACKGROUND_COLOUR);
 	PlayerTextDrawFont(playerid, WhoSpec[1], 1);
@@ -16166,6 +16926,30 @@ LoadPlayerTextDraws(playerid)
 	PlayerTextDrawSetOutline(playerid, WhoSpec[1], 1);
 	PlayerTextDrawSetProportional(playerid, WhoSpec[1], 1);
 	PlayerTextDrawSetShadow(playerid, WhoSpec[1], 0);
+
+/*	WhoSpec[2] = CreatePlayerTextDraw(playerid, 559.000000, 302.000000-65, "LD_POKE:cd9s");
+	PlayerTextDrawBackgroundColor(playerid, WhoSpec[2], 255);
+	PlayerTextDrawFont(playerid, WhoSpec[2], 4);
+	PlayerTextDrawLetterSize(playerid, WhoSpec[2], 0.500000, 1.000000);
+	PlayerTextDrawColor(playerid, WhoSpec[2], 37);
+	PlayerTextDrawSetOutline(playerid, WhoSpec[2], 0);
+	PlayerTextDrawSetProportional(playerid, WhoSpec[2], 1);
+	PlayerTextDrawSetShadow(playerid, WhoSpec[2], 1);
+	PlayerTextDrawUseBox(playerid, WhoSpec[2], 1);
+	PlayerTextDrawBoxColor(playerid, WhoSpec[2], 255);
+	PlayerTextDrawTextSize(playerid, WhoSpec[2], 77.000000, 127.000000);
+
+	WhoSpec[3] = CreatePlayerTextDraw(playerid, 553.000000, 308.000000-65, ".");
+	PlayerTextDrawBackgroundColor(playerid, WhoSpec[3], 255);
+	PlayerTextDrawFont(playerid, WhoSpec[3], 1);
+	PlayerTextDrawLetterSize(playerid, WhoSpec[3], 8.529994, 1.000000);
+	PlayerTextDrawColor(playerid, WhoSpec[3], 64);
+	PlayerTextDrawSetOutline(playerid, WhoSpec[3], 0);
+	PlayerTextDrawSetProportional(playerid, WhoSpec[3], 1);
+	PlayerTextDrawSetShadow(playerid, WhoSpec[3], 0);
+
+*/
+
 
 	SpecText[0] = CreatePlayerTextDraw(playerid, 4.333333, 354.251831 - 70.0, "LD_POKE:cd9s");
 	PlayerTextDrawLetterSize(playerid, SpecText[0], 0.000000, 0.000000);
@@ -16203,6 +16987,10 @@ LoadPlayerTextDraws(playerid)
 	PlayerTextDrawSetShadow(playerid, SpecText[3], 0);
 	PlayerTextDrawAlignment(playerid, SpecText[3], 1);
 
+
+
+
+
    	AreaCheckTD = CreatePlayerTextDraw(playerid,320.000000, 210.000000, "_");
 	PlayerTextDrawAlignment(playerid, AreaCheckTD, 2);
 	PlayerTextDrawBackgroundColor(playerid, AreaCheckTD, MAIN_BACKGROUND_COLOUR);
@@ -16239,6 +17027,38 @@ LoadPlayerTextDraws(playerid)
 	PlayerTextDrawSetShadow(playerid, DeathText[1], 0);
 	PlayerTextDrawAlignment(playerid, DeathText[1], 2);
 
+
+
+/*
+	HPTextDraw_TD = CreatePlayerTextDraw(playerid,577, 67.7, "_");
+	PlayerTextDrawBackgroundColor(playerid, HPTextDraw_TD, MAIN_BACKGROUND_COLOUR);
+	PlayerTextDrawFont(playerid, HPTextDraw_TD, 2);
+    PlayerTextDrawLetterSize(playerid, HPTextDraw_TD, 0.1599, 0.6999);
+	PlayerTextDrawColor(playerid, HPTextDraw_TD, 16711935);
+	PlayerTextDrawSetOutline(playerid, HPTextDraw_TD, 0);
+	PlayerTextDrawSetProportional(playerid, HPTextDraw_TD, 1);
+	PlayerTextDrawSetShadow(playerid, HPTextDraw_TD,0);
+	PlayerTextDrawAlignment(playerid, HPTextDraw_TD, 2);
+
+	ArmourTextDraw = CreatePlayerTextDraw(playerid,577, 45.7, "_");
+	PlayerTextDrawBackgroundColor(playerid, ArmourTextDraw, MAIN_BACKGROUND_COLOUR);
+	PlayerTextDrawFont(playerid, ArmourTextDraw, 2);
+    PlayerTextDrawLetterSize(playerid, ArmourTextDraw, 0.1599, 0.6999);
+	PlayerTextDrawColor(playerid, ArmourTextDraw, 16711935);
+	PlayerTextDrawSetOutline(playerid, ArmourTextDraw, 0);
+	PlayerTextDrawSetProportional(playerid, ArmourTextDraw, 1);
+	PlayerTextDrawSetShadow(playerid, ArmourTextDraw,0);
+	PlayerTextDrawAlignment(playerid, ArmourTextDraw, 2);
+
+    BaseID_VS = CreatePlayerTextDraw(playerid, 548.000000, 25.000000,"_");
+	PlayerTextDrawFont(playerid, BaseID_VS, 1);
+	PlayerTextDrawLetterSize(playerid, BaseID_VS, 0.26000, 1.500000);
+	PlayerTextDrawBackgroundColor(playerid, BaseID_VS,MAIN_BACKGROUND_COLOUR);
+	PlayerTextDrawColor(playerid, BaseID_VS,-65281);
+	PlayerTextDrawSetOutline(playerid, BaseID_VS,1);
+    PlayerTextDrawSetProportional(playerid, BaseID_VS, 1);
+    PlayerTextDrawSetShadow(playerid, BaseID_VS,0);
+*/
     DeathMessage[0] = CreatePlayerTextDraw(playerid, 193.000000, 157.000000, "Random says this to you");
 	PlayerTextDrawBackgroundColor(playerid, DeathMessage[0], -16776961);
 	PlayerTextDrawFont(playerid, DeathMessage[0], 1);
@@ -16313,6 +17133,9 @@ LoadBases()
 		} while(db_next_row(res));
 
 		db_free_result(res);
+
+		//format(iString, sizeof(iString), "{FFFFFF}%d bases are loaded.", TotalBases);
+	    //SendClientMessageToAll(-1, iString);
 
 		printf("Bases Loaded: %d", TotalBases);
 
@@ -16589,8 +17412,13 @@ LoadConfig()
         db_next_row(res);
 	#endif
 
-    // ac junk
+	#if ANTICHEAT == 1
+	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // ESL Anticheat
+    ESLAC = strval(iString);
 	db_next_row(res);
+	#else
+	db_next_row(res);
+	#endif
 
 	db_get_field_assoc(res, "Value", iString, sizeof(iString)); // ESL Mode
 	ESLMode = (strval(iString) == 1 ? true : false);
@@ -16847,6 +17675,10 @@ public OnBasesLoaded(Result:res) {
 
 	sql_free_result(res);
 
+
+	//format(iString, sizeof(iString), "{FFFFFF}%d "COL_PRIM"bases are loaded.", TotalBases);
+    //SendClientMessageToAll(-1, iString);
+
 	printf("Bases Loaded: %d", TotalBases);
 }
 
@@ -17097,6 +17929,10 @@ public OnPlayerDuelStats(Result:res, playerid) {
 #endif
 
 
+
+
+
+
 //------------------------------------------------------------------------------
 // Other Functions
 //------------------------------------------------------------------------------
@@ -17176,9 +18012,10 @@ public SpawnConnectedPlayer(playerid, team)
 		PlayerTextDrawShow(playerid, FPSPingPacket);
 		PlayerTextDrawShow(playerid, RoundKillDmgTDmg);
 
+		#if ANTICHEAT == 1
 		if(AntiCheat == true)
 			TextDrawShowForPlayer(playerid, ACText);
-
+		#endif
 		TextDrawSetString(WebText, WebString);
 	    TextDrawShowForPlayer(playerid, WebText);
 
@@ -17418,7 +18255,6 @@ stock randomExFloat(Float:min, Float:max)
 	return rand;
 }
 
-// ?
 stock randomExInt(min, max)
 {
 	return random(max-min) + min;
@@ -17521,6 +18357,30 @@ stock ResetTeamLeaders()
 		}
 	}
 	RadarFix();
+	/*new team;
+
+	team = 0;
+	if(TeamHasLeader[team] == true)
+	{
+		if(IsPlayerConnected(TeamLeader[team]))
+		{
+			ColorFix(TeamLeader[team]);
+		}
+	    TeamLeader[team] = INVALID_PLAYER_ID;
+		TeamHasLeader[team] = false;
+	}
+
+	team = 1;
+	if(TeamHasLeader[team] == true)
+	{
+	    if(IsPlayerConnected(TeamLeader[team]))
+	    {
+			ColorFix(TeamLeader[team]);
+	    }
+	    TeamLeader[team] = INVALID_PLAYER_ID;
+		TeamHasLeader[team] = false;
+	}
+	*/
 	return 1;
 }
 
@@ -18751,6 +19611,98 @@ stock SpawnInAntiLag(playerid) {
 	SetPlayerTeamEx(playerid, 5);
 }
 
+
+stock ESLRules() {
+	new iString[256];
+	strcat(iString, "~w~~h~Gamemode Rules:-~n~");
+	strcat(iString, "~n~~w~~h~| No Cheating, Flaming, Spamming and Racism.");
+	strcat(iString, "~n~~w~~h~| No Car/Heli killing or ramming.");
+	format(iString, sizeof(iString), "%s~n~~w~~h~| Max Packetloss: ~r~~h~%.2f~w~~h~	|	Max Ping: ~r~~h~%d~w~~h~	|	Min FPS: ~r~~h~%d", iString, Max_Packetloss, Max_Ping, Min_FPS);
+	TextDrawSetString(introRules,iString);
+
+	iString = "~n~~n~~n~~w~~h~Starting Commands: /help, /cmds, /acmds, /updates";
+	strcat(iString, "~n~~w~~h~| Report bugs and add suggestions in, ~b~~h~sixtytiger.com");
+	strcat(iString, "~n~~w~~h~| No complaining/crying about random shit or ~r~~h~DDoSed");
+	strcat(iString, "		/eslcmds, /topduels, /votenetcheck");
+	strcat(iString, "~n~~r~| No Car/Hali killing.");
+
+	TextDrawSetString(introRules2, iString);
+}
+
+
+forward ShowESLHelpDiag(playerid);
+public ShowESLHelpDiag(playerid)
+{
+	if(!Player[playerid][Playing])
+		ESLHelpDialog(playerid);
+	return 1;
+}
+
+stock ESLHelpDialog(playerid) {
+
+    EslString = "";
+	strcat(EslString, ""COL_PRIM"\t\t\t\t\t>> ESL Mode <<");
+    strcat(EslString, "\n\n"COL_PRIM"To Enable/Disable the ESL mode, use: {FFFFFF}/eslmode");
+    strcat(EslString, "\n"COL_PRIM"ESL Limits: {FFFFFF}Maximum Packetloss: 2.0 | Maximum Ping: 350 | Minimum FPS: 35 "COL_PRIM"** Unchangable");
+	strcat(EslString, "\n\n"COL_PRIM"Make sure you have your SAMP opened from the ESL wire and you are using a clean GTA-SA.");
+	strcat(EslString, "\n"COL_PRIM"Select your team as Alpha or Beta based on the team that the ESL match-board selected for you.");
+	strcat(EslString, "\n\n"COL_PRIM"Useful commands: {FFFFFF}/ready, /voters, /maxplayers, /votekick, /1on1, /votenetcheck");
+
+	ShowPlayerDialog(playerid,DIALOG_ESL_TEAMS,DIALOG_STYLE_MSGBOX," ", EslString, "Alpha","Beta");
+}
+
+stock ResetScoresForESL() {
+	new iString[180];
+    ESLMode = true;
+
+    TeamScore[ATTACKER] = 0;
+    TeamScore[DEFENDER] = 0;
+    CurrentRound = 0;
+
+    if(OneOnOne == false) TotalRounds = 5;
+    else TotalRounds = 19;
+
+
+	TeamName[ATTACKER] = "Alpha";
+	TeamName[ATTACKER_SUB] = "Alpha Sub";
+	TeamName[DEFENDER] = "Beta";
+	TeamName[DEFENDER_SUB] = "Beta Sub";
+
+	format(iString, sizeof(iString), "~r~%s %s(~r~%d%s)  ~b~~h~%s %s(~b~~h~%d%s)",TeamName[ATTACKER],MAIN_TEXT_COLOUR,TeamScore[ATTACKER],MAIN_TEXT_COLOUR,TeamName[DEFENDER],MAIN_TEXT_COLOUR,TeamScore[DEFENDER],MAIN_TEXT_COLOUR);
+    TextDrawSetString(TeamScoreText, iString);
+
+	format(iString, sizeof(iString), "%sRounds ~r~~h~%d~r~/~h~~h~%d", MAIN_TEXT_COLOUR, CurrentRound, TotalRounds);
+	TextDrawSetString(RoundsPlayed, iString);
+
+	if(WarMode == false) {
+		WarMode = true;
+	    format(iString, sizeof iString, "%sWar Mode: ~r~ON", MAIN_TEXT_COLOUR);
+		TextDrawSetString(WarModeText, iString);
+	}
+
+	TextDrawShowForAll(RoundsPlayed);
+	TextDrawShowForAll(TeamScoreText);
+
+	foreach(new i : Player) {
+	    for(new j = 0; j < 55; j ++)
+			Player[i][WeaponStat][j] = 0;
+		Player[i][TotalKills] = 0;
+		Player[i][TotalDeaths] = 0;
+		Player[i][TotalDamage] = 0;
+		Player[i][RoundPlayed] = 0;
+	    Player[i][TotalBulletsFired] = 0;
+	    Player[i][TotalshotsHit] = 0;
+
+		Player[i][Readied] = false;
+
+		if(Player[i][TextPos] == false) format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDamage ~r~%.0f~n~%sTotal Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[i][RoundKills], MAIN_TEXT_COLOUR, Player[i][RoundDamage], MAIN_TEXT_COLOUR, Player[i][TotalDamage]);
+		else format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDmg ~r~%.0f~n~%sT. Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[i][RoundKills], MAIN_TEXT_COLOUR, Player[i][RoundDamage], MAIN_TEXT_COLOUR, Player[i][TotalDamage]);
+		PlayerTextDrawSetString(i, RoundKillDmgTDmg, iString);
+	}
+	ClearPlayerVariables();
+}
+
+
 stock TogglePlayerControllableEx(playerid, bool:Set) {
 	if(Set == false) Player[playerid][IsFrozen] = true;
 	else Player[playerid][IsFrozen] = false;
@@ -19235,6 +20187,25 @@ stock SwapTeams()
 	TeamName[DEFENDER_SUB] = TempName;
 
 
+
+/*	format(iString, sizeof(iString), "~l~~h~%s", TeamName[ATTACKER]);
+	TextDrawSetString(AttackerText, iString);
+
+	format(iString, sizeof(iString), "%s Sub", TeamName[ATTACKER]);
+	format(TeamName[ATTACKER_SUB], 24, iString);
+
+	format(iString, sizeof(iString), "~l~~h~%s", TeamName[ATTACKER_SUB]);
+	TextDrawSetString(AttackerSubText, iString);
+
+	format(iString, sizeof(iString), "~l~~h~%s", TeamName[DEFENDER]);
+	TextDrawSetString(DefenderText, iString);
+
+	format(iString, sizeof(iString), "%s Sub", TeamName[DEFENDER]);
+	format(TeamName[DEFENDER_SUB], 24, iString);
+
+	format(iString, sizeof(iString), "~l~~h~%s", TeamName[DEFENDER_SUB]);
+	TextDrawSetString(DefenderSubText, iString);
+*/
 	#if INTROTEXT == 1
 	format(iString, sizeof(iString), "~r~~h~%s", TeamName[ATTACKER]);
 	TextDrawSetString(introAtt, iString);
@@ -19329,7 +20300,15 @@ stock BalanceTeams() {
 
 
 stock SwitchTeamFix(playerid) {
+/*    TextDrawHideForPlayer(playerid, AttackerText);
+    TextDrawHideForPlayer(playerid, AttackerSubText);
+    TextDrawHideForPlayer(playerid, DefenderText);
+    TextDrawHideForPlayer(playerid, DefenderSubText);
+	TextDrawHideForPlayer(playerid, AutoAssignText);
+    TextDrawHideForPlayer(playerid, RefereeText);
 
+    CancelSelectTextDraw(playerid);
+*/
     new iString[160];
 	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has switched to: {FFFFFF}%s", Player[playerid][Name], TeamName[Player[playerid][Team]]);
 	SendClientMessageToAll(-1, iString);
@@ -19568,6 +20547,13 @@ stock PauseRound() {
 	for(new g = 0; g < MAX_VEHICLES; g ++)
 		GetVehicleVelocity(g, VehicleVelc[g][0], VehicleVelc[g][1], VehicleVelc[g][2]);
 
+
+	#if ANTICHEAT == 1
+	if(AntiCheat) {
+		SendClientMessageToAll(-1, "{FFFF00}** "COL_PRIM"Checking all players for 2 PC trick");
+	}
+	#endif
+
 	RoundPaused = true;
 
 	if(ESLMode == true) {
@@ -19636,7 +20622,88 @@ stock ShowEndRoundTextDraw(playerid) {
 	PlayerTextDrawHide(playerid, DeathText[0]);
 	PlayerTextDrawHide(playerid, DeathText[1]);
 
+//	TextDrawShowForPlayer(playerid, EN_Attacker);
+//	TextDrawShowForPlayer(playerid, EN_Defender);
+/*	TextDrawShowForPlayer(playerid, EN_WhoWon);
+	TextDrawShowForPlayer(playerid, EN_AttackerTitle);
+	TextDrawShowForPlayer(playerid, EN_DefenderTitle);
+	TextDrawShowForPlayer(playerid, EN_AttackerList);
+
+    if(MatchEnded == false) TextDrawShowForPlayer(playerid, EN_AttackerKills);
+    else {
+		TextDrawShowForPlayer(playerid, EN_TAttackerKills);
+		TextDrawSetString(EN_AttackerKills, "");
+	}
+
+    if(MatchEnded == false)TextDrawShowForPlayer(playerid, EN_AttackerHP);
+    else {
+		TextDrawShowForPlayer(playerid, EN_TAttackerDeaths);
+        TextDrawShowForPlayer(playerid, EN_TAttackerRoundsPlayed);
+        TextDrawSetString(EN_AttackerHP, "");
+	}
+
+    if(MatchEnded == false)TextDrawShowForPlayer(playerid, EN_AttackerAccuracy);
+    else {
+		TextDrawShowForPlayer(playerid, EN_TAttackerAccuracy);
+		TextDrawSetString(EN_AttackerAccuracy, "");
+	}
+    if(MatchEnded == false)TextDrawShowForPlayer(playerid, EN_AttackerDamage);
+    else {
+		TextDrawShowForPlayer(playerid, EN_TAttackerDamage);
+        TextDrawSetString(EN_AttackerDamage, "");
+	}
+
+    TextDrawShowForPlayer(playerid, EN_DefenderList);
+
+    if(MatchEnded == false) TextDrawShowForPlayer(playerid, EN_DefenderKills);
+    else {
+		TextDrawShowForPlayer(playerid, EN_TDefenderKills);
+		TextDrawSetString(EN_DefenderKills, "");
+	}
+
+    if(MatchEnded == false)TextDrawShowForPlayer(playerid, EN_DefenderHP);
+    else {
+		TextDrawShowForPlayer(playerid, EN_TDefenderDeaths);
+		TextDrawShowForPlayer(playerid, EN_TDefenderRoundsPlayed);
+		TextDrawSetString(EN_DefenderHP, "");
+	}
+    if(MatchEnded == false)TextDrawShowForPlayer(playerid, EN_DefenderAccuracy);
+    else {
+		TextDrawShowForPlayer(playerid, EN_TDefenderAccuracy);
+		TextDrawSetString(EN_DefenderAccuracy, "");
+	}
+
+    if(MatchEnded == false)TextDrawShowForPlayer(playerid, EN_DefenderDamage);
+    else {
+		TextDrawShowForPlayer(playerid, EN_TDefenderDamage);
+        TextDrawSetString(EN_DefenderDamage, "");
+	}
+
+    TextDrawShowForPlayer(playerid, EN_AttackerBox);
+    TextDrawShowForPlayer(playerid, EN_DefenderBox);
+    TextDrawShowForPlayer(playerid, EN_DefenderTitleBox);
+    TextDrawShowForPlayer(playerid, EN_AttackerTitleBox);
+//    TextDrawShowForPlayer(playerid, EN_WhoWonBox);
+//    TextDrawShowForPlayer(playerid, EN_WhoWonTopBar);
+//    TextDrawShowForPlayer(playerid, EN_WhoWonAttBar);
+//    TextDrawShowForPlayer(playerid, EN_WhoWonDefBar);
+//    TextDrawShowForPlayer(playerid, EN_AttackerTextBox);
+//    TextDrawShowForPlayer(playerid, EN_DefenderTextBox);
+
+//	if(AttWin == true) {
+//		TextDrawShowForPlayer(playerid, EN_WhoWonAttWinBar);
+//		TextDrawHideForPlayer(playerid, EN_WhoWonDefWinBar);
+//	} else {
+//		TextDrawShowForPlayer(playerid, EN_WhoWonDefWinBar);
+//		TextDrawHideForPlayer(playerid, EN_WhoWonAttWinBar);
+//	}
+*/
+
 	Player[playerid][TextDrawOnScreen] = true;
+
+
+//	SetPlayerCameraLookAt(playerid, 1660.3087,-2668.6558,16.5469);
+//	SetPlayerCameraPos(playerid, 1658.0651,-2668.4104,16.5469);
 }
 
 stock HideEndRoundTextDraw(playerid) {
@@ -19660,7 +20727,59 @@ stock HideEndRoundTextDraw(playerid) {
     TextDrawHideForPlayer( playerid, leftAcc	); 		TextDrawHideForPlayer( playerid, rightAcc	 	);
     TextDrawHideForPlayer( playerid, leftPlayed ); 		TextDrawHideForPlayer( playerid, rightPlayed    );
 
+
+
+
+
+//	TextDrawHideForPlayer(playerid, EN_Attacker);
+//	TextDrawHideForPlayer(playerid, EN_Defender);
+
+/*	TextDrawHideForPlayer(playerid, EN_WhoWon);
+	TextDrawHideForPlayer(playerid, EN_AttackerTitle);
+	TextDrawHideForPlayer(playerid, EN_DefenderTitle);
+	TextDrawHideForPlayer(playerid, EN_AttackerList);
+    TextDrawHideForPlayer(playerid, EN_AttackerKills);
+    TextDrawHideForPlayer(playerid, EN_AttackerHP);
+    TextDrawHideForPlayer(playerid, EN_AttackerAccuracy);
+    TextDrawHideForPlayer(playerid, EN_AttackerDamage);
+//    TextDrawHideForPlayer(playerid, EN_BaseID);
+    TextDrawHideForPlayer(playerid, EN_DefenderList);
+    TextDrawHideForPlayer(playerid, EN_DefenderKills);
+    TextDrawHideForPlayer(playerid, EN_DefenderHP);
+    TextDrawHideForPlayer(playerid, EN_DefenderAccuracy);
+    TextDrawHideForPlayer(playerid, EN_DefenderDamage);
+    TextDrawHideForPlayer(playerid, EN_AttackerBox);
+    TextDrawHideForPlayer(playerid, EN_DefenderBox);
+    TextDrawHideForPlayer(playerid, EN_DefenderTitleBox);
+    TextDrawHideForPlayer(playerid, EN_AttackerTitleBox);
+
+    TextDrawHideForPlayer(playerid, EN_TAttackerKills);
+    TextDrawHideForPlayer(playerid, EN_TAttackerDeaths);
+    TextDrawHideForPlayer(playerid, EN_TAttackerRoundsPlayed);
+    TextDrawHideForPlayer(playerid, EN_TAttackerAccuracy);
+    TextDrawHideForPlayer(playerid, EN_TAttackerDamage);
+
+    TextDrawHideForPlayer(playerid, EN_TDefenderKills);
+    TextDrawHideForPlayer(playerid, EN_TDefenderDeaths);
+    TextDrawHideForPlayer(playerid, EN_TDefenderRoundsPlayed);
+    TextDrawHideForPlayer(playerid, EN_TDefenderAccuracy);
+    TextDrawHideForPlayer(playerid, EN_TDefenderDamage);
+*/
+
     Player[playerid][TextDrawOnScreen] = false;
+
+
+    /*    TextDrawHideForPlayer(playerid, EN_WhoWonBox);
+    TextDrawHideForPlayer(playerid, EN_WhoWonTopBar);
+    TextDrawHideForPlayer(playerid, EN_WhoWonAttBar);
+    TextDrawHideForPlayer(playerid, EN_WhoWonDefBar);
+    TextDrawHideForPlayer(playerid, EN_AttackerTextBox);
+    TextDrawHideForPlayer(playerid, EN_DefenderTextBox);
+	TextDrawHideForPlayer(playerid, EN_WhoWonAttWinBar);
+	TextDrawHideForPlayer(playerid, EN_WhoWonDefWinBar);
+*/
+
+ //   SetCameraBehindPlayer(playerid);
 }
 
 stock GetPlayerHighestScores(array[][rankingEnum], left, right)
@@ -19779,6 +20898,32 @@ stock StorePlayerVariablesMin(playerid) {
 	}
 	return 1;
 }
+/*
+stock LoadPlayerVariablesMin(playerid) {
+
+    for(new i = 0; i < SAVE_SLOTS; i ++) {
+		if( strlen( SaveVariables[i][pName] ) > 2 && strcmp( SaveVariables[i][pName], Player[playerid][Name], true ) == 0) {
+
+//		    Player[playerid][Team] = SaveVariables[i][pTeam];
+
+//    		Player[playerid][RoundKills] 	= 	SaveVariables[i][RKills];
+//			Player[playerid][RoundDeaths] 	= 	SaveVariables[i][RDeaths];
+//			Player[playerid][RoundDamage] 	= 	SaveVariables[i][RDamage];
+
+			Player[playerid][TotalKills] 	= 	Player[playerid][TotalKills]	+   SaveVariables[i][TKills];
+			Player[playerid][TotalDeaths] 	= 	Player[playerid][TotalDeaths] 	+ 	SaveVariables[i][TDeaths];
+			Player[playerid][TotalDamage] 	= 	Player[playerid][TotalDamage] 	+ 	SaveVariables[i][TDamage];
+
+			ResetSaveVariables(i);
+
+			return 1;
+		} else continue;
+	}
+
+	return 1;
+}
+
+*/
 
 stock StorePlayerVariables(playerid) {
 	new iString[128];
@@ -19865,7 +21010,6 @@ public ReshowCPForPlayer(playerid)
 	return 1;
 }
 
-// just scroll through this function and see if you understand all it's random if's
 stock LoadPlayerVariables(playerid)
 {
  	new iString[160];
@@ -20573,6 +21717,20 @@ stock strmatch(const sStr1[], const sStr2[]) {
 forward Float:GetPlayerPacketLoss(playerid);
 public Float:GetPlayerPacketLoss(playerid) {
 
+    /*new stats[401], stringstats[70];
+    GetPlayerNetworkStats(playerid, stats, sizeof(stats));
+    new len = strfind(stats, "Packetloss: ");
+    new Float:packetloss = 0.0;
+    if(len != -1) {
+        strmid(stringstats, stats, len, strlen(stats));
+        new len2 = strfind(stringstats, "%");
+        if(len != -1) {
+            strdel(stats, 0, strlen(stats));
+            strmid(stats, stringstats, len2-3, len2);
+            packetloss = floatstr(stats);
+        }
+    }*/
+
     return NetStats_PacketLossPercent(playerid);
 }
 
@@ -20589,6 +21747,16 @@ stock GetPlayerFPS(playerid) {
 		}
 	}
 }
+
+
+/*
+stock pProfile(playerid) {
+	new String[128];
+	format(String, sizeof(String), "attackdefend/users/%s.ini", Player[playerid][Name]);
+	printf("pProfile: %s", String);
+	return String;
+}
+*/
 
 public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 {
@@ -21224,13 +22392,35 @@ public OnScriptUpdate()
 
 		if(Player[i][Spectating] == true && Player[i][IsSpectatingID] != INVALID_PLAYER_ID) {
 			new specid = Player[i][IsSpectatingID];
+/*			new Float:Angle; GetPlayerFacingAngle(specid, Angle);
 
+			format(iString,sizeof(iString),"~l~%s ~r~%d~n~~l~(~l~%.0f~l~)  (~r~~h~%.0f~l~)~n~~l~Ping ~r~%d ~l~FPS ~r~%d~n~~l~Packet-Loss ~r~%.1f", Player[specid][Name], specid, Player[specid][pArmour], Player[specid][pHealth], GetPlayerPing(specid), Player[specid][FPS], GetPlayerPacketLoss(specid));
+			PlayerTextDrawSetString(i, SpecText[1], iString);
+		    PlayerTextDrawShow(i,SpecText[1]);
+
+			format(iString,sizeof(iString),"~l~R-Dmg ~r~%.0f  ~l~T-Dmg ~r~%.0f~n~~l~Facing ~r~%s~n~~l~%s", Player[specid][RoundDamage], Player[specid][TotalDamage], GetCardinalPoint(Angle), SpecWeapons(specid));
+			PlayerTextDrawSetString(i, SpecText[1], iString);
+		    PlayerTextDrawShow(i,SpecText[1]);
+*/
 			format(iString, sizeof(iString),"%s%s ~r~~h~%d~n~~n~%s(%.0f) (~r~~h~%.0f%s)~n~FPS: ~r~~h~%d %sPing: ~r~~h~%d~n~%sPacket-Loss: ~r~~h~%.1f~n~%sKills: ~r~~h~%d~n~%sDamage: ~r~~h~%.0f~n~%sTotal Dmg: ~r~~h~%.0f",
 				MAIN_TEXT_COLOUR, Player[specid][Name], specid, MAIN_TEXT_COLOUR, Player[specid][pArmour], Player[specid][pHealth], MAIN_TEXT_COLOUR, Player[specid][FPS], MAIN_TEXT_COLOUR, GetPlayerPing(specid), MAIN_TEXT_COLOUR, GetPlayerPacketLoss(specid), MAIN_TEXT_COLOUR, Player[specid][RoundKills], MAIN_TEXT_COLOUR, Player[specid][RoundDamage], MAIN_TEXT_COLOUR, Player[specid][TotalDamage]);
 			PlayerTextDrawSetString(i, SpecText[1], iString);
 			PlayerTextDrawSetString(i, SpecText[3], SpecWeapons(specid));
 
 		}
+
+
+		/*if(Current == -1) {
+			switch(Player[i][Team]) {
+			    case ATTACKER: {
+					Alive[ATTACKER-1]++;
+				} case DEFENDER: {
+					Alive[DEFENDER-1]++;
+				}
+			}
+	    	format(iString, sizeof(iString), "  ~r~%d  ~l~Vs  ~b~~h~%d", Alive[ATTACKER-1], Alive[DEFENDER-1]);
+			PlayerTextDrawSetString(i, BaseID_VS, iString);
+		}*/
 
 
 		if(Player[i][WasInBase] == true && TeamHPDamage == true) {
@@ -22006,7 +23196,30 @@ public SwapBothTeams() {
 }
 
 stock GetPlayerAKA(playerid) {
+	/*new File:f = fopen("aka.ini", io_readwrite);
+	if(f) {
+		new fstring[256], IP[MAX_PLAYER_NAME];
+		GetPlayerIp(playerid, IP, sizeof(IP));
 
+		while(fread(f, fstring, sizeof(fstring))) {
+		    new idx = strfind(fstring, "=", true);
+		    if(idx != -1) {
+		        new key[128];
+		        //new value[1024];
+                AKAString = "";
+				strmid(key, fstring, 0, idx);
+				if(!strcmp(key, IP, true)) {
+				    strmid(AKAString, fstring, idx+1, strlen(fstring)-2);
+				    return AKAString;
+				}
+		    }
+		}
+		if(!dini_Isset("aka.ini", IP)) {
+		    dini_Set("aka.ini", IP, Player[playerid][Name]);
+		}
+	}
+
+    AKAString = "";*/
     new IP[MAX_PLAYER_NAME];
     GetPlayerIp(playerid, IP, sizeof(IP));
     new string[128];
@@ -22020,6 +23233,9 @@ stock GetPlayerAKA(playerid) {
 		format(string, sizeof(string), "INSERT INTO `AKAs` (`IP`, `Names`) VALUES ('%s', '%s')", IP, "");
 		db_free_result(db_query(sqliteconnection, string));
 	}
+
+	//strcat(AKAString, ",");
+	//strcat(AKAString, Player[playerid][Name]);
 
 	db_free_result(dbres);
 	return AKAString;
@@ -23356,10 +24572,22 @@ ShowPlayerWeaponMenu(playerid, team)
 //	if(!IsPlayerInAnyVehicle(playerid)) SetPlayerVirtualWorld(playerid, playerid+100);
 }
 
+new bool:AlreadyEndingRound = false;
 
+forward NotEndingRound();
+public NotEndingRound()
+{
+    AlreadyEndingRound = false;
+    return 1;
+}
 
 EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefendersLeft
 {
+	if(AlreadyEndingRound == true)
+	    return 0;
+	    
+    AlreadyEndingRound = true;
+
 	switch(GameType) {
 	    case BASE: {
 			BaseStarted = false;
@@ -23834,6 +25062,8 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 
     ResetTeamLeaders();
     LoadGraffs();
+    
+    SetTimer("NotEndingRound", 3000, false);
 	return 1;
 }
 
@@ -24389,6 +25619,20 @@ public WarEnded()
 	DefAcc = "";
 	DefDamage = "";
 
+	#if ANTICHEAT == 1
+		if(ESLMode == false) {
+			AntiCheat = false;
+			TextDrawHideForAll(ACText);
+			new newhostname[128];
+			format(newhostname, sizeof(newhostname), "hostname %s", hostname);
+			SendRconCommand(newhostname);
+
+			KillTimer(ACTimer);
+		    AC_Toggle(false);
+		    PermAC = false;
+		}
+	#endif
+
 	#if INTROTEXT == 1
 	format(iString, sizeof(iString), "~r~~h~%s", TeamName[ATTACKER]);
 	TextDrawSetString(introAtt, iString);
@@ -24857,6 +26101,159 @@ public OnPlayerClickPlayer(playerid, clickedplayerid, source)
 	LastClickedPlayer[playerid] = clickedplayerid;
 	return 1;
 }
+
+
+
+#if ANTICHEAT == 1
+
+public OnUsingAnotherPC(playerid)
+{
+    new str2[128], name[MAX_PLAYER_NAME];
+	GetPlayerName(playerid, name, sizeof(name));
+    format(str2, sizeof(str2), ""COL_PRIM"** Whitetiger's AC: {FFFFFF}%s"COL_PRIM" might be using the 2 PC trick.", name);
+    SendClientMessageToAll(-1, str2);
+
+    return 1;
+}
+
+public OnACUpdated(playerid) {
+
+//    printf("OnACUpdated(%d): %d %d %d", playerid, AC_Running(playerid), AC_HasTrainer(playerid), AC_ASI(playerid));
+
+    if(!IsPlayerConnected(playerid)) return 1;
+	if(Player[playerid][IsGettingKicked] == true) return 1;
+    if(AllowStartBase == false) return 1;
+
+	new iString[400];
+
+	if(!AC_Running(playerid)) {
+	    if(Player[playerid][ACKick] >= 1) {
+			format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has been kicked for not running the Anti-Cheat.", Player[playerid][Name]);
+			SendClientMessageToAll(-1, iString);
+
+			SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+		    SendClientMessage(playerid, -1, ""COL_PRIM"You can get the Anti-Cheat from: {FFFFFF}http://sixtytiger.com/tiger/ac_files/");
+	        SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
+	        Player[playerid][IsGettingKicked] = true;
+			SetTimerEx("KickForAC", 1000, false, "i", playerid);
+
+			iString = "";
+			strcat(iString, "{FFFFFF}>>{FF3333}Anti-Cheat{FFFFFF}<<\n\nYou were kicked for not running the Whitetiger's Anti-Cheat.\n\nDownload Link: "COL_PRIM"http://sixtytiger.com/tiger/ac_files/");
+			strcat(iString, "{FFFFFF}\n\nInstall and run the AC, wait for it to say \"You are ready to play now.\"\nMake sure it is up to date (Latest Version).");
+
+			ShowPlayerDialog(playerid,DIALOG_ANTICHEAT,DIALOG_STYLE_MSGBOX,"{FF0000}Anti-Cheat", iString,"OK","");
+
+			Player[playerid][ACKick] = 0;
+
+	        printf("Player: %s (%d) has been kicked for not running the Anti-Cheat.", Player[playerid][Name], playerid);
+		} else {
+			Player[playerid][ACKick]++;
+
+			format(iString,sizeof(iString),"{CCCCCC}AC is off %d/2", Player[playerid][ACKick]);
+   			SendClientMessage(playerid, -1, iString);
+
+   			format(iString, sizeof(iString), ""COL_PRIM"Warning: {FFFFFF}%s's"COL_PRIM" AC is off.", Player[playerid][Name]);
+   			SendClientMessageToAll(-1, iString);
+		}
+
+		return 1;
+
+	} else if(AC_HasTrainer(playerid)) {
+		format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has been kicked for running trainers.", Player[playerid][Name]);
+		SendClientMessageToAll(-1, iString);
+
+        SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+		SendClientMessage(playerid, -1, ""COL_PRIM"If you are using {FFFFFF}AutoHotkey "COL_PRIM"please remove it.");
+        SendClientMessage(playerid, -1, ""COL_PRIM"Once you're sure that you are using the original files, please {FFFFFF}RESTART "COL_PRIM"the Anti-Cheat.");
+        SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
+        Player[playerid][IsGettingKicked] = true;
+		SetTimerEx("KickForAC", 1000, false, "i", playerid);
+
+		printf("Player: %s (%d) has been kicked for running trainers.", Player[playerid][Name], playerid);
+
+		return 1;
+
+	} else if(AC_ASI(playerid)) {
+		format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has been kicked for using .ASI scripts.", Player[playerid][Name]);
+		SendClientMessageToAll(-1, iString);
+
+        SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        SendClientMessage(playerid, -1, ""COL_PRIM"Once you're sure that you are using the original files, please {FFFFFF}RESTART "COL_PRIM"the Anti-Cheat.");
+        SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
+        Player[playerid][IsGettingKicked] = true;
+		SetTimerEx("KickForAC", 1000, false, "i", playerid);
+
+        printf("Player: %s (%d) has been kicked for using .ASI", Player[playerid][Name], playerid);
+
+		return 1;
+	} else {
+	    Player[playerid][ACKick] = 0;
+	}
+
+	return 1;
+}
+
+public OnACFileModified(playerid, file[]) {
+	if(!IsPlayerConnected(playerid)) return 1;
+    if(Player[playerid][IsGettingKicked] == true) return 1;
+    if(AllowStartBase == false) return 1;
+
+	new iString[400];
+	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has been kicked for using modified: {FFFFFF}%s", Player[playerid][Name], file);
+	SendClientMessageToAll(-1, iString);
+
+	SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	format(iString, sizeof(iString), ""COL_PRIM"Once you replaced your modified {FFFFFF}%s "COL_PRIM"by the original one, please {FFFFFF}RESTART "COL_PRIM"the Anti-Cheat.", file);
+	SendClientMessage(playerid, -1, iString);
+    SendClientMessage(playerid, -1, ""COL_PRIM"You can get original files from: {FFFFFF}http://sixtytiger.com/tiger/ac_files/unmodded_files/");
+    SendClientMessage(playerid, -1, "{FFFFFF}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
+	iString = "";
+	strcat(iString, "{FFFFFF}You are either kicked for running mods that are not allowed or your Anti-Cheat is not ready yet.\nIf your Anti-Cheat didn't say \"You are ready to play now\" then please wait for it.");
+	strcat(iString, "\n\nDownload Link for AC:\n\nhttp://sixtytiger.com/tiger/ac_files/\n\n Install and run the AC, wait for it to say \"You are ready to play now.\"\nMake sure its up to date (Latest Version).");
+    ShowPlayerDialog(playerid,DIALOG_ANTICHEAT,DIALOG_STYLE_MSGBOX,"{FF0000}Anti-Cheat", iString,"OK","");
+
+    printf("Player: %s (%d) has been kicked for using modified %s", Player[playerid][Name], playerid, file);
+
+    Player[playerid][IsGettingKicked] = true;
+	SetTimerEx("KickForAC", 1000, false, "i", playerid);
+
+	return 1;
+}
+
+public OnACToggled(bool:set) {
+    AntiCheat = set;
+
+    //new newhostname[128];
+
+    if(set) {
+		//format(newhostname, sizeof(newhostname), "hostname %s [AC]", hostname);
+		AC_GetAllInfo();
+	} //else {
+	    //format(newhostname, sizeof(newhostname), "hostname %s", hostname);
+	//}
+	//SendRconCommand(newhostname);
+}
+
+forward OnACStart();
+public OnACStart() {
+	AC_Toggle(true);
+	TextDrawSetString(ACText, sprintf("%sAC v2: ~g~      ON", MAIN_TEXT_COLOUR));
+	//printf("AC is on.");
+}
+
+
+forward KickForAC(playerid);
+public KickForAC(playerid) {
+    Player[playerid][IsKicked] = true;
+	Kick(playerid);
+	return 1;
+}
+
+#endif
 
 #if MYSQL == 1
 
