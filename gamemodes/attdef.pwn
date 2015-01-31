@@ -17267,14 +17267,14 @@ public HidePlayerDeathMessage(playerid)
 
 stock ShowPlayerDeathMessage(killerid, playerid)
 {
-	if(strlen(DeathMessageStr[killerid]) <= 0)
+	if(!strcmp("NO_DEATH_MESSAGE", DeathMessageStr[killerid], false))
 	    return 0;
 	    
 	PlayerTextDrawSetString(playerid, DeathMessage[0], sprintf("A death message to you from %s", Player[killerid][Name]));
     PlayerTextDrawSetString(playerid, DeathMessage[1], sprintf("%s", DeathMessageStr[killerid]));
 	PlayerTextDrawShow(playerid, DeathMessage[0]);
     PlayerTextDrawShow(playerid, DeathMessage[1]);
-    SetTimerEx("HidePlayerDeathMessage", 3500, false, "i", playerid);
+    SetTimerEx("HidePlayerDeathMessage", 6000, false, "i", playerid);
 	return 1;
 }
 
@@ -24982,18 +24982,26 @@ LoginPlayer(playerid, DBResult:res) {
 	db_get_field_assoc(res, "ShowSpecs", iString, sizeof(iString));
 	Player[playerid][ShowSpecs] = (strval(iString) == 0 ? false : true);
 
+	
 	// Load Style
 	db_get_field_assoc(res, "Style", iString, sizeof(iString));
 	Player[playerid][Style] = strval(iString);
 	
+	
+	print("Loading Style");
 	// Load Fighting Style
 	db_get_field_assoc(res, "FightStyle", iString, sizeof(iString));
+	print("Read data from result of field Style");
 	Player[playerid][FightStyle] = strval(iString);
+	print("Set it to Player Style var");
 	SetPlayerFightingStyle(playerid, Player[playerid][FightStyle]);
 	
+	print("Loading DeathMessages");
 	// Load Death Messages
 	db_get_field_assoc(res, "DeathMessage", iString, sizeof(iString));
+	print("Read data from result of field DeathMessage");
 	format(DeathMessageStr[playerid], 64, "%s", iString);
+	printf("Done formattinhg | Size: %d | Data: %s", strlen(iString), iString);
 
 	// Get current IP address
 	new IP[MAX_PLAYER_NAME];
