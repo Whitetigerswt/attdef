@@ -44,11 +44,7 @@ native IsValidVehicle(vehicleid);
 #undef MAX_PLAYERS
 #define MAX_PLAYERS      		40
 
-#if OBJECTS == 1
-    #include <streamer>
-#endif
-
-#if XMAS == 1
+#if OBJECTS == 1 || XMAS == 1
     #include <streamer>
 #endif
 
@@ -619,7 +615,6 @@ enum PlayerVariables {
 	bool:Spawned,
 	bool:IsAFK,
 	bool:IsFrozen,
-	//bool:IsFreezed,
 	bool:IsGettingKicked,
 	bool:AskingForHelp,
 	AskingForHelpTimer,
@@ -839,9 +834,6 @@ new DMWeapons[MAX_DMS][3];
 new bool:DMExist[MAX_DMS] = false;
 
 // - AntiLag Variables -
-
-new Float:PlayerAP[MAX_PLAYERS];
-new Float:PlayerHP[MAX_PLAYERS];
 
 
 // - Duel Variables -
@@ -3109,7 +3101,7 @@ public OnPlayerHeadshotPlayer(playerid, shooterid, weaponid)
 	{
 	    if(Player[playerid][InHeadShot])
 	    {
-	        SetPlayerHealthEx(playerid, 0.0);
+	        SetHP(playerid, 0.0);
 			return 1;
 		}
 	}
@@ -3977,8 +3969,8 @@ public OnPlayerSpawn(playerid)
 		SetPlayerInterior(playerid, 	0);
 		SetPlayerVirtualWorld(playerid, 500);
 
-		SetPlayerHealthEx(playerid,	100.0);
-		SetPlayerArmourEx(playerid,	100.0);
+		SetHP(playerid,	100.0);
+		SetAP(playerid,	100.0);
 
 
 
@@ -3989,8 +3981,8 @@ public OnPlayerSpawn(playerid)
 	}
 
 	if(Player[playerid][Playing] == false && Player[playerid][InDM] == false && Player[playerid][InDuel] == false) {
-		SetPlayerHealthEx(playerid, 100);
-		SetPlayerArmourEx(playerid, 100);
+		SetHP(playerid, 100);
+		SetAP(playerid, 100);
 
 
 
@@ -4454,8 +4446,8 @@ public OnPlayerDeath(playerid, killerid, reason)
 		}
 
 		if(Player[killerid][InDM] == true) {
-			SetPlayerHealthEx(killerid, 100);
-			SetPlayerArmourEx(killerid, 100);
+			SetHP(killerid, 100);
+			SetAP(killerid, 100);
 
 
 
@@ -4561,7 +4553,7 @@ public OnPlayerDeath(playerid, killerid, reason)
 				{
 					TeamTDMKills[DEFENDER]++;
 					Player[playerid][InTDM] = true;
-					SetPlayerHealthEx(playerid, 100);
+					SetHP(playerid, 100);
 					SpawnPlayerEx(playerid);
 					return 1;
 				}
@@ -4569,7 +4561,7 @@ public OnPlayerDeath(playerid, killerid, reason)
 				{
 					TeamTDMKills[ATTACKER]++;
 					Player[playerid][InTDM] = true;
-					SetPlayerHealthEx(playerid, 100);
+					SetHP(playerid, 100);
 					SpawnPlayerEx(playerid);
 					return 1;
 				}
@@ -4603,7 +4595,7 @@ public OnPlayerDeath(playerid, killerid, reason)
 
 
 
-	SetPlayerHealthEx(playerid, 100);
+	SetHP(playerid, 100);
 	SpawnPlayerEx(playerid);
 
 	return 1;
@@ -5255,7 +5247,7 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 	}
 	if(Player[damagedid][PauseCount] > 2) return 1;
 
-	new Float:Health[3], Float:Damage;
+	new Float:Health[2], Float:Damage;
 	GetHP(damagedid, Health[0]);
 	GetAP(damagedid, Health[1]);
 	
@@ -5271,8 +5263,8 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 
     new Float:health, Float:armor;
 
-    armor = PlayerAP[damagedid];
-    health = PlayerHP[damagedid];
+    armor = Health[1];
+    health = Health[0];
 
     new bool:setArmor = false;
 
@@ -5290,10 +5282,8 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
         armor = 0.0;
     }
 
-    SetPlayerArmourEx(damagedid, armor);
-//    PlayerAP[damagedid] = armor;
-    SetPlayerHealthEx(damagedid, health);
- //   PlayerHP[damagedid] = health;
+    SetAP(damagedid, armor);
+    SetHP(damagedid, health);
 
     OnPlayerTakeDamage(damagedid, playerid, amount, -1, bodypart );
 
@@ -5323,7 +5313,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		{
 		    if(Player[playerid][InHeadShot])
 		    {
-		        SetPlayerHealthEx(playerid, 0.0);
+		        SetHP(playerid, 0.0);
 				return 1;
 			}
 		}
@@ -5358,7 +5348,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 	if(ServerAntiLag == true && weaponid != -1) return 1;
 
 
-	new Float:Health[3], Float:Damage;
+	new Float:Health[2], Float:Damage;
 	GetHP(playerid, Health[0]);
 	GetAP(playerid, Health[1]);
 
@@ -5372,8 +5362,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 
 	if(FallProtection == true && Player[playerid][Playing] == true) {
 		if(weaponid == 54 || weaponid == 49 || weaponid == 50) {
-	    	SetPlayerHealthEx(playerid, 100.0);
-			PlayerHP[playerid] = 100.0;
+	    	SetHP(playerid, 100.0);
 		} else {
 		    if(issuerid != INVALID_PLAYER_ID) {
 				if(Player[issuerid][Team] != Player[playerid][Team]) {
@@ -5392,7 +5381,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		{
 			Player[playerid][PROT_HPAutoRefilled] = true;
 			SetTimerEx("HideAutoRefillText", 2000, false, "i", playerid);
-			SetPlayerHealthEx(playerid, RoundHP);
+			SetHP(playerid, RoundHP);
 		}
 	}
 	// <end>
@@ -5401,9 +5390,8 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 	if(weaponid == 54)
 	{
 	    SetHP(playerid, Health[0] - amount);
-	    goto skipped;
 	}
-	if(Health[1] > 0.0)
+	else if(Health[1] > 0.0)
 	{
 		if((Health[1] - amount) < 0)
 		{
@@ -5417,7 +5405,6 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 	else
 	    SetHP(playerid, Health[0] - amount);
 	// <end>
-	skipped:
 
 	if(Health[0] > 0) {
 	    if(amount > Health[0]) {
@@ -5438,31 +5425,6 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		if(Player[issuerid][Playing] == true && (Player[issuerid][Team] == Player[playerid][Team])) return 1;
 		if(Player[issuerid][Playing] == true && Player[playerid][Playing] == false) return 1;
 		if(Player[issuerid][Playing] == true && (Player[issuerid][Team] == REFEREE || Player[playerid][Team] == REFEREE)) return 1;
-
-		/*if(weaponid == 49)
-		{
-		    if(Player[playerid][Playing] == true && Player[issuerid][Playing] == true)
-		    {
-				SetPlayerHealthEx(playerid, Health[0]);
-				SetPlayerArmourEx(playerid, Health[1]);
-				SendClientMessage(issuerid,-1,"{FF0000}WARNING! "COL_PRIM"Do not ram others with your vehicle");
-			}
-		}
-
-		if(weaponid == 50)
-		{
-		    if(Player[playerid][Playing] == true && Player[issuerid][Playing] == true)
-		    {
-				SetPlayerHealthEx(playerid, Health[0]);
-				SetPlayerArmourEx(playerid, Health[1]);
-
-		       	format(iString, sizeof(iString),"{FFFFFF}%s (%d) "COL_PRIM"has been auto-kicked for heli-killing", Player[issuerid][Name], issuerid);
-		        SendClientMessageToAll(-1,iString);
-
-				Player[issuerid][DontPause] = true;
-		        SetTimerEx("OnPlayerKicked", 50, false, "i", issuerid);
-			}
-		}*/
 
 	    if(GotHit[playerid] == 0) {
 			if(Health[1] == 0) {
@@ -5494,8 +5456,6 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 			PlayerTextDrawSetString(issuerid, RoundKillDmgTDmg, iString);
 
 		}
-
-		//HPLost[issuerid][playerid] += amount;
 
 		if(gLastHit[0][issuerid] == -1 && gLastHit[1][issuerid] != playerid && gLastHit[2][issuerid] != playerid) gLastHit[0][issuerid] = playerid;
 		if(gLastHit[0][issuerid] == playerid) {
@@ -5745,14 +5705,6 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		{
 			if(Player[i][Style] == 1) TextDrawShowForPlayer(i, rightBlueBG);
 		}
-		//foreach(new i:Player)
-		//{
-		 //   if( Player[i][Playing] || ( Player[i][Spectating] == true && IsPlayerConnected(Player[i][IsSpectatingID]) && Player[ Player[i][IsSpectatingID] ][Playing] ) )
-		 //   {
-		//		TextDrawShowForPlayer( i, rightBlueBG );
-		//	}
-		//}
-
 
         KillTimer(DefHpTimer);
         DefHpTimer = SetTimer("HideHpTextForDef", 3000, false);
@@ -7089,8 +7041,6 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 					    foreach(new i : Player) {
 							SAMP_SetPlayerTeam(i, ANTILAG_TEAM);
-							GetHP(i, PlayerHP[i]);
-							GetAP(i, PlayerAP[i]);
 					    }
 						TextDrawSetString(AntiLagTD, sprintf("%sAntiLag: ~g~On", MAIN_TEXT_COLOUR));
 						TextDrawShowForAll(AntiLagTD);
@@ -8734,10 +8684,10 @@ CMD:yes(playerid, params[])
 	ResetPlayerWeapons(pID);
 	SetPlayerVirtualWorld(playerid, playerid+10);
 	SetPlayerVirtualWorld(pID, playerid+10);
-	SetPlayerHealthEx(playerid, 100);
-	SetPlayerHealthEx(pID, 100);
-	SetPlayerArmourEx(playerid, 100);
-	SetPlayerArmourEx(pID, 100);
+	SetHP(playerid, 100);
+	SetHP(pID, 100);
+	SetAP(playerid, 100);
+	SetAP(pID, 100);
 
 
 	SetSpawnInfoEx(playerid, playerid, Skin[Player[playerid][Team]], -2966.9707, 1768.2054, 12.6369, 270.0, WeaponID1, 9999, WeaponID2, 9999, 0, 0);
@@ -12664,8 +12614,8 @@ CMD:heal(playerid, params[])
 	if(Player[playerid][AntiLag] == true) return SendErrorMessage(playerid,"Can't heal in anti-lag zone.");
 	if(Player[playerid][InDuel] == true) return SendErrorMessage(playerid,"Can't use this command during duel. Use {FFFFFF}/rq "COL_PRIM"instead.");
 
-	SetPlayerHealthEx(playerid, 100);
-	SetPlayerArmourEx(playerid, 100);
+	SetHP(playerid, 100);
+	SetAP(playerid, 100);
 
 	return 1;
 }
@@ -12786,7 +12736,7 @@ CMD:afk(playerid, params[])
 	SetPlayerColor(pID, 0xAAAAAAAA);
 	TogglePlayerControllableEx(pID, false);
 	Player[pID][IsAFK] = true;
-	SetPlayerHealthEx(pID, 9999999);
+	SetHP(pID, 9999999);
 
 
 	new iString[160];
@@ -12815,7 +12765,7 @@ CMD:setafk(playerid, params[])
 	SetPlayerColor(pID, 0xAAAAAAAA);
 	TogglePlayerControllableEx(pID, false);
 	Player[pID][IsAFK] = true;
-	SetPlayerHealthEx(pID, 9999999);
+	SetHP(pID, 9999999);
 
 	new iString[180];
 	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has set {FFFFFF}%s "COL_PRIM"to AFK mode.", Player[playerid][Name], Player[pID][Name]);
@@ -12831,8 +12781,7 @@ CMD:back(playerid, params[])
 	Player[playerid][Team] = REFEREE;
     TogglePlayerControllableEx(playerid, true);
     Player[playerid][IsAFK] = false;
-    SetPlayerHealthEx(playerid, 100);
-	PlayerHP[playerid] = 100.0;
+    SetHP(playerid, 100);
 
 /*
 	SetPlayerCameraPos(playerid, 1582.5701,-2286.9172,16.5396);
@@ -13310,7 +13259,7 @@ CMD:killhim(playerid, params[])
 	if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player isn't connected.");
 //	if(Player[pID][Level] >= Player[playerid][Level]) return SendErrorMessage(playerid,"Can't kill someone of same or higher admin level.");
 
-	SetPlayerHealthEx(pID, 0.0);
+	SetHP(pID, 0.0);
 	LogAdminCommand("killhim", playerid, pID);
 	return 1;
 }
@@ -13364,8 +13313,7 @@ CMD:healall(playerid, params[])
 	if(Current == -1) return SendErrorMessage(playerid,"There is no active round.");
 	foreach(new i : Player) {
 	    if(Player[i][Playing] == true) {
-	        SetPlayerHealthEx(i, RoundHP);
-			PlayerHP[i] = RoundHP;
+	        SetHP(i, RoundHP);
 		}
 	}
 
@@ -13406,8 +13354,6 @@ CMD:nolag(playerid, params[])
 
 	    foreach(new i : Player) {
 			SAMP_SetPlayerTeam(i, ANTILAG_TEAM);
-			GetHP(i, PlayerHP[i]);
-			GetAP(i, PlayerAP[i]);
 	    }
 
 		TextDrawSetString(AntiLagTD, sprintf("%sAntiLag: ~g~On", MAIN_TEXT_COLOUR));
@@ -13452,7 +13398,7 @@ CMD:armourall(playerid, params[])
 	if(Current == -1) return SendErrorMessage(playerid,"There is no active round.");
 	foreach(new i : Player) {
 	    if(Player[i][Playing] == true) {
-	        SetPlayerArmourEx(i, 100);
+	        SetAP(i, 100);
 		}
 	}
 
@@ -13475,8 +13421,7 @@ CMD:sethp(playerid, params[])
 	if(Amount < 0 || Amount > 100)  return SendErrorMessage(playerid,"Invalid amount.");
 	if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player isn't connected.");
 
-	SetPlayerHealthEx(pID, Amount);
-	PlayerHP[pID] = Amount;
+	SetHP(pID, Amount);
 
 
 	new iString[180];
@@ -13496,7 +13441,7 @@ CMD:setarmour(playerid, params[])
 	if(Amount < 0 || Amount > 100)  return SendErrorMessage(playerid,"Invalid amount.");
 	if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player isn't connected.");
 
-	SetPlayerArmourEx(pID, Amount);
+	SetAP(pID, Amount);
 
 
 
@@ -13739,9 +13684,7 @@ CMD:kill(playerid, params[])
     	SendClientMessageToAll(-1, iString);
 	}
 
-	SetPlayerHealthEx(playerid, 0.0);
-	PlayerHP[playerid] = 0.0;
-
+	SetHP(playerid, 0.0);
 	return 1;
 }
 
@@ -15049,10 +14992,8 @@ CMD:headshot(playerid, params[])
 	SetPlayerInterior(playerid, 0);
 	SetPlayerVirtualWorld(playerid, 500);
 
-	SetPlayerHealthEx(playerid,	100.0);
-	SetPlayerArmourEx(playerid,	100.0);
-
-
+	SetHP(playerid,	100.0);
+	SetAP(playerid,	100.0);
 
     GivePlayerWeapon(playerid, SNIPER, 	9996);
 
@@ -15092,10 +15033,8 @@ CMD:dm(playerid, params[])
 
 	ResetPlayerWeapons(playerid); // Reset all player weapons
 	SetPlayerVirtualWorld(playerid, 1); // Put player in a different virtual world so that if you create a DM in your lobby and you join the DM, you won't be able to see other players in the lobby.
-	SetPlayerHealthEx(playerid, 100);
-	SetPlayerArmourEx(playerid, 100);
-
-
+	SetHP(playerid, 100);
+	SetAP(playerid, 100);
 
 	Player[playerid][InDM] = true; // Keep a record of what is the player current status.
 	Player[playerid][DMReadd] = DMID;
@@ -15213,10 +15152,8 @@ SpawnInDM(playerid, DMID)
 
 	ResetPlayerWeapons(playerid); // Reset all player weapons
 	SetPlayerVirtualWorld(playerid, Player[playerid][VWorld]); // Put player in a different virtual world so that if you create a DM in your lobby and you join the DM, you won't be able to see other players in the lobby.
-	SetPlayerHealthEx(playerid, 100);
-	SetPlayerArmourEx(playerid, 100);
-
-
+	SetHP(playerid, 100);
+	SetAP(playerid, 100);
 
 	SetSpawnInfoEx(playerid, playerid, Skin[Player[playerid][Team]], DMSpawn[DMID][0]+random(2), DMSpawn[DMID][1]+random(2), DMSpawn[DMID][2], DMSpawn[DMID][3], DMWeapons[DMID][0], 9999, DMWeapons[DMID][1], 9999, DMWeapons[DMID][2], 9999);
 	SetPlayerInterior(playerid, DMInterior[DMID]);
@@ -18684,16 +18621,6 @@ stock ResetDuellersToTheirTeams(dueller1, dueller2)
 	return 1;
 }
 
-stock SetPlayerHealthEx(playerid, Float:amount) {
-	SetHP(playerid, amount);
-	PlayerHP[playerid] = amount;
-}
-
-stock SetPlayerArmourEx(playerid, Float:amount) {
-	SetAP(playerid, amount);
-	PlayerAP[playerid] = amount;
-}
-
 stock SetPlayerTeamEx(playerid, teamid) {
 	if(ServerAntiLag == false) SetPlayerTeam(playerid, teamid);
 	else SetPlayerTeam(playerid, ANTILAG_TEAM);
@@ -19750,10 +19677,8 @@ stock SpawnInAntiLag(playerid) {
 	SetPlayerInterior(playerid, 	10);
 	SetPlayerVirtualWorld(playerid, 1);
 
-	SetPlayerHealthEx(playerid,	100.0);
-	SetPlayerArmourEx(playerid,	100.0);
-
-
+	SetHP(playerid,	100.0);
+	SetAP(playerid,	100.0);
 
     GivePlayerWeapon(playerid, SHOTGUN, 9996);
     GivePlayerWeapon(playerid, SNIPER, 	9996);
@@ -21231,8 +21156,8 @@ stock LoadPlayerVariables(playerid)
 			Player[playerid][WasInBase] = true;
 
 	        Player[playerid][Team] = SaveVariables[i][pTeam];
-			SetPlayerHealthEx(playerid, SaveVariables[i][gHealth]);
-			SetPlayerArmourEx(playerid, SaveVariables[i][gArmour]);
+			SetHP(playerid, SaveVariables[i][gHealth]);
+			SetAP(playerid, SaveVariables[i][gArmour]);
 
 
 
@@ -21802,8 +21727,8 @@ SyncPlayer(playerid)
 	Player[playerid][IgnoreSpawn] = true;
 	SpawnPlayerEx(playerid);
 
-	SetPlayerHealthEx(playerid, HP[0]);
-	SetPlayerArmourEx(playerid, HP[1]);
+	SetHP(playerid, HP[0]);
+	SetAP(playerid, HP[1]);
 
 	SetPlayerInterior(playerid, Int);
 	SetPlayerVirtualWorld(playerid, VirtualWorld);
@@ -23439,10 +23364,8 @@ public OnPlayerReplace(ToAddID, ToReplaceID, playerid) {
 	Player[ToAddID][WasInBase] = true;
 
     Player[ToAddID][Team] = Player[ToReplaceID][Team];
-	SetPlayerHealthEx(ToAddID, HP[0]);
-	SetPlayerArmourEx(ToAddID, HP[1]);
-
-
+	SetHP(ToAddID, HP[0]);
+	SetAP(ToAddID, HP[1]);
 
 	SetPlayerPos(ToAddID, Pos[0], Pos[1], Pos[2]+1);
 	SetPlayerFacingAngle(ToAddID, Pos[3]);
@@ -23513,8 +23436,8 @@ public OnPlayerInGameReplace(ToAddID, i, playerid) {
 	Player[ToAddID][WasInBase] = true;
 
     Player[ToAddID][Team] = SaveVariables[i][pTeam];
-	SetPlayerHealthEx(ToAddID, SaveVariables[i][gHealth]);
-	SetPlayerArmourEx(ToAddID, SaveVariables[i][gArmour]);
+	SetHP(ToAddID, SaveVariables[i][gHealth]);
+	SetAP(ToAddID, SaveVariables[i][gArmour]);
 
 
 
@@ -23905,8 +23828,8 @@ SpawnPlayersInArena()
 	        if(OneOnOne == false) SetPlayerInterior(i, AInterior[Current]);
 			else SetPlayerInterior(i, DuelInterior[Current]);
 
-			SetPlayerArmourEx(i, RoundAR);
-			SetPlayerHealthEx(i, RoundHP);
+			SetAP(i, RoundAR);
+			SetHP(i, RoundHP);
 
             Player[i][HealthBeforeMenu] = RoundHP;
 			Player[i][ArmourBeforeMenu] = RoundAR;
@@ -24044,8 +23967,8 @@ public AddPlayerToArena(playerid)
 	PlayerPlaySound(playerid, 1057, 0, 0, 0);
 	SetCameraBehindPlayer(playerid);
 
-	SetPlayerArmourEx(playerid, RoundAR);
-	SetPlayerHealthEx(playerid, RoundHP);
+	SetAP(playerid, RoundAR);
+	SetHP(playerid, RoundHP);
 
 
 
@@ -24429,8 +24352,8 @@ SpawnPlayersInBase()
 			PlayerPlaySound(i, 1057, 0, 0, 0);
 			SetCameraBehindPlayer(i);
 
-			SetPlayerArmourEx(i, RoundAR);
-			SetPlayerHealthEx(i, RoundHP);
+			SetAP(i, RoundAR);
+			SetHP(i, RoundHP);
 
             Player[i][HealthBeforeMenu] = RoundHP;
 			Player[i][ArmourBeforeMenu] = RoundAR;
@@ -24581,8 +24504,8 @@ public AddPlayerToBase(playerid)
 	PlayerPlaySound(playerid, 1057, 0, 0, 0);
 	SetCameraBehindPlayer(playerid);
 
-	SetPlayerArmourEx(playerid, RoundAR);
-	SetPlayerHealthEx(playerid, RoundHP);
+	SetAP(playerid, RoundAR);
+	SetHP(playerid, RoundHP);
     Player[playerid][HealthBeforeMenu] = RoundHP;
     Player[playerid][ArmourBeforeMenu] = RoundAR;
 
@@ -24675,8 +24598,8 @@ ShowPlayerWeaponMenu(playerid, team)
 	    Player[playerid][ArmourBeforeMenu] = RoundAR;
 	}
 
-	SetPlayerHealthEx(playerid, 99999999999);
-	SetPlayerArmourEx(playerid, 99999999999);
+	SetHP(playerid, 99999999999);
+	SetAP(playerid, 99999999999);
 
 	if(Player[playerid][WeaponPicked] > 0){
  		TimesPicked[Player[playerid][Team]][Player[playerid][WeaponPicked]-1]--;
@@ -24933,8 +24856,8 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 	    PlayerTextDrawHide(i, AreaCheckBG);
 
 		if(Player[i][InDuel] == false) {
-			SetPlayerHealthEx(i, 100);
-			SetPlayerArmourEx(i, 100);
+			SetHP(i, 100);
+			SetAP(i, 100);
 		}
 
 
