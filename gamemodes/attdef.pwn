@@ -730,9 +730,6 @@ enum PlayerVariables {
 	PlayerTypeByWeapon[32],
 	bool:ToGiveParachute,
 	bool:OnGunmenu,
-	Float:HealthBeforeMenu,
-	Float:ArmourBeforeMenu,
-	//IpToReconnect[16]
 	bool:SetToReconnect,
 	ReaddOrAddTickCount
 
@@ -4843,15 +4840,6 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 
 	return 1;
 }
-/*
-public OnPlayerExitVehicle(playerid, vehicleid)
-{
-	new Float:pos[3];
-    GetPlayerPos(playerid, pos[0], pos[1], pos[2]);
-    SetPlayerPos(playerid, pos[0]+ random(1), pos[1]+ random(1), pos[2]+ 0.4);
-    return 1;
-}
-*/
 
 public OnVehicleSpawn(vehicleid)
 {
@@ -4926,16 +4914,6 @@ public OnPlayerEnterCheckpoint(playerid) {
 				else
 				    if(CurrentCPTime < ConfigCPTime)
 				    	SendClientMessageToAll(-1, sprintf(""COL_PRIM"Improper CP touch done by {FFFFFF}%s", Player[playerid][Name]));
-
-			    /*foreach(new i : Player) {
-			        if(Player[i][WasInCP] == true) {
-			            Player[i][WasInCP] = false;
-//			            ColorFix(i);
-					}
-				}*/
-//				RadarFix();
-
-                //TextDrawHideForAll(EN_CheckPoint);
 			}
 		}
 	}
@@ -5012,8 +4990,6 @@ public OnRconLoginAttempt(ip[], password[], success)
 			return 1;
 		}
     } else {
-//		format(Str, sizeof(Str), "{FFFFFF}%s "COL_PRIM"has successfully logged into rcon.", iName);
-//        SendClientMessageToAll(-1, Str);
 		format(Str, sizeof(Str), "{FFFFFF}%s "COL_PRIM"has successfully logged into rcon.", iName);
 		foreach(new j : Player) {
 			if(Player[j][Level] > 4) SendClientMessage(j, -1, Str);
@@ -5042,23 +5018,6 @@ public OnPlayerUpdate(playerid)
             SetVehiclePos(GetPlayerVehicleID(playerid), VehiclePos[playerid][0], VehiclePos[playerid][1], VehiclePos[playerid][2]);
 		}
 	}
-
-	/*if (GetPlayerState(playerid) == PLAYER_STATE_ONFOOT) {
-        new Float:vec[3];
-        GetPlayerCameraFrontVector(playerid, vec[0], vec[1], vec[2]);
-        new bool:crasher = false;
-        for (new i = 0; !crasher && i < sizeof(vec); i++) {
-                if (floatabs(vec[i]) > 10.0) {
-                        crasher = true;
-				} else { crasher = false; }
-		}
-
-        if (crasher)
-        {
-                return 0;
-        }
-    }
-*/
 	// Target info
 
 	if(ToggleTargetInfo == true && Player[playerid][Spectating] != true)
@@ -5086,9 +5045,6 @@ public OnPlayerUpdate(playerid)
 
 
 	if(noclipdata[playerid][cameramode] == CAMERA_MODE_FLY) {
-
-//		new keys,ud,lr;
-//		GetPlayerKeys(playerid,keys,ud,lr);
 
 		if(noclipdata[playerid][noclipcammode] && (GetTickCount() - noclipdata[playerid][lastmove] > 100))
 		{
@@ -5119,29 +5075,11 @@ public OnPlayerUpdate(playerid)
 		return 0;
 	}
 
-	/*if( Player[playerid][InWeap] == true )
-	{
-	    if( gettime() - Player[playerid][InWeapTime] <= 5 )
-	    {
-	        SetPlayerChatBubble(playerid,"Selecting Weapons", -1, DRAW_DISTANCE - 0.025, 500 );
-	        return 0;
-	    }
-	    else
-	    {
-	    	Player[playerid][InWeap] = false;
-	    }
-	}*/
-
 	return 1;
 }
 
 public OnPlayerStreamIn(playerid, forplayerid)
 {
-/*	if(Player[playerid][Team] == ATTACKER_SUB || Player[playerid][Team] == DEFENDER_SUB) {
-	    SetPlayerMarkerForPlayer(forplayerid,playerid,GetPlayerColor(playerid) & 0xFFFFFF00);
-	    return 1;
-	}
-*/
 	if(Player[playerid][Playing] == true && Player[forplayerid][Playing] == true){
 		if(Player[forplayerid][Team] != Player[playerid][Team]){
 			SetPlayerMarkerForPlayer(forplayerid,playerid, GetPlayerColor(playerid) & 0xFFFFFF00);
@@ -5160,11 +5098,6 @@ public OnPlayerStreamIn(playerid, forplayerid)
 
 public OnPlayerStreamOut(playerid, forplayerid)
 {
-/*	if(Player[playerid][Team] == ATTACKER_SUB || Player[playerid][Team] == DEFENDER_SUB) {
-	    SetPlayerMarkerForPlayer(forplayerid,playerid,GetPlayerColor(playerid) & 0xFFFFFF00);
-	    return 1;
-	}
-*/
 	if(Player[playerid][Playing] == true && Player[forplayerid][Playing] == true){
 		if(Player[forplayerid][Team] != Player[playerid][Team]){
 			SetPlayerMarkerForPlayer(forplayerid,playerid, GetPlayerColor(playerid) & 0xFFFFFF00);
@@ -5181,40 +5114,17 @@ public OnPlayerStreamOut(playerid, forplayerid)
 	return 1;
 }
 
-
-//============Attempting to do something e.e
-/*    new testObject_[MAX_PLAYERS];
-public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY, Float:fZ)
-{
-	//not available in lagcomp = 0
-	DestroyObject( testObject_[playerid] );
-	new Float: OX,
-		Float: OY,
-		Float: OZ,
-		Float: HitX,
-		Float: HitY,
-		Float: HitZ,
-
-		string[ 128 ]
-	;
-
-    GetPlayerLastShotVectors(playerid, OX, OY, OZ, HitX, HitY, HitZ);
-
-    format( string, sizeof(string), "** Hit Vectors : %0.1f | %0.1f | %0.1f **\n", HitX, HitY, HitZ );
-    SendClientMessage(playerid,-1,string);
-
-    format( string, sizeof(string), "*** Shot From : %0.1f | %0.1f | %0.1f **", OX, OY, OZ );
-    SendClientMessage(playerid,-1,string);
-
-    testObject_[playerid] = CreateObject( 19130, HitX, HitY, HitZ, 0.0, 0.0, 90.0, 100.0 ); //ArrowType1 0.3c
-	return 1;
-}
-*/
-//============
-
-
 public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart)
 {
+
+	if(Player[damagedid][OnGunmenu] && Player[damagedid][Playing])
+        return 1;
+
+	if(Player[damagedid][IsAFK])
+	{
+		return 1;
+	}
+
 	if(ToggleTargetInfo == true)
 	{
 	    ShowTargetInfo(playerid, damagedid);
@@ -5299,11 +5209,16 @@ public HideAutoRefillText(playerid)
 
 public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 {
-    if(Player[playerid][OnGunmenu] == true && Player[playerid][Playing])
+    if(Player[playerid][OnGunmenu] && Player[playerid][Playing])
         return 1;
 
 	if(weaponid == 49 || weaponid == 50 || weaponid == 51 || (weaponid == 54 && amount <= 10))
 	    return 1;
+
+	if(Player[playerid][IsAFK])
+	{
+		return 1;
+	}
 
     //ShowHitArrow(playerid, issuerid);
 
@@ -5348,7 +5263,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 	if(ServerAntiLag == true && weaponid != -1) return 1;
 
 
-	new Float:Health[2], Float:Damage;
+	new Float:Health[3], Float:Damage;
 	GetHP(playerid, Health[0]);
 	GetAP(playerid, Health[1]);
 
@@ -6346,16 +6261,6 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	        else
 				TogglePlayerControllableEx(playerid, true);
 
-			if(Player[playerid][HealthBeforeMenu] <= 0.0)
-		    {
-		        SetHP(playerid, RoundHP);
-				SetAP(playerid, RoundAR);
-		    }
-		    else
-		    {
- 				SetHP(playerid, Player[playerid][HealthBeforeMenu]);
-				SetAP(playerid, Player[playerid][ArmourBeforeMenu]);
-			}
 			Player[playerid][OnGunmenu] = false;
 		}
 		return 1;
@@ -10395,8 +10300,6 @@ CMD:ready(playerid, params[])
 			    if(CanPlay(i)) {
 					TogglePlayerControllableEx(i, false);
 					Player[i][ToAddInRound] = true;
-					Player[i][HealthBeforeMenu] = 100.0;
-    				Player[i][ArmourBeforeMenu] = 100.0;
 				}
 			}
 		} else if(playersReady == (attackers+defenders) && attackers == defenders && OneOnOne == true) {
@@ -10415,8 +10318,6 @@ CMD:ready(playerid, params[])
 			    if(CanPlay(i)) {
 					TogglePlayerControllableEx(i, false);
 					Player[i][ToAddInRound] = true;
-					Player[i][HealthBeforeMenu] = 100.0;
-    				Player[i][ArmourBeforeMenu] = 100.0;
 				}
 			}
 		}
@@ -12673,8 +12574,6 @@ CMD:rr(playerid, params[])
 			PlayerTextDrawHide(i, RoundText);
 			TogglePlayerControllableEx(i, false);
 			Player[i][ToAddInRound] = true;
-			Player[i][HealthBeforeMenu] = 100.0;
-			Player[i][ArmourBeforeMenu] = 100.0;
 		}
 	}
 
@@ -12736,8 +12635,6 @@ CMD:afk(playerid, params[])
 	SetPlayerColor(pID, 0xAAAAAAAA);
 	TogglePlayerControllableEx(pID, false);
 	Player[pID][IsAFK] = true;
-	SetHP(pID, 9999999);
-
 
 	new iString[160];
 	if(pID != playerid) {
@@ -12765,7 +12662,6 @@ CMD:setafk(playerid, params[])
 	SetPlayerColor(pID, 0xAAAAAAAA);
 	TogglePlayerControllableEx(pID, false);
 	Player[pID][IsAFK] = true;
-	SetHP(pID, 9999999);
 
 	new iString[180];
 	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has set {FFFFFF}%s "COL_PRIM"to AFK mode.", Player[playerid][Name], Player[pID][Name]);
@@ -14074,8 +13970,6 @@ CMD:random(playerid, params[])
 	    if(CanPlay(i)) {
 	        TogglePlayerControllableEx(i, false); // Pause all the players.
 			Player[i][ToAddInRound] = true;
-			Player[i][HealthBeforeMenu] = 100.0;
-    		Player[i][ArmourBeforeMenu] = 100.0;
 		}
 	}
 
@@ -14158,8 +14052,6 @@ CMD:vote(playerid, params[])
 					        TogglePlayerControllableEx(i, false);
 							Player[i][ToAddInRound] = true;
 							Player[i][HasVoted] = false;
-							Player[i][HealthBeforeMenu] = 100.0;
-    						Player[i][ArmourBeforeMenu] = 100.0;
 						}
 					}
 				}
@@ -14220,8 +14112,6 @@ CMD:vote(playerid, params[])
 					        TogglePlayerControllableEx(i, false);
 							Player[i][ToAddInRound] = true;
 							Player[i][HasVoted] = false;
-							Player[i][HealthBeforeMenu] = 100.0;
-    						Player[i][ArmourBeforeMenu] = 100.0;
 						}
 					}
 				}
@@ -14283,8 +14173,6 @@ CMD:vote(playerid, params[])
 					        TogglePlayerControllableEx(i, false);
 							Player[i][ToAddInRound] = true;
 							Player[i][HasVoted] = false;
-							Player[i][HealthBeforeMenu] = 100.0;
-    						Player[i][ArmourBeforeMenu] = 100.0;
 						}
 					}
 				}
@@ -14294,8 +14182,16 @@ CMD:vote(playerid, params[])
 					new i;
 				   	while((i < MAX_ARENAS) || (i <= HighestID+1))
 				   	{
-				   	    if(i < MAX_ARENAS) VoteCount[i] = 0; VoteCount[ArenaID] = 1;
-				   	    if(i <= HighestID+1) Player[i][HasVoted] = false; Player[playerid][HasVoted] = true;
+				   	    if(i < MAX_ARENAS)
+				   	    {
+				   	    	VoteCount[i] = 0; 
+				   	    	VoteCount[ArenaID] = 1;
+				   	    } 
+				   	    if(i <= HighestID+1)
+				   	    {
+				   	    	Player[i][HasVoted] = false; 
+				   	    	Player[playerid][HasVoted] = true;
+				   	    }
 				   	    i++;
 				   	}
 				   	OnVoteTDM();
@@ -14404,8 +14300,6 @@ CMD:randomint(playerid, params[])
 	    if(CanPlay(i)) {
 	        TogglePlayerControllableEx(i, false); // Pause all the players.
 	        Player[i][ToAddInRound] = true;
-	        Player[i][HealthBeforeMenu] = 100.0;
-    		Player[i][ArmourBeforeMenu] = 100.0;
 		}
 	}
 
@@ -14589,8 +14483,6 @@ CMD:start(playerid, params[])
 	    if(CanPlay(i)) {
 	        TogglePlayerControllableEx(i, false); // Pause all the players.
 			Player[i][ToAddInRound] = true;
-			Player[i][HealthBeforeMenu] = 100.0;
-    		Player[i][ArmourBeforeMenu] = 100.0;
 		}
 	}
 
@@ -18972,8 +18864,6 @@ public OnVoteBase()
 				TogglePlayerControllableEx(i, false);
 				Player[i][ToAddInRound] = true;
 				Player[i][HasVoted] = false;
-				Player[i][HealthBeforeMenu] = 100.0;
-    			Player[i][ArmourBeforeMenu] = 100.0;
 			}
 		}
 
@@ -19082,8 +18972,6 @@ public OnVoteTDM()
 				TogglePlayerControllableEx(i, false);
 				Player[i][ToAddInRound] = true;
 				Player[i][HasVoted] = false;
-				Player[i][HealthBeforeMenu] = 100.0;
-    			Player[i][ArmourBeforeMenu] = 100.0;
 			}
 		}
 
@@ -22116,8 +22004,6 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					    if(CanPlay(i)) {
 							TogglePlayerControllableEx(i, false);
 							Player[i][ToAddInRound] = true;
-							Player[i][HealthBeforeMenu] = 100.0;
-    						Player[i][ArmourBeforeMenu] = 100.0;
 						}
 					}
 				} else if(playersReady == (attackers+defenders) && attackers == defenders && OneOnOne == true) {
@@ -22136,8 +22022,6 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 					    if(CanPlay(i)) {
 							TogglePlayerControllableEx(i, false);
 							Player[i][ToAddInRound] = true;
-							Player[i][HealthBeforeMenu] = 100.0;
-    						Player[i][ArmourBeforeMenu] = 100.0;
 						}
 					}
 				}
@@ -23831,9 +23715,6 @@ SpawnPlayersInArena()
 			SetAP(i, RoundAR);
 			SetHP(i, RoundHP);
 
-            Player[i][HealthBeforeMenu] = RoundHP;
-			Player[i][ArmourBeforeMenu] = RoundAR;
-
 			switch(Player[i][Team]) {
 			    case ATTACKER: {
 			        if(OneOnOne == false) {
@@ -24022,9 +23903,6 @@ public AddPlayerToArena(playerid)
 	        SAMP_SetPlayerTeam(playerid, 3);
 		}
 	}
-
-    Player[playerid][HealthBeforeMenu] = 100.0;
-    Player[playerid][ArmourBeforeMenu] = 100.0;
 
 	GivePlayerArenaWeapons(playerid);
 
@@ -24355,9 +24233,6 @@ SpawnPlayersInBase()
 			SetAP(i, RoundAR);
 			SetHP(i, RoundHP);
 
-            Player[i][HealthBeforeMenu] = RoundHP;
-			Player[i][ArmourBeforeMenu] = RoundAR;
-
 	        SetPlayerVirtualWorld(i, 2); //Set player virtual world to something different that that for lobby and DM so that they don't collide with each other. e.g. You shouldn't be able to see players in lobby or DM while you are in base.
 	        SetPlayerInterior(i, BInterior[Current]);
 
@@ -24506,8 +24381,6 @@ public AddPlayerToBase(playerid)
 
 	SetAP(playerid, RoundAR);
 	SetHP(playerid, RoundHP);
-    Player[playerid][HealthBeforeMenu] = RoundHP;
-    Player[playerid][ArmourBeforeMenu] = RoundAR;
 
     Player[playerid][ReaddOrAddTickCount] = GetTickCount();
 
@@ -24580,26 +24453,6 @@ ShowPlayerWeaponMenu(playerid, team)
 	ResetPlayerWeapons(playerid);
 
 	Player[playerid][OnGunmenu] = true;
-
-	if(ElapsedTime > 3)
-	{
-		GetHP(playerid, Player[playerid][HealthBeforeMenu]);
-		GetAP(playerid, Player[playerid][ArmourBeforeMenu]);
-	}
-	else
-	{
-	    Player[playerid][HealthBeforeMenu] = RoundHP;
-	    Player[playerid][ArmourBeforeMenu] = RoundAR;
-	}
-	
-	if((GetTickCount() - Player[playerid][ReaddOrAddTickCount]) < 2000)
-	{
-	    Player[playerid][HealthBeforeMenu] = RoundHP;
-	    Player[playerid][ArmourBeforeMenu] = RoundAR;
-	}
-
-	SetHP(playerid, 99999999999);
-	SetAP(playerid, 99999999999);
 
 	if(Player[playerid][WeaponPicked] > 0){
  		TimesPicked[Player[playerid][Team]][Player[playerid][WeaponPicked]-1]--;
