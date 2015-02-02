@@ -4,8 +4,9 @@
 
 	- Other fighting styles are made usable now with the power of /fightstyle.
 	- AC Update allowing functions to be used without the plugin loaded.
-	- Make sure you leave a message to your dead enemies using /deathmessage.
+	- Make sure you leave a message to your dead enemies using /deathdiss.
 	- Fixed team win bug that could make wrong results in a round.
+	- Server-sided health is real now
 */
 
 #define GM_NAME				"Attack-Defend v2.7 (a)"
@@ -15,6 +16,7 @@
 #include <zcmd> 			// Used for commands.
 #include <geolocation> 		// Shows player country based on IP
 #include <strlib>
+#include <progress2>
 
 #include <sampac> // THE MIGHTY NEW ANTICHEAT
 
@@ -576,6 +578,7 @@ new PlayerText: BaseID_VS;
 new PlayerText: BITCH;
 new PlayerText: TargetInfoTD;
 new PlayerText: DeathMessage[2]; new DeathMessageStr[MAX_PLAYERS][64];
+new PlayerBar: HealthBar, PlayerBar:ArmourBar;
 
 
 new ThemeChange_listitem[MAX_PLAYERS];
@@ -591,6 +594,8 @@ new MaxTDMKills = 10;
 new g_oSignText[4];
 
 // - Player Variables -
+
+new Float:PlayerHealth[MAX_PLAYERS], Float:PlayerArmour[MAX_PLAYERS];
 
 enum PlayerVariables {
 	#if ENABLED_TDM == 1
@@ -3524,6 +3529,11 @@ public OnPlayerConnect(playerid)
 */
 
 	LoadPlayerTextDraws(playerid);
+	
+	HPArmourBaseID_VS_TD(playerid);
+	
+	SetHP(playerid, 100.0);
+	SetAP(playerid, 100.0);
 
 	// Reset all variables (So that the connected player don't have the same variable values as the player that left with the same playerid)
 
@@ -3896,7 +3906,7 @@ public OnPlayerSpawn(playerid)
 		#endif
 	    return 0;
 	}
-
+    
 	ClearAnimations(playerid);
 
 	#if XMAS == 1
@@ -4044,8 +4054,8 @@ public OnPlayerDisconnect(playerid, reason)
 
 
 	new iString[180], Float:HP[2];
-    GetPlayerHealth(playerid, HP[0]);
-    GetPlayerArmour(playerid, HP[1]);
+    GetHP(playerid, HP[0]);
+    GetAP(playerid, HP[1]);
 
     if(WarMode == true)
 	{
@@ -4115,8 +4125,8 @@ public OnPlayerDisconnect(playerid, reason)
 		foreach(new i : Player) {
 			if(Player[i][challengerid] == playerid) {
 				new Float:HPc[2];
-    			GetPlayerHealth(i, HPc[0]);
-    			GetPlayerArmour(i, HPc[1]);
+    			GetHP(i, HPc[0]);
+    			GetAP(i, HPc[1]);
 				format(iString, sizeof(iString), "{FFFFFF}His opponent %s had {CCCCCC}%.0f HP and %.0f Armour", Player[i][Name], HPc[0], HPc[1]);
 				SendClientMessageToAll(-1, iString);
 				Player[i][InDuel] = false;
@@ -4408,8 +4418,8 @@ public OnPlayerDeath(playerid, killerid, reason)
 		if(Current == -1) SendDeathMessage(killerid, playerid, reason);
 
 		new Float:HP[2], dl, dw;
-		GetPlayerHealth(killerid, HP[0]);
-		GetPlayerArmour(killerid, HP[1]);
+		GetHP(killerid, HP[0]);
+		GetAP(killerid, HP[1]);
 		new str[180];
 
 		if(Player[playerid][InDuel] == true) {
@@ -4907,8 +4917,8 @@ public OnPlayerEnterCheckpoint(playerid) {
 				format(iString, sizeof iString, "%sPlayers In CP", MAIN_TEXT_COLOUR);
 				foreach(new i : Player) {
 				    if(Player[i][WasInCP] == true) {
-				        GetPlayerHealth(i, HP);
-				        GetPlayerArmour(i, AP);
+				        GetHP(i, HP);
+				        GetAP(i, AP);
 				        format(iString, sizeof(iString), "%s~n~~r~~h~- %s%s (%.0f)", iString, MAIN_TEXT_COLOUR, Player[i][Name], (HP+AP));
 					}
 				}
@@ -4964,8 +4974,8 @@ public OnPlayerLeaveCheckpoint(playerid) {
 		format(iString, sizeof iString, "%sPlayers In CP", MAIN_TEXT_COLOUR);
 		foreach(new i : Player) {
 		    if(Player[i][WasInCP] == true) {
-		        GetPlayerHealth(i, HP);
-		        GetPlayerArmour(i, AP);
+		        GetHP(i, HP);
+		        GetAP(i, AP);
 		        format(iString, sizeof(iString), "%s~n~~r~~h~- %s%s (%.0f)", iString, MAIN_TEXT_COLOUR, Player[i][Name], (HP+AP));
 			}
 		}
@@ -5228,7 +5238,7 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 		    CallLocalFunction("OnPlayerTakeDamage", "ddfdd", damagedid, playerid, amount, weaponid, bodypart);
 		}
 
-		SetPlayerHealth(damagedid, 0);
+		SetHP(damagedid, 0);
 
 		if(!ServerAntiLag) return 1;
 	}
@@ -5246,9 +5256,9 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 	if(Player[damagedid][PauseCount] > 2) return 1;
 
 	new Float:Health[3], Float:Damage;
-	GetPlayerHealth(damagedid, Health[0]);
-	GetPlayerArmour(damagedid, Health[1]);
-
+	GetHP(damagedid, Health[0]);
+	GetAP(damagedid, Health[1]);
+	
 	if(Health[0] > 0) {
 	    if(amount > Health[0]) {
 	        Damage = amount - Health[0];
@@ -5299,9 +5309,13 @@ public HideAutoRefillText(playerid)
 
 public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 {
-    //ShowHitArrow(playerid, issuerid);
     if(Player[playerid][OnGunmenu] == true && Player[playerid][Playing])
         return 1;
+
+	if(weaponid == 49 || weaponid == 50 || weaponid == 51 || (weaponid == 54 && amount <= 10))
+	    return 1;
+
+    //ShowHitArrow(playerid, issuerid);
 
 	if(playerid != INVALID_PLAYER_ID && issuerid != INVALID_PLAYER_ID && bodypart == 9) // headshot
 	{
@@ -5331,7 +5345,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 				new shootername[MAX_PLAYER_NAME], shotname[MAX_PLAYER_NAME];
 				GetPlayerName(playerid, shotname, sizeof shotname);
 				GetPlayerName(issuerid, shootername, sizeof shootername);
-				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has just head-shot {FFFFFF}%s "COL_PRIM"({FFFFFF}%s"COL_PRIM")", shootername, shotname, wepName));
+				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has landed a shot on {FFFFFF}%s's head "COL_PRIM"({FFFFFF}%s"COL_PRIM")", shootername, shotname, wepName));
 			}
 		}
 	}
@@ -5345,8 +5359,8 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 
 
 	new Float:Health[3], Float:Damage;
-	GetPlayerHealth(playerid, Health[0]);
-	GetPlayerArmour(playerid, Health[1]);
+	GetHP(playerid, Health[0]);
+	GetAP(playerid, Health[1]);
 
 	if(ServerAntiLag == false) {
 		if(Player[playerid][AntiLag] == true && weaponid != -1) return 1;
@@ -5382,6 +5396,28 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		}
 	}
 	// <end>
+	
+	// Health and armour handling
+	if(weaponid == 54)
+	{
+	    SetHP(playerid, Health[0] - amount);
+	    goto skipped;
+	}
+	if(Health[1] > 0.0)
+	{
+		if((Health[1] - amount) < 0)
+		{
+		    new Float:diff = (Health[1] - amount);
+		    SetAP(playerid, 0.0);
+		    SetHP(playerid, Health[0] + diff);
+		}
+		else
+		    SetAP(playerid, Health[1] - amount);
+	}
+	else
+	    SetHP(playerid, Health[0] - amount);
+	// <end>
+	skipped:
 
 	if(Health[0] > 0) {
 	    if(amount > Health[0]) {
@@ -5403,7 +5439,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		if(Player[issuerid][Playing] == true && Player[playerid][Playing] == false) return 1;
 		if(Player[issuerid][Playing] == true && (Player[issuerid][Team] == REFEREE || Player[playerid][Team] == REFEREE)) return 1;
 
-		if(weaponid == 49)
+		/*if(weaponid == 49)
 		{
 		    if(Player[playerid][Playing] == true && Player[issuerid][Playing] == true)
 		    {
@@ -5426,7 +5462,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 				Player[issuerid][DontPause] = true;
 		        SetTimerEx("OnPlayerKicked", 50, false, "i", issuerid);
 			}
-		}
+		}*/
 
 	    if(GotHit[playerid] == 0) {
 			if(Health[1] == 0) {
@@ -6360,13 +6396,13 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 			if(Player[playerid][HealthBeforeMenu] <= 0.0)
 		    {
-		        SetPlayerHealth(playerid, RoundHP);
-				SetPlayerArmour(playerid, RoundAR);
+		        SetHP(playerid, RoundHP);
+				SetAP(playerid, RoundAR);
 		    }
 		    else
 		    {
- 				SetPlayerHealth(playerid, Player[playerid][HealthBeforeMenu]);
-				SetPlayerArmour(playerid, Player[playerid][ArmourBeforeMenu]);
+ 				SetHP(playerid, Player[playerid][HealthBeforeMenu]);
+				SetAP(playerid, Player[playerid][ArmourBeforeMenu]);
 			}
 			Player[playerid][OnGunmenu] = false;
 		}
@@ -7053,8 +7089,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
 					    foreach(new i : Player) {
 							SAMP_SetPlayerTeam(i, ANTILAG_TEAM);
-							GetPlayerHealth(i, PlayerHP[i]);
-							GetPlayerArmour(i, PlayerAP[i]);
+							GetHP(i, PlayerHP[i]);
+							GetAP(i, PlayerAP[i]);
 					    }
 						TextDrawSetString(AntiLagTD, sprintf("%sAntiLag: ~g~On", MAIN_TEXT_COLOUR));
 						TextDrawShowForAll(AntiLagTD);
@@ -7575,6 +7611,8 @@ public OnPlayerClickTextDraw(playerid, Text:clickedid)
 	        PlayerTextDrawShow(playerid, HPTextDraw_TD);
 	        PlayerTextDrawShow(playerid, ArmourTextDraw);
 			PlayerTextDrawShow(playerid, BaseID_VS);
+			ShowPlayerProgressBar(playerid, HealthBar);
+			ShowPlayerProgressBar(playerid, ArmourBar);
 
 
 
@@ -8004,8 +8042,12 @@ CMD:updates(playerid, params[])
     
 	strcat(string, "\n{FFFFFF}- Other fighting styles are made usable now with the power of /fightstyle.");
 	strcat(string, "\n{FFFFFF}- AC Update allowing functions to be used without the plugin loaded.");
-	strcat(string, "\n{FFFFFF}- Make sure you leave a message to your dead enemies using /deathmessage.");
+	strcat(string, "\n{FFFFFF}- Make sure you leave a message to your dead enemies using /deathdiss.");
 	strcat(string, "\n{FFFFFF}- Fixed team win bug that could make wrong results in a round.");
+	strcat(string, "\n{FFFFFF}- Gamemode now uses server-sided health which brings out some features:-");
+	strcat(string, "\n{FFFFFF}\t-Perfected fall protection.\n\t-Smoothly disabled heli-blades, falling, collision, explosions and fire.\n\t-No longer trusting the client, server handles player health which means less cheaters");
+	strcat(string, "\n{FFFFFF}");
+	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -8385,6 +8427,8 @@ CMD:freecam(playerid, params[])
 		TextDrawShowForPlayer(playerid, WebText);
 		PlayerTextDrawShow(playerid, HPTextDraw_TD);
 		PlayerTextDrawShow(playerid, ArmourTextDraw);
+		ShowPlayerProgressBar(playerid, HealthBar);
+		ShowPlayerProgressBar(playerid, ArmourBar);
 	}
 	else
 	{
@@ -8396,6 +8440,8 @@ CMD:freecam(playerid, params[])
 		TextDrawHideForPlayer(playerid, WebText);
 		PlayerTextDrawHide(playerid, HPTextDraw_TD);
 		PlayerTextDrawHide(playerid, ArmourTextDraw);
+		HidePlayerProgressBar(playerid, HealthBar);
+		HidePlayerProgressBar(playerid, ArmourBar);
 	}
 	LogAdminCommand("freecam", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -8611,8 +8657,8 @@ CMD:lobby(playerid, params[])
 
     if(Player[playerid][Playing] == true) {
 		new Float:HP[2];
-		GetPlayerHealth(playerid, HP[0]);
-		GetPlayerArmour(playerid, HP[1]);
+		GetHP(playerid, HP[0]);
+		GetAP(playerid, HP[1]);
 		format(iString, sizeof(iString), "{FFFFFF}%s (%d) "COL_PRIM"has removed himself from the round. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, HP[0], HP[1]);
 		SendClientMessageToAll(-1, iString);
         RemovePlayerFromRound(playerid);
@@ -8755,8 +8801,8 @@ CMD:rq(playerid, params[])
 
 	} else {
 		new pID, iString[180], Float:HPs[2];
-		GetPlayerHealth(playerid, HPs[0]);
-		GetPlayerArmour(playerid, HPs[1]);
+		GetHP(playerid, HPs[0]);
+		GetAP(playerid, HPs[1]);
 		pID = Player[playerid][challengerid];
 
 		format(iString, sizeof(iString), "%s%s {FFFFFF}rage-quitted from a duel | {CCCCCC}HP %.0f | Armour %.0f", TextColor[Player[playerid][Team]], Player[playerid][Name], HPs[0], HPs[1]);
@@ -9057,6 +9103,8 @@ CMD:textdraw(playerid, params[])
     PlayerTextDrawShow(playerid, HPTextDraw_TD);
     PlayerTextDrawShow(playerid, ArmourTextDraw);
 	PlayerTextDrawShow(playerid, BaseID_VS);
+	ShowPlayerProgressBar(playerid, HealthBar);
+	ShowPlayerProgressBar(playerid, ArmourBar);
 
 	new iString[160];
 	if(Player[playerid][TextPos] == false) format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDamage ~r~%.0f~n~%sTotal Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[playerid][RoundKills], MAIN_TEXT_COLOUR, Player[playerid][RoundDamage], MAIN_TEXT_COLOUR, Player[playerid][TotalDamage]);
@@ -12113,9 +12161,9 @@ CMD:help(playerid, params[])
 	return 1;
 }
 
-CMD:deathmessage(playerid, params[])
+CMD:deathdiss(playerid, params[])
 {
-    if(isnull(params)) return SendUsageMessage(playerid,"/deathmessage [Message]");
+    if(isnull(params)) return SendUsageMessage(playerid,"/deathdiss [Message]");
 	if(strlen(params) <= 3) return SendErrorMessage(playerid,"Too short!");
 	if(strlen(params) > 64) return SendErrorMessage(playerid,"Too long!");
 
@@ -12123,7 +12171,7 @@ CMD:deathmessage(playerid, params[])
 	format(DeathMessageStr[playerid], 64, "%s", params);
 	format(iString, sizeof(iString), "UPDATE `Players` SET `DeathMessage` = '%s' WHERE `Name` = '%s'", DB_Escape(params), DB_Escape(Player[playerid][Name]) );
 	db_free_result(db_query(sqliteconnection, iString));
-	SendClientMessage(playerid, -1, "Death message has been changed successfully!");
+	SendClientMessage(playerid, -1, "Death diss message has been changed successfully!");
 	return 1;
 }
 
@@ -13044,8 +13092,8 @@ CMD:rem(playerid, params[])
 	if(ElapsedTime > 60) return SendErrorMessage(playerid,"Too late to remove yourself.");
 
     new iString[160], Float:HP[2];
-    GetPlayerHealth(playerid, HP[0]);
-    GetPlayerArmour(playerid, HP[1]);
+    GetHP(playerid, HP[0]);
+    GetAP(playerid, HP[1]);
 
     format(iString, sizeof(iString), "{FFFFFF}%s (%d) "COL_PRIM"removed himself from round. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, HP[0], HP[1]);
     SendClientMessageToAll(-1, iString);
@@ -13063,8 +13111,8 @@ CMD:remove(playerid, params[])
 	new pID = strval(params);
 
     new iString[160], Float:HP[2];
-    GetPlayerHealth(pID, HP[0]);
-    GetPlayerArmour(pID, HP[1]);
+    GetHP(pID, HP[0]);
+    GetAP(pID, HP[1]);
 
 	if(!IsPlayerConnected(pID)) return SendErrorMessage(playerid,"That player isn't connected.");
 	if(Player[pID][Playing] == false) return SendErrorMessage(playerid,"That player is not playing.");
@@ -13358,8 +13406,8 @@ CMD:nolag(playerid, params[])
 
 	    foreach(new i : Player) {
 			SAMP_SetPlayerTeam(i, ANTILAG_TEAM);
-			GetPlayerHealth(i, PlayerHP[i]);
-			GetPlayerArmour(i, PlayerAP[i]);
+			GetHP(i, PlayerHP[i]);
+			GetAP(i, PlayerAP[i]);
 	    }
 
 		TextDrawSetString(AntiLagTD, sprintf("%sAntiLag: ~g~On", MAIN_TEXT_COLOUR));
@@ -13667,6 +13715,8 @@ CMD:specoff(playerid, params[])
 		TextDrawShowForPlayer(playerid, WebText);
 		PlayerTextDrawShow(playerid, HPTextDraw_TD);
 		PlayerTextDrawShow(playerid, ArmourTextDraw);
+		ShowPlayerProgressBar(playerid, HealthBar);
+		ShowPlayerProgressBar(playerid, ArmourBar);
 		return 1;
 	}
 	else
@@ -13683,8 +13733,8 @@ CMD:kill(playerid, params[])
 
 	if(Player[playerid][Playing] == true) {
 	    new iString[180], Float:HP[2];
-	    GetPlayerHealth(playerid, HP[0]);
-	    GetPlayerArmour(playerid, HP[1]);
+	    GetHP(playerid, HP[0]);
+	    GetAP(playerid, HP[1]);
 	    format(iString, sizeof(iString), "{FFFFFF}%s (%d) "COL_PRIM"killed himself. {CCCCCC}HP %.0f | Armour %.0f", Player[playerid][Name], playerid, HP[0], HP[1]);
     	SendClientMessageToAll(-1, iString);
 	}
@@ -16796,6 +16846,10 @@ LoadPlayerTextDraws(playerid)
 	PlayerTextDrawSetOutline(playerid, BITCH, 1);
     PlayerTextDrawAlignment(playerid, BITCH, 2);
     PlayerTextDrawSetShadow(playerid, BITCH, 0);
+    
+    //HealthBar = CreatePlayerProgressBar(playerid, 548.000000, 64.000000, 63.000000, 10.000000, 16711935, 100.000000, BAR_DIRECTION_RIGHT);
+	//ArmourBar = CreatePlayerProgressBar(playerid, 548.000000, 46.000000, 63.000000, 10.000000, 16711935, 100.000000, BAR_DIRECTION_RIGHT);
+
 
     TargetInfoTD = CreatePlayerTextDraw(playerid, 50.000000, 285.000000, "_");
 	PlayerTextDrawBackgroundColor(playerid, TargetInfoTD, MAIN_BACKGROUND_COLOUR);
@@ -18073,6 +18127,8 @@ public SpawnConnectedPlayer(playerid, team)
         PlayerTextDrawShow(playerid, HPTextDraw_TD);
         PlayerTextDrawShow(playerid, ArmourTextDraw);
 		PlayerTextDrawShow(playerid, BaseID_VS);
+		ShowPlayerProgressBar(playerid, HealthBar);
+		ShowPlayerProgressBar(playerid, ArmourBar);
 
         if(WarMode == true)
 		{
@@ -18094,6 +18150,82 @@ public SpawnConnectedPlayer(playerid, team)
 // Stocks
 //------------------------------------------------------------------------------
 
+stock SetHP(playerid, Float:amount)
+{
+	PlayerHealth[playerid] = amount;
+	SetPlayerHealth(playerid, 256 + amount);
+	SetPlayerProgressBarValue(playerid, HealthBar, amount);
+	if(amount <= 0)
+	    SetPlayerHealth(playerid, 0.0);
+	    
+	if(amount > 100.0)
+	{
+	    SetPlayerProgressBarColour(playerid, HealthBar, 0x00FF00FF);
+	}
+	if(amount <= 100.0 && amount > 70.0)
+ 	{
+ 	    SetPlayerProgressBarColour(playerid, HealthBar, 0x00FF00FF);
+ 	}
+	if(amount <= 70.0 && amount > 50.0)
+	{
+	    SetPlayerProgressBarColour(playerid, HealthBar, 0xFFFF00FF);
+ 	}
+	if(amount <= 50.0 && amount > 30.0)
+	{
+        SetPlayerProgressBarColour(playerid, HealthBar, 0xCC0000FF);
+	}
+	if(amount <= 30.0 && amount >= 0.0)
+	{
+        SetPlayerProgressBarColour(playerid, HealthBar, 0xFF0000FF);
+	}
+	return 1;
+}
+
+stock SetAP(playerid, Float:amount)
+{
+	PlayerArmour[playerid] = amount;
+	SetPlayerArmour(playerid, 256 + amount);
+    SetPlayerProgressBarValue(playerid, ArmourBar, amount);
+    if(amount <= 0)
+	    SetPlayerArmour(playerid, 0.0);
+	    
+    if(amount > 100)
+	{
+	    SetPlayerProgressBarColour(playerid, ArmourBar, 0x00FF00FF);
+	}
+	if(amount <= 100 && amount > 70)
+ 	{
+ 	    SetPlayerProgressBarColour(playerid, ArmourBar, 0x00FF00FF);
+ 	}
+	if(amount <= 70 && amount > 50)
+	{
+	    SetPlayerProgressBarColour(playerid, ArmourBar, 0xFFFF00FF);
+ 	}
+	if(amount <= 50 && amount > 30)
+	{
+        SetPlayerProgressBarColour(playerid, ArmourBar, 0xCC0000FF);
+	}
+	if(amount <= 30 && amount >= 0)
+	{
+        SetPlayerProgressBarColour(playerid, ArmourBar, 0xFF0000FF);
+	}
+	return 1;
+}
+
+stock GetHP(playerid, &Float:health)
+{
+	health = PlayerHealth[playerid];
+	return 1;
+}
+
+stock GetAP(playerid, &Float:armour)
+{
+	armour = PlayerArmour[playerid];
+	return 1;
+}
+
+
+
 forward HidePlayerDeathMessage(playerid);
 public HidePlayerDeathMessage(playerid)
 {
@@ -18107,7 +18239,7 @@ stock ShowPlayerDeathMessage(killerid, playerid)
 	if(!strcmp("NO_DEATH_MESSAGE", DeathMessageStr[killerid], false))
 	    return 0;
 	    
-	PlayerTextDrawSetString(playerid, DeathMessage[0], sprintf("A death message to you from %s", Player[killerid][Name]));
+	PlayerTextDrawSetString(playerid, DeathMessage[0], sprintf("A death diss from %s", Player[killerid][Name]));
     PlayerTextDrawSetString(playerid, DeathMessage[1], sprintf("%s", DeathMessageStr[killerid]));
 	PlayerTextDrawShow(playerid, DeathMessage[0]);
     PlayerTextDrawShow(playerid, DeathMessage[1]);
@@ -18423,8 +18555,8 @@ stock DamagePlayer(playerid, Float:amnt)
 {
 	new Float:toReturn;
 	new Float:temp_hp, Float:temp_arm;
-	GetPlayerHealth(playerid, temp_hp);
-	GetPlayerArmour(playerid, temp_arm);
+	GetHP(playerid, temp_hp);
+	GetAP(playerid, temp_arm);
 	if(temp_arm < 0.1)
 	{
 		if(temp_hp < temp_arm)
@@ -18432,7 +18564,7 @@ stock DamagePlayer(playerid, Float:amnt)
 	}
 	if(temp_arm <= 0)
 	{
-		SetPlayerHealth(playerid, temp_hp - amnt);
+		SetHP(playerid, temp_hp - amnt);
 		toReturn = temp_hp - amnt;
 	}
 	else if(temp_arm >= 1.00)
@@ -18441,13 +18573,13 @@ stock DamagePlayer(playerid, Float:amnt)
 		// printf("%f", minus_result); //For debug.
 		if(minus_result <= 0.00)
 		{
-			SetPlayerArmour(playerid, 0.00);
-			SetPlayerHealth(playerid, minus_result + temp_hp);
+			SetAP(playerid, 0.00);
+			SetHP(playerid, minus_result + temp_hp);
 			toReturn = minus_result + temp_hp;
 		}
 		else if(minus_result >= 1.00)
 		{
-			SetPlayerArmour(playerid, minus_result);
+			SetAP(playerid, minus_result);
 			toReturn = minus_result;
 		}
 	}
@@ -18539,12 +18671,12 @@ stock ResetDuellersToTheirTeams(dueller1, dueller2)
 }
 
 stock SetPlayerHealthEx(playerid, Float:amount) {
-	SetPlayerHealth(playerid, amount);
+	SetHP(playerid, amount);
 	PlayerHP[playerid] = amount;
 }
 
 stock SetPlayerArmourEx(playerid, Float:amount) {
-	SetPlayerArmour(playerid, amount);
+	SetAP(playerid, amount);
 	PlayerAP[playerid] = amount;
 }
 
@@ -19489,6 +19621,14 @@ stock HPArmourBaseID_VS_TD(playerid) {
 	PlayerTextDrawDestroy(playerid, HPTextDraw_TD);
 	PlayerTextDrawDestroy(playerid, ArmourTextDraw);
 	PlayerTextDrawDestroy(playerid, BaseID_VS);
+	
+	DestroyPlayerProgressBar(playerid, HealthBar);
+	DestroyPlayerProgressBar(playerid, ArmourBar);
+	
+	HealthBar = CreatePlayerProgressBar(playerid, 548.000000, 64.000000, 63.000000, 10.000000, 16711935, 100.000000, BAR_DIRECTION_RIGHT);
+	ArmourBar = CreatePlayerProgressBar(playerid, 548.000000, 46.000000, 63.000000, 10.000000, 16711935, 100.000000, BAR_DIRECTION_RIGHT);
+	ShowPlayerProgressBar(playerid, HealthBar);
+    ShowPlayerProgressBar(playerid, ArmourBar);
 
 	if(Player[playerid][TextPos] == false) {
 		HPTextDraw_TD = CreatePlayerTextDraw(playerid,577, 67.7, "_");
@@ -19549,8 +19689,7 @@ stock HPArmourBaseID_VS_TD(playerid) {
 	    PlayerTextDrawSetProportional(playerid, BaseID_VS, 1);
 	    PlayerTextDrawSetShadow(playerid, BaseID_VS,0);
 	}
-
-
+	return 1;
 }
 
 stock DB_Escape(text[]){
@@ -20936,8 +21075,8 @@ stock StorePlayerVariables(playerid) {
 	 		GetPlayerFacingAngle(playerid, SaveVariables[i][pCoords][3]);
 
 			if(Player[i][ToAddInRound] == false) {
-				GetPlayerHealth(playerid, SaveVariables[i][gHealth]);
-				GetPlayerArmour(playerid, SaveVariables[i][gArmour]);
+				GetHP(playerid, SaveVariables[i][gHealth]);
+				GetAP(playerid, SaveVariables[i][gArmour]);
 			} else {
 			    SaveVariables[i][gArmour] = 100.0;
 			    SaveVariables[i][gHealth] = 100.0;
@@ -21626,8 +21765,8 @@ SyncPlayer(playerid)
 	}
 
 	new Float:HP[2], Float:Pos[4], Int, VirtualWorld, CurrWep;
-	GetPlayerHealth(playerid, HP[0]);
-	GetPlayerArmour(playerid, HP[1]);
+	GetHP(playerid, HP[0]);
+	GetAP(playerid, HP[1]);
 
 	CurrWep = GetPlayerWeapon(playerid);
 
@@ -22319,8 +22458,8 @@ public OnScriptUpdate()
 
 //		new iString[200];
 
-		GetPlayerHealth(i, Player[i][pHealth]);
-		GetPlayerArmour(i, Player[i][pArmour]);
+		GetHP(i, Player[i][pHealth]);
+		GetAP(i, Player[i][pArmour]);
 
 		if(Player[i][PROT_HPAutoRefilled] == false)
 		{
@@ -22516,8 +22655,8 @@ public OnScriptUpdate()
 						if(Player[i][OutOfArena] <= 0) {
 		                    RemovePlayerFromRound(i);
 							new Float: hp, Float: arm;
-							GetPlayerHealth( i, hp );
-							GetPlayerArmour( i, arm );
+							GetHP( i, hp );
+							GetAP( i, arm );
 						    format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has been removed for not staying in Arena. {FFFFFF}.: (%0.1f | %0.1f) :.", Player[i][Name], hp, arm);
 						    SendClientMessageToAll(-1, iString);
 
@@ -22774,8 +22913,8 @@ public OnScriptUpdate()
 				format(iString, sizeof iString, "%sPlayers In CP", MAIN_TEXT_COLOUR);
 				foreach(new i : Player) {
 				    if(Player[i][WasInCP] == true) {
-				        GetPlayerHealth(i, HP);
-				        GetPlayerArmour(i, AP);
+				        GetHP(i, HP);
+				        GetAP(i, AP);
 				        format(iString, sizeof(iString), "%s~n~~r~~h~- %s%s (%.0f)", iString, MAIN_TEXT_COLOUR, Player[i][Name], (HP+AP));
 					}
 				}
@@ -23272,8 +23411,8 @@ public OnPlayerReplace(ToAddID, ToReplaceID, playerid) {
 	GetPlayerPos(ToReplaceID, Pos[0], Pos[1], Pos[2]);
 	GetPlayerFacingAngle(ToReplaceID, Pos[3]);
 
-	GetPlayerHealth(ToReplaceID, HP[0]);
-	GetPlayerArmour(ToReplaceID, HP[1]);
+	GetHP(ToReplaceID, HP[0]);
+	GetAP(ToReplaceID, HP[1]);
 
 	new Weapons[13], Ammo[13];
 	for(new i = 0; i < 13; i++){
@@ -24507,8 +24646,8 @@ ShowPlayerWeaponMenu(playerid, team)
 
 	if(ElapsedTime > 3)
 	{
-		GetPlayerHealth(playerid, Player[playerid][HealthBeforeMenu]);
-		GetPlayerArmour(playerid, Player[playerid][ArmourBeforeMenu]);
+		GetHP(playerid, Player[playerid][HealthBeforeMenu]);
+		GetAP(playerid, Player[playerid][ArmourBeforeMenu]);
 	}
 	else
 	{
@@ -24713,8 +24852,8 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 		    if(Player[i][Playing] == true) {
 				OnPlayerAmmoUpdate(i);
 				new Float:HP[2];
-				GetPlayerHealth(i, HP[0]);
-				GetPlayerArmour(i, HP[1]);
+				GetHP(i, HP[0]);
+				GetAP(i, HP[1]);
 
 				if(Player[i][Team] == ATTACKER) {
 					ahpleft = ahpleft + (HP[0] + HP[1]);
@@ -25675,8 +25814,8 @@ SpectatePlayer(playerid, specid) {
 	//{
 	// spectation info tds
 	new iString[256],Float:aArmour, Float:aHealth;
-	GetPlayerHealth(specid, aHealth);
-	GetPlayerArmour(specid, aArmour);
+	GetHP(specid, aHealth);
+	GetAP(specid, aArmour);
 
 	format(iString, sizeof(iString),"%s%s ~r~~h~%d~n~~n~%s(%.0f) (~r~~h~%.0f%s)~n~FPS: ~r~~h~%d %sPing: ~r~~h~%d~n~%sPacket-Loss: ~r~~h~%.1f~n~%sKills: ~r~~h~%d~n~%sDamage: ~r~~h~%.0f~n~%sTotal Dmg: ~r~~h~%.0f",
 		MAIN_TEXT_COLOUR, Player[specid][Name], specid, MAIN_TEXT_COLOUR, Player[specid][pArmour], Player[specid][pHealth], MAIN_TEXT_COLOUR, Player[specid][FPS], MAIN_TEXT_COLOUR, GetPlayerPing(specid), MAIN_TEXT_COLOUR, GetPlayerPacketLoss(specid), MAIN_TEXT_COLOUR, Player[specid][RoundKills], MAIN_TEXT_COLOUR, Player[specid][RoundDamage], MAIN_TEXT_COLOUR, Player[specid][TotalDamage]);
@@ -25724,6 +25863,8 @@ SpectatePlayer(playerid, specid) {
 	PlayerTextDrawHide(playerid, RoundKillDmgTDmg);
 	PlayerTextDrawHide(playerid, ArmourTextDraw);
 	PlayerTextDrawHide(playerid, HPTextDraw_TD);
+	HidePlayerProgressBar(playerid, HealthBar);
+	HidePlayerProgressBar(playerid, ArmourBar);
 
 
 	SetPlayerVirtualWorld(playerid, GetPlayerVirtualWorld(specid));
@@ -25892,6 +26033,8 @@ StopSpectate(playerid) {
 	PlayerTextDrawShow(playerid, RoundKillDmgTDmg);
 	PlayerTextDrawShow(playerid, ArmourTextDraw);
 	PlayerTextDrawShow(playerid, HPTextDraw_TD);
+	ShowPlayerProgressBar(playerid, HealthBar);
+	ShowPlayerProgressBar(playerid, ArmourBar);
 
     TogglePlayerSpectating(playerid, 0);
 
