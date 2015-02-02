@@ -18153,10 +18153,17 @@ public SpawnConnectedPlayer(playerid, team)
 stock SetHP(playerid, Float:amount)
 {
 	PlayerHealth[playerid] = amount;
-	SetPlayerHealth(playerid, 256 + amount);
-	SetPlayerProgressBarValue(playerid, HealthBar, amount);
-	if(amount <= 0)
+	if(amount <= 0.0)
+	{
 	    SetPlayerHealth(playerid, 0.0);
+	    HidePlayerProgressBar(playerid, HealthBar);
+	}
+	else
+	{
+		SetPlayerHealth(playerid, 256 + amount);
+		ShowPlayerProgressBar(playerid, HealthBar);
+	}
+	SetPlayerProgressBarValue(playerid, HealthBar, amount);
 	    
 	if(amount > 100.0)
 	{
@@ -18184,10 +18191,17 @@ stock SetHP(playerid, Float:amount)
 stock SetAP(playerid, Float:amount)
 {
 	PlayerArmour[playerid] = amount;
-	SetPlayerArmour(playerid, 256 + amount);
-    SetPlayerProgressBarValue(playerid, ArmourBar, amount);
-    if(amount <= 0)
+	if(amount <= 0.0)
+	{
 	    SetPlayerArmour(playerid, 0.0);
+	    HidePlayerProgressBar(playerid, ArmourBar);
+	}
+	else
+	{
+		SetPlayerArmour(playerid, 256 + amount);
+		ShowPlayerProgressBar(playerid, ArmourBar);
+	}
+    SetPlayerProgressBarValue(playerid, ArmourBar, amount);
 	    
     if(amount > 100)
 	{
