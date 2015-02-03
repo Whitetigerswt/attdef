@@ -17989,7 +17989,7 @@ stock SetHP(playerid, Float:amount)
 	}
 	else
 	{
-		SetPlayerHealth(playerid, 256 + amount);
+		SetPlayerHealth(playerid, 65536 + amount);
 		ShowPlayerProgressBar(playerid, HealthBar);
 	}
 	SetPlayerProgressBarValue(playerid, HealthBar, amount);
@@ -18027,7 +18027,7 @@ stock SetAP(playerid, Float:amount)
 	}
 	else
 	{
-		SetPlayerArmour(playerid, 256 + amount);
+		SetPlayerArmour(playerid, 65536 + amount);
 		ShowPlayerProgressBar(playerid, ArmourBar);
 	}
     SetPlayerProgressBarValue(playerid, ArmourBar, amount);
