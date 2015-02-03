@@ -5302,6 +5302,10 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 	// <end>
 	
 	// Health and armour handling
+	if(IsPlayerConnected(issuerid))
+		if(Player[issuerid][Playing] == true && (Player[issuerid][Team] == Player[playerid][Team]))
+			return 1;
+			
 	if(weaponid == 54)
 	{
 	    SetHP(playerid, Health[0] - amount);
@@ -16675,10 +16679,6 @@ LoadPlayerTextDraws(playerid)
 	PlayerTextDrawSetOutline(playerid, BITCH, 1);
     PlayerTextDrawAlignment(playerid, BITCH, 2);
     PlayerTextDrawSetShadow(playerid, BITCH, 0);
-    
-    //HealthBar = CreatePlayerProgressBar(playerid, 548.000000, 64.000000, 63.000000, 10.000000, 16711935, 100.000000, BAR_DIRECTION_RIGHT);
-	//ArmourBar = CreatePlayerProgressBar(playerid, 548.000000, 46.000000, 63.000000, 10.000000, 16711935, 100.000000, BAR_DIRECTION_RIGHT);
-
 
     TargetInfoTD = CreatePlayerTextDraw(playerid, 50.000000, 285.000000, "_");
 	PlayerTextDrawBackgroundColor(playerid, TargetInfoTD, MAIN_BACKGROUND_COLOUR);
