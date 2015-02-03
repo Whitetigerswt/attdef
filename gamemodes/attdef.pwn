@@ -2320,7 +2320,7 @@ new GRAFFObject[MAX_PLAYERS],
 	Index[MAX_PLAYERS] = 0,
 	UseBold[MAX_PLAYERS] = 0,
 	TextAlign[MAX_PLAYERS] = 1,
-	FontName[MAX_PLAYERS][128],
+	FontName[MAX_PLAYERS][32],
 	FontSize[MAX_PLAYERS] = 24,
 	GRAFFTextColor[MAX_PLAYERS],
 	BackgColor[MAX_PLAYERS],
@@ -2333,7 +2333,7 @@ new
 
 #define GRAFF_Grey              "{C4C4C4}"
 
-#define MAX_GRAFFS 200
+#define MAX_GRAFFS 100
 
 enum GRAFFITI_DATA
 {
@@ -2423,6 +2423,7 @@ stock LoadGraffs()
 			TotalGraffs ++;
 		} while(db_next_row(res));
 		skipped:
+		db_free_result(res);
 		printf("Graffs Loaded: %d", TotalGraffs);
 	#else
 	print("Graffiti system is currently not availble on MySQL version!");
@@ -2520,8 +2521,8 @@ CMD:spray(playerid, params[])
 		Index[playerid] = 0;
         Text[playerid] = "Blank",
 		FontName[playerid] = "Arial",
-		GRAFFTextColor[playerid] = HexToInt("0xFFFF8200"),
-		BackgColor[playerid] = HexToInt("0xFF000000");
+		GRAFFTextColor[playerid] = 0xFFFF8200;
+		BackgColor[playerid] = 0xFF000000;
 
     	CreatingTextO[playerid] = true, ShowGraffMainMenu(playerid);
     	GetPlayerPos(playerid, GRAFFPos[playerid][0], GRAFFPos[playerid][1], GRAFFPos[playerid][2]), GetPlayerFacingAngle(playerid, GRAFFPos[playerid][3]);
@@ -2631,7 +2632,7 @@ public OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext
 				case 11: {
                     CreatingTextO[playerid] = false, DestroyPlayerObject(playerid, GRAFFObject[playerid]);
 					TextAlign[playerid] = 1, Text[playerid] = "Example", FontName[playerid] = "Arial",
-					GRAFFTextColor[playerid] = HexToInt("0xFFFF8200"), BackgColor[playerid] = HexToInt("0xFF000000"),
+					GRAFFTextColor[playerid] = 0xFFFF8200, BackgColor[playerid] = 0xFF000000,
 					Size[playerid] = 50, Index[playerid] = 0, UseBold[playerid] = 0,
 					FontSize[playerid] = 24, OName[playerid] = "0", ObjectID[playerid] = 19353;
 					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"INFO: {FFFFFF}All settings have been reset.");
@@ -2694,7 +2695,7 @@ public OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext
 	if(dialogid == FontNDialog)
 	{
 	    if(response) {
-	        new string[128]; format(string, sizeof(string),"%s",inputtext); FontName[playerid] = string;
+	        new string[32]; format(string, sizeof(string),"%s",inputtext); FontName[playerid] = string;
 	        format(string, sizeof(string), ""GRAFF_Grey"* "COL_PRIM"Text Font: {FFFFFF}%s",FontName[playerid]); SendClientMessage(playerid,-1,string);
 			UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
 	    }
@@ -2758,7 +2759,7 @@ public OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext
 	if(dialogid == ColorDialog2)
 	{
 	    if(response) {
-	    	new string[80]; GRAFFTextColor[playerid] = HexToInt(inputtext);
+	    	new string[80]; GRAFFTextColor[playerid] = strval(inputtext);
 			format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Text Color: {FFFFFF}%i", GRAFFTextColor[playerid]);
 			SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
 		}
@@ -2776,14 +2777,14 @@ public OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext
 	    if(response) {
 	        switch(listitem)
 	        {
-	            case 0: { GRAFFTextColor[playerid] = HexToInt("0xFFFF0000"); } //Red
-	            case 1: { GRAFFTextColor[playerid] = HexToInt("0xFF04B404"); }
-	            case 2: { GRAFFTextColor[playerid] = HexToInt("0xFF00B5CD"); }
-	            case 3: { GRAFFTextColor[playerid] = HexToInt("0xFFFFFF00"); } //Yellow
-	            case 4: { GRAFFTextColor[playerid] = HexToInt("0xFF0000FF"); }
-	            case 5: { GRAFFTextColor[playerid] = HexToInt("0xFF848484"); }
-	            case 6: { GRAFFTextColor[playerid] = HexToInt("0xFFFF00FF"); }
-	            case 7: { GRAFFTextColor[playerid] = HexToInt("0xFFFFFFFF"); } //White
+	            case 0: { GRAFFTextColor[playerid] = 0xFFFF0000; } //Red
+	            case 1: { GRAFFTextColor[playerid] = 0xFF04B404; }
+	            case 2: { GRAFFTextColor[playerid] = 0xFF00B5CD; }
+	            case 3: { GRAFFTextColor[playerid] = 0xFFFFFF00; } //Yellow
+	            case 4: { GRAFFTextColor[playerid] = 0xFF0000FF; }
+	            case 5: { GRAFFTextColor[playerid] = 0xFF848484; }
+	            case 6: { GRAFFTextColor[playerid] = 0xFFFF00FF; }
+	            case 7: { GRAFFTextColor[playerid] = 0xFFFFFFFF; } //White
 	        }
 	        new string[80]; UpdateGraffObject(playerid);
 	        format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Text Color: {FFFFFF}%i", GRAFFTextColor[playerid]);
@@ -2822,7 +2823,7 @@ public OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext
 	if(dialogid == ColorDialog4)
 	{
 	    if(response) {
-	    	new string[80]; BackgColor[playerid] = HexToInt(inputtext);
+	    	new string[80]; BackgColor[playerid] = strval(inputtext);
 			format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Background Color: {FFFFFF}%i", BackgColor[playerid]);
 			SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
 		}
@@ -2841,14 +2842,14 @@ public OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext
 		{
 	        switch(listitem)
 	        {
-	            case 0: { BackgColor[playerid] = HexToInt("0xFFFF0000"); } //Red
-	            case 1: { BackgColor[playerid] = HexToInt("0xFF04B404"); }
-	            case 2: { BackgColor[playerid] = HexToInt("0xFF00B5CD"); }
-	            case 3: { BackgColor[playerid] = HexToInt("0xFFFFFF00"); } //Yellow
-	            case 4: { BackgColor[playerid] = HexToInt("0xFF0000FF"); }
-	            case 5: { BackgColor[playerid] = HexToInt("0xFF848484"); }
-	            case 6: { BackgColor[playerid] = HexToInt("0xFFFF00FF"); }
-	            case 7: { BackgColor[playerid] = HexToInt("0xFFFFFFFF"); } //White
+	            case 0: { BackgColor[playerid] = 0xFFFF0000; } //Red
+	            case 1: { BackgColor[playerid] = 0xFF04B404; }
+	            case 2: { BackgColor[playerid] = 0xFF00B5CD; }
+	            case 3: { BackgColor[playerid] = 0xFFFFFF00; } //Yellow
+	            case 4: { BackgColor[playerid] = 0xFF0000FF; }
+	            case 5: { BackgColor[playerid] = 0xFF848484; }
+	            case 6: { BackgColor[playerid] = 0xFFFF00FF; }
+	            case 7: { BackgColor[playerid] = 0xFFFFFFFF; } //White
 	        }
 	        new string[80]; UpdateGraffObject(playerid); ShowGraffMainMenu(playerid);
 	        format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Background Color: {FFFFFF}%i", BackgColor[playerid]);
@@ -2896,7 +2897,7 @@ public OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext
 			CreatingTextO[playerid] = false, DestroyPlayerObject(playerid, GRAFFObject[playerid]);
             PlayerSaveNewGraff(playerid);
 			TextAlign[playerid] = 1, Text[playerid] = "Blank", FontName[playerid] = "Arial",
-			GRAFFTextColor[playerid] = HexToInt("0xFFFF8200"), BackgColor[playerid] = HexToInt("0xFF000000"),
+			GRAFFTextColor[playerid] = 0xFFFF8200, BackgColor[playerid] = 0xFF000000,
 			Size[playerid] = 50, Index[playerid] = 0, UseBold[playerid] = 0,
 			FontSize[playerid] = 24, OName[playerid] = "0", ObjectID[playerid] = 19353;
 
@@ -21658,20 +21659,6 @@ stock SpawnPlayerEx(playerid) {
 	 	SpawnPlayer(playerid);
 	}
 	return 1;
-}
-
-
-stock HexToInt(string[])
-{
-  if (string[0]==0) return 0;
-  new i;
-  new cur=1;
-  new res=0;
-  for (i=strlen(string);i>0;i--) {
-    if (string[i-1]<58) res=res+cur*(string[i-1]-48); else res=res+cur*(string[i-1]-65+10);
-    cur=cur*16;
-  }
-  return res;
 }
 
 
