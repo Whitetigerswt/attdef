@@ -5209,16 +5209,24 @@ public HideAutoRefillText(playerid)
 
 public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 {
-    if(Player[playerid][OnGunmenu] && Player[playerid][Playing])
+    if((Player[playerid][OnGunmenu] && Player[playerid][Playing]) ||
+    	(weaponid == 49 || weaponid == 50 || weaponid == 51 || (weaponid == 54 && amount <= 10)) ||
+    	Player[playerid][IsAFK])
+    {
+    	// Fix HP bars from going out of sync
+    	new Float:hp, Float:ar;
+
+    	// Get fake hp
+    	GetHP(playerid, hp);
+    	GetAP(playerid, ar);
+
+    	// Set fake hp (will cause hp/armour flicker)
+    	SetHP(playerid, hp);
+    	SetAP(playerid, ar);
+
         return 1;
+    }
 
-	if(weaponid == 49 || weaponid == 50 || weaponid == 51 || (weaponid == 54 && amount <= 10))
-	    return 1;
-
-	if(Player[playerid][IsAFK])
-	{
-		return 1;
-	}
 
     //ShowHitArrow(playerid, issuerid);
 
