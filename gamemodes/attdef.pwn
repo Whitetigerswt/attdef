@@ -17983,14 +17983,35 @@ public SpawnConnectedPlayer(playerid, team)
 	return 1;
 }
 
-
 //------------------------------------------------------------------------------
 // Stocks
 //------------------------------------------------------------------------------
 
 stock SetHP(playerid, Float:amount)
 {
+	if(amount > 100.0)
+	{
+	    SetPlayerProgressBarColour(playerid, HealthBar, 7799039);
+	}
+	if(amount <= 100.0 && amount > 70.0)
+ 	{
+ 	    SetPlayerProgressBarColour(playerid, HealthBar, 7799039);
+ 	}
+	if(amount <= 70.0 && amount > 50.0)
+	{
+	    SetPlayerProgressBarColour(playerid, HealthBar, 0x938305FF);
+ 	}
+	if(amount <= 50.0 && amount > 30.0)
+	{
+        SetPlayerProgressBarColour(playerid, HealthBar, 0x938305FF);
+	}
+	if(amount <= 30.0 && amount >= 0.0)
+	{
+        SetPlayerProgressBarColour(playerid, HealthBar, 0x890606FF);
+	}
+	
 	PlayerHealth[playerid] = amount;
+	SetPlayerProgressBarValue(playerid, HealthBar, amount);
 	if(amount <= 0.0)
 	{
 	    SetPlayerHealth(playerid, 0.0);
@@ -18001,34 +18022,34 @@ stock SetHP(playerid, Float:amount)
 		SetPlayerHealth(playerid, 65536 + amount);
 		ShowPlayerProgressBar(playerid, HealthBar);
 	}
-	SetPlayerProgressBarValue(playerid, HealthBar, amount);
-	    
-	if(amount > 100.0)
-	{
-	    SetPlayerProgressBarColour(playerid, HealthBar, 0x00FF00FF);
-	}
-	if(amount <= 100.0 && amount > 70.0)
- 	{
- 	    SetPlayerProgressBarColour(playerid, HealthBar, 0x00FF00FF);
- 	}
-	if(amount <= 70.0 && amount > 50.0)
-	{
-	    SetPlayerProgressBarColour(playerid, HealthBar, 0xFFFF00FF);
- 	}
-	if(amount <= 50.0 && amount > 30.0)
-	{
-        SetPlayerProgressBarColour(playerid, HealthBar, 0xCC0000FF);
-	}
-	if(amount <= 30.0 && amount >= 0.0)
-	{
-        SetPlayerProgressBarColour(playerid, HealthBar, 0xFF0000FF);
-	}
 	return 1;
 }
 
 stock SetAP(playerid, Float:amount)
 {
+    if(amount > 100)
+	{
+	    SetPlayerProgressBarColour(playerid, ArmourBar, 44040447);
+	}
+	if(amount <= 100 && amount > 70)
+ 	{
+ 	    SetPlayerProgressBarColour(playerid, ArmourBar, 44040447);
+ 	}
+	if(amount <= 70 && amount > 50)
+	{
+	    SetPlayerProgressBarColour(playerid, ArmourBar, 0xc1ae1bFF);
+ 	}
+	if(amount <= 50 && amount > 30)
+	{
+        SetPlayerProgressBarColour(playerid, ArmourBar, 0xc1ae1bFF);
+	}
+	if(amount <= 30 && amount >= 0)
+	{
+        SetPlayerProgressBarColour(playerid, ArmourBar, 0xdb1e1eFF);
+	}
+	
 	PlayerArmour[playerid] = amount;
+	SetPlayerProgressBarValue(playerid, ArmourBar, amount);
 	if(amount <= 0.0)
 	{
 	    SetPlayerArmour(playerid, 0.0);
@@ -18038,28 +18059,6 @@ stock SetAP(playerid, Float:amount)
 	{
 		SetPlayerArmour(playerid, 65536 + amount);
 		ShowPlayerProgressBar(playerid, ArmourBar);
-	}
-    SetPlayerProgressBarValue(playerid, ArmourBar, amount);
-	    
-    if(amount > 100)
-	{
-	    SetPlayerProgressBarColour(playerid, ArmourBar, 0x00FF00FF);
-	}
-	if(amount <= 100 && amount > 70)
- 	{
- 	    SetPlayerProgressBarColour(playerid, ArmourBar, 0x00FF00FF);
- 	}
-	if(amount <= 70 && amount > 50)
-	{
-	    SetPlayerProgressBarColour(playerid, ArmourBar, 0xFFFF00FF);
- 	}
-	if(amount <= 50 && amount > 30)
-	{
-        SetPlayerProgressBarColour(playerid, ArmourBar, 0xCC0000FF);
-	}
-	if(amount <= 30 && amount >= 0)
-	{
-        SetPlayerProgressBarColour(playerid, ArmourBar, 0xFF0000FF);
 	}
 	return 1;
 }
@@ -19462,9 +19461,9 @@ stock HPArmourBaseID_VS_TD(playerid) {
 	
 	DestroyPlayerProgressBar(playerid, HealthBar);
 	DestroyPlayerProgressBar(playerid, ArmourBar);
-	
-	HealthBar = CreatePlayerProgressBar(playerid, 548.000000, 64.000000, 63.000000, 10.000000, 16711935, 100.000000, BAR_DIRECTION_RIGHT);
-	ArmourBar = CreatePlayerProgressBar(playerid, 548.000000, 46.000000, 63.000000, 10.000000, 16711935, 100.000000, BAR_DIRECTION_RIGHT);
+
+ 	HealthBar = CreatePlayerProgressBar(playerid, 547.000000, 67.000000, 64.000000, 6.000000, 7799039, 100.000000, BAR_DIRECTION_RIGHT);
+	ArmourBar = CreatePlayerProgressBar(playerid, 547.000000, 46.000000, 64.000000, 6.000000, 44040447, 100.000000, BAR_DIRECTION_RIGHT);
 	ShowPlayerProgressBar(playerid, HealthBar);
     ShowPlayerProgressBar(playerid, ArmourBar);
 
@@ -26313,21 +26312,15 @@ LoginPlayer(playerid, DBResult:res) {
 	Player[playerid][Style] = strval(iString);
 	
 	
-	print("Loading Style");
 	// Load Fighting Style
 	db_get_field_assoc(res, "FightStyle", iString, sizeof(iString));
-	print("Read data from result of field Style");
 	Player[playerid][FightStyle] = strval(iString);
-	print("Set it to Player Style var");
 	SetPlayerFightingStyle(playerid, Player[playerid][FightStyle]);
 	
-	print("Loading DeathMessages");
 	// Load Death Messages
 	db_get_field_assoc(res, "DeathMessage", iString, sizeof(iString));
-	print("Read data from result of field DeathMessage");
 	format(DeathMessageStr[playerid], 64, "%s", iString);
-	printf("Done formattinhg | Size: %d | Data: %s", strlen(iString), iString);
-
+	
 	// Get current IP address
 	new IP[MAX_PLAYER_NAME];
 	GetPlayerIp(playerid, IP, sizeof(IP));
