@@ -18005,7 +18005,7 @@ stock SetHP(playerid, Float:amount)
 	{
         SetPlayerProgressBarColour(playerid, HealthBar, 0x938305FF);
 	}
-	if(amount <= 30.0 && amount >= 0.0)
+	if(amount <= 30.0 && amount > 0.0)
 	{
         SetPlayerProgressBarColour(playerid, HealthBar, 0x890606FF);
 	}
@@ -18043,7 +18043,7 @@ stock SetAP(playerid, Float:amount)
 	{
         SetPlayerProgressBarColour(playerid, ArmourBar, 0xc1ae1bFF);
 	}
-	if(amount <= 30 && amount >= 0)
+	if(amount <= 30 && amount > 0)
 	{
         SetPlayerProgressBarColour(playerid, ArmourBar, 0xdb1e1eFF);
 	}
