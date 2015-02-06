@@ -22346,7 +22346,7 @@ public OnScriptUpdate()
 		}
 
 
-		if(Player[i][Spectating] == true && Player[i][IsSpectatingID] != INVALID_PLAYER_ID) {
+		if(Player[i][Spectating] == true && Player[i][IsSpectatingID] != INVALID_PLAYER_ID && !noclipdata[i][FlyMode]) {
 			new specid = Player[i][IsSpectatingID];
 /*			new Float:Angle; GetPlayerFacingAngle(specid, Angle);
 
