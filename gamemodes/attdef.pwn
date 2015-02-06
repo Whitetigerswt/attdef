@@ -5259,7 +5259,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 				new shootername[MAX_PLAYER_NAME], shotname[MAX_PLAYER_NAME];
 				GetPlayerName(playerid, shotname, sizeof shotname);
 				GetPlayerName(issuerid, shootername, sizeof shootername);
-				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has landed a shot on {FFFFFF}%s's head "COL_PRIM"({FFFFFF}%s"COL_PRIM")", shootername, shotname, wepName));
+				SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has landed a shot on {FFFFFF}%s's "COL_PRIM"head "COL_PRIM"({FFFFFF}%s"COL_PRIM")", shootername, shotname, wepName));
 			}
 		}
 	}
@@ -5286,7 +5286,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 
 	if(FallProtection == true && Player[playerid][Playing] == true) {
 		if(weaponid == 54 || weaponid == 49 || weaponid == 50) {
-	    	SetHP(playerid, 100.0);
+	    	return 1; //SetHP(playerid, 100.0);
 		} else {
 		    if(issuerid != INVALID_PLAYER_ID) {
 				if(Player[issuerid][Team] != Player[playerid][Team]) {
@@ -5303,9 +5303,10 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 	{
 		if(Health[1] >= 1.0 && (Health[0] - amount) < RoundHP)
 		{
-			Player[playerid][PROT_HPAutoRefilled] = true;
-			SetTimerEx("HideAutoRefillText", 2000, false, "i", playerid);
-			SetHP(playerid, RoundHP);
+		    return 1;
+			//Player[playerid][PROT_HPAutoRefilled] = true;
+			//SetTimerEx("HideAutoRefillText", 2000, false, "i", playerid);
+			//SetHP(playerid, RoundHP);
 		}
 	}
 	// <end>
