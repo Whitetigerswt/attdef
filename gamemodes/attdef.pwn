@@ -7,6 +7,8 @@
 	- Make sure you leave a message to your dead enemies using /deathdiss.
 	- Fixed team win bug that could make wrong results in a round.
 	- Server-sided health is real now
+	- Server-sided death is real as well
+	- Much code optimization's been done for better performence and smoother gameplay.
 */
 
 #define GM_NAME				"Attack-Defend v2.7 (a)"
@@ -307,7 +309,7 @@ new ColScheme[10] = ""COL_PRIM"";
 #define MAX_DMS 			50
 #define MAX_DUELS       	50
 #define SAVE_SLOTS      	50
-#define MAX_CHANNELS    	1000
+#define MAX_CHANNELS    	100
 #define DRAW_DISTANCE   	25
 #define MAX_STATS       	30
 #define MAX_INI_ENTRY_TEXT 	80
@@ -374,25 +376,9 @@ new ColScheme[10] = ""COL_PRIM"";
 #define DIALOG_ROUND_LIST               58 // dialog for showing list of rounds played in last match mode or current.
 #define DIALOG_THEME_CHANGE1            59
 #define DIALOG_THEME_CHANGE2            60
-#define GRAFFMainDialog      			61
-#define OModelDialog    				62
-#define TextDialog      				63
-#define SizesDialog     				64
-#define FontNDialog     				65
-#define FontSDialog     				66
-#define BoldDialog      				67
-#define ColorDialog     				68
-#define BackgDialog     				69
-#define BackgColorD     				70
-#define AlignDialog     				71
-#define GRAFFSaveDialog                 72
-#define ColorDialog2                    73
-#define ColorDialog3                    74
-#define ColorDialog4                    75
-#define ColorDialog5                    76
-#define DIALOG_ADMIN_CODE               77
-#define DIALOG_REPLACE_FIRST            78
-#define DIALOG_REPLACE_SECOND           79
+#define DIALOG_ADMIN_CODE               61
+#define DIALOG_REPLACE_FIRST            62
+#define DIALOG_REPLACE_SECOND           63
 
 new w0[MAX_PLAYERS];	//heartnarmor
 new REPLACE_ToAddID[MAX_PLAYERS]; // replace with dialogs
@@ -455,24 +441,9 @@ new Text: EN_AttackerBox;
 new Text: EN_DefenderBox;
 new Text: AttackerTeam[4];
 new Text: DefenderTeam[4];
-/* //ROUND_REMOVED
-new Text: EN_TAttackerKills;
-new Text: EN_TAttackerDeaths;
-new Text: EN_TAttackerRoundsPlayed;
-new Text: EN_TAttackerAccuracy;
-new Text: EN_TAttackerDamage;
-new Text: EN_TDefenderKills;
-new Text: EN_TDefenderDeaths;
-new Text: EN_TDefenderRoundsPlayed;
-new Text: EN_TDefenderAccuracy;
-new Text: EN_TDefenderDamage;*/
 new Text: EN_CheckPoint;
 new Text: Ready[2];
 new GotHit[MAX_PLAYERS];
-//new Text: LOGO;
-
-//new Text: AttackersAlive[15];
-//new Text: DefendersAlive[15];
 
 new thetrain, traintrailer1, traintrailer2;
 
@@ -534,26 +505,8 @@ new Text:centerTeamNames;
         Text: leftAcc		, 	Text: rightAcc		,
         Text: leftPlayed	, 	Text: rightPlayed
 
-	;// 17 + 12 tds
-
-	// -EndRound TextDraw
-/*  //ROUND_REMOVED
-new Text: EN_WhoWon;
-new Text: EN_AttackerTitle;
-new Text: EN_AttackerTitleBox;
-new Text: EN_DefenderTitle;
-new Text: EN_DefenderTitleBox;
-new Text: EN_AttackerList;
-new Text: EN_AttackerKills;
-new Text: EN_AttackerHP;
-new Text: EN_AttackerAccuracy;
-new Text: EN_AttackerDamage;
-new Text: EN_DefenderList;
-new Text: EN_DefenderKills;
-new Text: EN_DefenderHP;
-new Text: EN_DefenderAccuracy;
-new Text: EN_DefenderDamage;
-*/
+	;
+	
 // - Player Textdraws -
 
 
@@ -631,7 +584,8 @@ enum PlayerVariables {
 	bool:blockedall,
 	bool:FakePacketRenovation,
 	bool:HasVoted,
-	bool:PROT_HPAutoRefilled,
+	ServerSidedDeath_killerid,
+	ServerSidedDeath_reason,
 	RadioID,
 	NetCheck,
 	FPSCheck,
@@ -916,9 +870,11 @@ new OnlineInChannel[MAX_CHANNELS];
 
 // - Global Strings -
 
+#define MAX_SERVER_PASS_LENGH 6
+
 new WeaponStatsStr[3000];
 new ChatString[128];
-new ServerPass[128];
+new ServerPass[MAX_SERVER_PASS_LENGH + 9]; // contains "password " plus the password itself
 new hostname[64];
 new lagcompmode;
 new ScoreString[4][256];
@@ -2068,7 +2024,7 @@ stock MATCHSYNC_InsertMatchStats()
 #define VERSION_IS_BEHIND       		0
 #define VERSION_IS_UPTODATE     		1
 
-#define VERSION_CHECKER_METHOD          1 // (1 for new method which is good when updates are more frequent - 0 for old method)
+#define VERSION_CHECKER_METHOD          0 // (1 for new method which is good when updates are more frequent - 0 for old method)
 
 #if VERSION_CHECKER_METHOD == 0
 new 	GM_VERSION[6] =		"2.6.0"; // Don't forget to change the length
@@ -2313,815 +2269,6 @@ CMD:checkversion(playerid, params[])
 }
 // version checker <end>
 
-// graffiti <start>
-new GRAFFObject[MAX_PLAYERS],
-	Text[MAX_PLAYERS][128],
-	Size[MAX_PLAYERS] = 50,
-	Index[MAX_PLAYERS] = 0,
-	UseBold[MAX_PLAYERS] = 0,
-	TextAlign[MAX_PLAYERS] = 1,
-	FontName[MAX_PLAYERS][32],
-	FontSize[MAX_PLAYERS] = 24,
-	GRAFFTextColor[MAX_PLAYERS],
-	BackgColor[MAX_PLAYERS],
-	OName[MAX_PLAYERS][30],
-	ObjectID[MAX_PLAYERS] = 19353,
-	Float:GRAFFPos[MAX_PLAYERS][4], Float:GRAFFRot[MAX_PLAYERS][3];
-
-new
-	bool:CreatingTextO[MAX_PLAYERS] = false;
-
-#define GRAFF_Grey              "{C4C4C4}"
-
-#define MAX_GRAFFS 100
-
-enum GRAFFITI_DATA
-{
-	G_id,
- 	G_sprayedtext[128],
- 	G_materialsize,
-	G_fontsize,
-	G_bold,
-	G_textalignment,
-	G_fontface[32],
-	G_textcolor,
-	G_backcolor,
-	G_objectmodel,
-	Float:G_pos[6],
-	Text3D:G_label
-};
-
-new TotalGraffs = 0, GraffData[MAX_GRAFFS][GRAFFITI_DATA], bool:GraffExists[MAX_GRAFFS], bool:IsGraff[MAX_OBJECTS];
-
-stock LoadGraffs()
-{
-    DeleteAllGraffs();
-	#if MYSQL == 0
-		new iString[160];
-		TotalGraffs = 0;
-
-        new DBResult:res = db_query(sqliteconnection, "SELECT * FROM Graffs ORDER BY ID ASC");
-	    for(new i = 0; i < MAX_GRAFFS; i++) GraffExists[i] = false;
-	    new i;
-	    if(db_num_rows(res) <= 0)
-	        goto skipped;
-		do {
-			db_get_field_assoc(res, "ID", iString, sizeof(iString));
-			i = strval(iString);
-			GraffData[i][G_id] = i;
-
-			db_get_field_assoc(res, "Text", GraffData[i][G_sprayedtext], 128);
-
-			db_get_field_assoc(res, "MaterialSize", iString, sizeof(iString));
-		    GraffData[i][G_materialsize] = strval(iString);
-
-			db_get_field_assoc(res, "FontSize", iString, sizeof(iString));
-		    GraffData[i][G_fontsize] = strval(iString);
-
-		    db_get_field_assoc(res, "Bold", iString, sizeof(iString));
-		    GraffData[i][G_bold] = strval(iString);
-
-		    db_get_field_assoc(res, "TextAlignment", iString, sizeof(iString));
-		    GraffData[i][G_textalignment] = strval(iString);
-
-		    db_get_field_assoc(res, "FontFace", GraffData[i][G_fontface], 32);
-
-		    db_get_field_assoc(res, "TextColor", iString, sizeof(iString));
-		    GraffData[i][G_textcolor] = strval(iString);
-
-		    db_get_field_assoc(res, "BackColor", iString, sizeof(iString));
-		    GraffData[i][G_backcolor] = strval(iString);
-
-		    db_get_field_assoc(res, "ObjectModel", iString, sizeof(iString));
-		    GraffData[i][G_objectmodel] = strval(iString);
-
-		    db_get_field_assoc(res, "X", iString, sizeof(iString));
-		    GraffData[i][G_pos][0] = floatstr(iString);
-
-		    db_get_field_assoc(res, "Y", iString, sizeof(iString));
-		    GraffData[i][G_pos][1] = floatstr(iString);
-
-		    db_get_field_assoc(res, "Z", iString, sizeof(iString));
-		    GraffData[i][G_pos][2] = floatstr(iString);
-
-		    db_get_field_assoc(res, "rX", iString, sizeof(iString));
-		    GraffData[i][G_pos][3] = floatstr(iString);
-
-		    db_get_field_assoc(res, "rY", iString, sizeof(iString));
-		    GraffData[i][G_pos][4] = floatstr(iString);
-
-		    db_get_field_assoc(res, "rZ", iString, sizeof(iString));
-		    GraffData[i][G_pos][5] = floatstr(iString);
-
-			GraffExists[i] = true;
-
-            new obj = CreateObject(GraffData[i][G_objectmodel], GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], GraffData[i][G_pos][3], GraffData[i][G_pos][4], GraffData[i][G_pos][5]);
-        	SetObjectMaterialText(obj, GraffData[i][G_sprayedtext], 0, GraffData[i][G_materialsize], GraffData[i][G_fontface],
-			GraffData[i][G_fontsize], GraffData[i][G_bold], GraffData[i][G_textcolor], GraffData[i][G_backcolor], GraffData[i][G_textalignment]);
-			GraffData[i][G_label] = Create3DTextLabel(sprintf("Graffito ID: %d", i), 0x47B0FEFF, GraffData[i][G_pos][0], GraffData[i][G_pos][1], GraffData[i][G_pos][2], 5.0, 0, 0);
-			IsGraff[obj] = true;
-			TotalGraffs ++;
-		} while(db_next_row(res));
-		skipped:
-		db_free_result(res);
-		printf("Graffs Loaded: %d", TotalGraffs);
-	#else
-	print("Graffiti system is currently not availble on MySQL version!");
-	#endif
-}
-
-stock PlayerSaveNewGraff(playerid)
-{
-    new iString[400];
-    format(iString, sizeof(iString), "SELECT ID FROM Graffs ORDER BY `ID` DESC LIMIT 1");
-	new DBResult:res = db_query(sqliteconnection, iString);
-
-	new GraffID;
-	if(db_num_rows(res)) {
-		db_get_field_assoc(res, "ID", iString, sizeof(iString));
-		GraffID = strval(iString)+1;
-    }
-    db_free_result(res);
-
-	format(iString, sizeof(iString), "INSERT INTO Graffs (ID, Text, MaterialSize, FontSize, Bold, TextAlignment, FontFace, TextColor, BackColor, ObjectModel, X, Y, Z, rX, rY, rZ) VALUES (%d, '%s', %d, %d, %d, %d, '%s', %d, %d, %d, %f, %f, %f, %f, %f, %f)",
-													GraffID, DB_Escape(Text[playerid]), Size[playerid], FontSize[playerid], UseBold[playerid], TextAlign[playerid], DB_Escape(FontName[playerid]), GRAFFTextColor[playerid], BackgColor[playerid], ObjectID[playerid], GRAFFPos[playerid][0], GRAFFPos[playerid][1], GRAFFPos[playerid][2], GRAFFRot[playerid][0], GRAFFRot[playerid][1], GRAFFRot[playerid][2]);
-
-	db_free_result(db_query(sqliteconnection, iString));
-
-	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has just finished spraying {FFFFFF}Graffito ID: %d", Player[playerid][Name], GraffID);
-	SendClientMessageToAll(-1, iString);
-
-	LoadGraffs();
-	return 1;
-}
-
-stock DeleteGraff(GraffID)
-{
-    db_free_result(db_query(sqliteconnection, sprintf("DELETE FROM Graffs WHERE ID = %d", GraffID)));
-	LoadGraffs();
-	return 1;
-}
-
-stock DeleteAllGraffs()
-{
-	for(new i = 0; i < MAX_OBJECTS; i ++)
-	{
-	    if(IsGraff[i] == true)
-	    {
-	        DestroyObject(i);
-	        IsGraff[i] = false;
-	    }
-	}
-	for(new i = 0; i < MAX_GRAFFS; i ++)
-	{
-	    if(GraffExists[i] == true)
-	    {
-	        Delete3DTextLabel(GraffData[GraffData[i][G_id]][G_label]);
-	    }
-	}
-	return 1;
-}
-
-CMD:seegraff(playerid, params[])
-{
-    if(isnull(params))
-		return SendUsageMessage(playerid,"/seegraff [Graffito ID]");
-	new gid = strval(params);
-
-	if(!GraffExists[gid])
-		return SendErrorMessage(playerid,"Invalid ID");
-
-	if(Player[playerid][Playing] || Player[playerid][Spectating])
-	    return 1;
-
-	SetPlayerPos(playerid, GraffData[gid][G_pos][0], GraffData[gid][G_pos][1], GraffData[gid][G_pos][2] + 5.0);
-	return 1;
-}
-
-CMD:deletegraff(playerid, params[])
-{
-    if(Player[playerid][Level] < 4) return SendErrorMessage(playerid,"Your admin level isn't high enough for this.");
-
-    if(isnull(params)) return SendUsageMessage(playerid,"/deletegraff [Graffito ID]");
-	new gid = strval(params);
-    DeleteGraff(gid);
-	return 1;
-}
-
-CMD:spray(playerid, params[])
-{
-    if(Player[playerid][Level] < 4) return SendErrorMessage(playerid,"Your admin level isn't high enough for this.");
-
-
-    if(CreatingTextO[playerid] == false)
-    {
-        if(Current != -1)
-			return SendErrorMessage(playerid, "You cannot spray a graffito while a round is in progress");
-		TextAlign[playerid] = 1,
-		Index[playerid] = 0;
-        Text[playerid] = "Blank",
-		FontName[playerid] = "Arial",
-		GRAFFTextColor[playerid] = 0xFFFF8200;
-		BackgColor[playerid] = 0xFF000000;
-
-    	CreatingTextO[playerid] = true, ShowGraffMainMenu(playerid);
-    	GetPlayerPos(playerid, GRAFFPos[playerid][0], GRAFFPos[playerid][1], GRAFFPos[playerid][2]), GetPlayerFacingAngle(playerid, GRAFFPos[playerid][3]);
-    	new Float:x = GRAFFPos[playerid][0] + (5.0 * floatsin(-GRAFFPos[playerid][3], degrees));
-		new Float:y = GRAFFPos[playerid][1] + (5.0 * floatcos(-GRAFFPos[playerid][3], degrees));
-
-    	GRAFFObject[playerid] = CreatePlayerObject(playerid, ObjectID[playerid], x, y, GRAFFPos[playerid][2]+0.5, 0.0, 0.0, GRAFFPos[playerid][3] - 90.0);
-
-    	SetPlayerObjectMaterialText(playerid, GRAFFObject[playerid], Text[playerid], Index[playerid], Size[playerid], FontName[playerid],
-		FontSize[playerid], UseBold[playerid], GRAFFTextColor[playerid], BackgColor[playerid], TextAlign[playerid]);
-
-		SendClientMessage(playerid,-1,"A blank graffito has been sprayed");
-	}
-	else
-		ShowGraffMainMenu(playerid);
-	return 1;
-}
-
-forward OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext[]);
-public OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext[])
-{
-	if(dialogid == GRAFFMainDialog){
-	    if(response){
-	        switch(listitem) {
-
-	            case 0:{
-	                new string[128];
-	                format(string, sizeof(string), ""COL_PRIM"Current Object Model ID: {FFFFFF}%d\
-					\n"GRAFF_Grey"Please, type below a Model ID for the object (example = 19353):",ObjectID[playerid]);
-					ShowPlayerDialog(playerid,OModelDialog,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Object Model ID",string,"Change","Back");
-	            }
-	        	case 1:{
-	        	    new string[300];
-	        	    format(string, sizeof(string),""COL_PRIM"Current Object Text: {FFFFFF}%s\
-					\n"GRAFF_Grey"Please, type below your text for the object:",Text[playerid]);
-	        	    ShowPlayerDialog(playerid,TextDialog,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Object Text",string,"Change","Back");
-	        	}
-				case 2: {
-				    new sizes[600];
-					strcat(sizes,"{FFFFFF}1. "COL_PRIM"32x32 "GRAFF_Grey"(10)\
-								\n{FFFFFF}2. "COL_PRIM"64x32 "GRAFF_Grey"(20)\
-								\n{FFFFFF}3. "COL_PRIM"64x64 "GRAFF_Grey"(30)\
-								\n{FFFFFF}4. "COL_PRIM"128x32 "GRAFF_Grey"(40)\
-								\n{FFFFFF}5. "COL_PRIM"128x64 "GRAFF_Grey"(50)\
-								\n{FFFFFF}6. "COL_PRIM"128x128 "GRAFF_Grey"(60)\
-								\n{FFFFFF}7. "COL_PRIM"256x32 "GRAFF_Grey"(70)");
-					strcat(sizes,"\n{FFFFFF}8. "COL_PRIM"256x64 "GRAFF_Grey"(80)\
-								\n{FFFFFF}9. "COL_PRIM"256x128 "GRAFF_Grey"(90)\
-								\n{FFFFFF}10. "COL_PRIM"256x256 "GRAFF_Grey"(100)\
-								\n{FFFFFF}11. "COL_PRIM"512x64 "GRAFF_Grey"(110)\
-								\n{FFFFFF}12. "COL_PRIM"512x128 "GRAFF_Grey"(120)\
-								\n{FFFFFF}13. "COL_PRIM"512x256 "GRAFF_Grey"(130)\
-								\n{FFFFFF}14. "COL_PRIM"512x512 "GRAFF_Grey"(140)");
-					new current[128];
-					format(current, sizeof(current),""GRAFF_Grey"Material Size "GRAFF_Grey"| "COL_PRIM"Current size: {FFFFFF}%d",Size[playerid]);
-					ShowPlayerDialog(playerid,SizesDialog,DIALOG_STYLE_LIST,current,sizes,"Change","Back");
-				}
-				case 3: {
-				    new string[128];
-				    format(string, sizeof(string), ""COL_PRIM"Current Text Font: {FFFFFF}%s\
-					\n"GRAFF_Grey"Please, type below the Text Font name which you want use:",FontName[playerid]);
-                    ShowPlayerDialog(playerid,FontNDialog,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Text Font",string,"Change","Back");
-				}
-				case 4: {
-				    new string[128];
-				    format(string, sizeof(string), ""COL_PRIM"Current Text Size: {FFFFFF}%d\
-					\n"GRAFF_Grey"Please, type below the Text Size which you want use:",FontSize[playerid]);
-                    ShowPlayerDialog(playerid,FontSDialog,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Text Size",string,"Change","Back");
-				}
-				case 5: {
-				    new title[100]; new yesorno[10];
-				    if(UseBold[playerid] == 0) yesorno = "No";
-				    else if(UseBold[playerid] == 1) yesorno = "Yes";
-				    format(title, sizeof(title), ""GRAFF_Grey"Bold Text "GRAFF_Grey"| "COL_PRIM"Using Bold Text: {FFFFFF}%s",yesorno);
-                    ShowPlayerDialog(playerid,BoldDialog,DIALOG_STYLE_LIST,title,"{FFFFFF}1. "COL_PRIM"No\n{FFFFFF}2. "COL_PRIM"Yes","Change","Back");
-				}
-				case 6: {
-				    new titulo[100];
-				    format(titulo, sizeof(titulo),""GRAFF_Grey"Text Color "GRAFF_Grey"| "COL_PRIM"Current Text Color: {FFFFFF}%i",GRAFFTextColor[playerid]);
-                    ShowPlayerDialog(playerid,ColorDialog,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Type a ARGB color code\
-					\n{FFFFFF}2. "COL_PRIM"Select a predefinded color","Next","Back");
-				}
-				case 7: {
-				    new titulo[100];
-				    format(titulo, sizeof(titulo),""GRAFF_Grey"Graffiti Background "GRAFF_Grey"| "COL_PRIM"Current Background Color: {FFFFFF}%i",BackgColor[playerid]);
-                    ShowPlayerDialog(playerid,BackgColorD,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Disable Background\n{FFFFFF}2. "COL_PRIM"Type a ARGB color code\
-					\n{FFFFFF}3. "COL_PRIM"Select a predefinded color","Next","Back");
-				}
-				case 8: {
-                    new title[100]; new position[30];
-				    if(TextAlign[playerid] == 0) position = "Left";
-				    else if(TextAlign[playerid] == 1) position = "Center";
-				    else if(TextAlign[playerid] == 2) position = "Right";
-				    format(title, sizeof(title), ""GRAFF_Grey"Text Alignment "GRAFF_Grey"| "COL_PRIM"Current Alignment: {FFFFFF}%s",position);
-                    ShowPlayerDialog(playerid,AlignDialog,DIALOG_STYLE_LIST,title,"{FFFFFF}1. "COL_PRIM"Left\n{FFFFFF}2. "COL_PRIM"Center\n{FFFFFF}3. "COL_PRIM"Right","Change","Back");
-				}
-				case 9: {
-				    EditPlayerObject(playerid, GRAFFObject[playerid]);
-					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"INFO: {FFFFFF}Use "COL_PRIM"ESC {FFFFFF}to cancel the object edition.");
-				}
-				case 10: {
-				    if(Current != -1)
-						return SendErrorMessage(playerid, "You cannot save a graffito while a round is in progress");
-				    ShowPlayerDialog(playerid,GRAFFSaveDialog,DIALOG_STYLE_MSGBOX,"    "GRAFF_Grey"Saving..",
-					"Are you sure you want to save this object into the database?","Confirm","Back");
-				}
-				case 11: {
-                    CreatingTextO[playerid] = false, DestroyPlayerObject(playerid, GRAFFObject[playerid]);
-					TextAlign[playerid] = 1, Text[playerid] = "Example", FontName[playerid] = "Arial",
-					GRAFFTextColor[playerid] = 0xFFFF8200, BackgColor[playerid] = 0xFF000000,
-					Size[playerid] = 50, Index[playerid] = 0, UseBold[playerid] = 0,
-					FontSize[playerid] = 24, OName[playerid] = "0", ObjectID[playerid] = 19353;
-					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"INFO: {FFFFFF}All settings have been reset.");
-					ShowPlayerDialog(playerid, -1, 0, " ", " ", " ", " ");
-				}
-	        }
-	    }
-	    return 1;
-	}
-	if(dialogid == OModelDialog)
-	{
-	    if(response)
-	    {
-	        if(!IsNumeric(inputtext)) return SendClientMessage(playerid,-1,"{FFFFFF}* "GRAFF_Grey"ERROR: "GRAFF_Grey"Please, use a numeric value"GRAFF_Grey"!"), ShowGraffMainMenu(playerid);
-	        new string[128];
-	        ObjectID[playerid] = strval(inputtext);
-	        format(string, sizeof(string), ""GRAFF_Grey"* "COL_PRIM"Object Model ID: {FFFFFF}%d",ObjectID[playerid]);
-	        SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
-	    }
-		else { ShowGraffMainMenu(playerid); }
-	    return 1;
-	}
-	if(dialogid == TextDialog){
-	    if(response){
-	        new string[128];
-	        format(string, sizeof(string),"%s",inputtext);
-	        Text[playerid] = string; format(string, sizeof(string), ""GRAFF_Grey"* "COL_PRIM"Object Text: {FFFFFF}%s",Text[playerid]);
-	        SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
-	    }
-		else { ShowGraffMainMenu(playerid); }
-		return 1;
-	}
-	if(dialogid == SizesDialog){
-	    if(response)
-	    {
-	        switch(listitem) {
-	            case 0: Size[playerid] = 10;
-	            case 1:  Size[playerid] = 20;
-	            case 2:  Size[playerid] = 30;
-	            case 3:  Size[playerid] = 40;
-	            case 4:  Size[playerid] = 50;
-	            case 5:  Size[playerid] = 60;
-	            case 6:  Size[playerid] = 70;
-	            case 7:  Size[playerid] = 80;
-	            case 8:  Size[playerid] = 90;
-	            case 9:  Size[playerid] = 100;
-	            case 10:  Size[playerid] = 110;
-	            case 11:  Size[playerid] = 120;
-	            case 12:  Size[playerid] = 130;
-	            case 13:  Size[playerid] = 140;
-	            default: Size[playerid] = 70;
-			}
-			new string[128];
-			format(string, sizeof(string), ""GRAFF_Grey"* "COL_PRIM"Object Material Size: {FFFFFF}%d",Size[playerid]);
-			SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
-	    }
-		else { ShowGraffMainMenu(playerid); }
-	    return 1;
-	}
-	if(dialogid == FontNDialog)
-	{
-	    if(response) {
-	        new string[32]; format(string, sizeof(string),"%s",inputtext); FontName[playerid] = string;
-	        format(string, sizeof(string), ""GRAFF_Grey"* "COL_PRIM"Text Font: {FFFFFF}%s",FontName[playerid]); SendClientMessage(playerid,-1,string);
-			UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
-	    }
-		else { ShowGraffMainMenu(playerid); }
-	    return 1;
-	}
-	if(dialogid == FontSDialog)
-	{
-	    if(response) {
-	        if(!IsNumeric(inputtext)) return SendClientMessage(playerid,-1,"{FFFFFF}* "GRAFF_Grey"ERROR: "GRAFF_Grey"Please, use a numeric value"GRAFF_Grey"!"), ShowGraffMainMenu(playerid);
-	        new string[128]; FontSize[playerid] = strval(inputtext);
-			format(string, sizeof(string), ""GRAFF_Grey"* "COL_PRIM"Text Size: {FFFFFF}%d",FontSize[playerid]); SendClientMessage(playerid,-1,string);
-			UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
-	    }
-		else { ShowGraffMainMenu(playerid); }
-	    return 1;
-	}
-	if(dialogid == BoldDialog)
-	{
-	    if(response)
-	    {
-			switch(listitem)
-			{
-	        	case 0: {
-                    UseBold[playerid] = 0;
-	        		SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Bold Text: {FFFFFF}No");
-	        		UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
-				}
-				case 1: {
-				    UseBold[playerid] = 1;
-	        		SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Bold Text: {FFFFFF}Yes");
-	        		UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
-				}
-			}
-	    }
-		else { ShowGraffMainMenu(playerid); }
-	    return 1;
-	}
-	if(dialogid == ColorDialog)
-	{
-	    if(response)
-	    {
-			switch(listitem)
-			{
-			    case 0:
-				{
-			        ShowPlayerDialog(playerid,ColorDialog2,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Text Color",
-			        ""GRAFF_Grey"Please, type a ARGB color code below (example = 0xFFFF0000):","Change","Back");
-			    }
-			    case 1:
-				{
-			        ShowPlayerDialog(playerid,ColorDialog3,DIALOG_STYLE_LIST,""GRAFF_Grey"Color List",
-			        "{FF0000}Red\n{04B404}Green\n{00B5CD}Sky-Blue\n{FFFF00}Yellow\
-					\n{0000FF}Blue\n{848484}Grey\n{FF00FF}Pink\n{FFFFFF}White","Change","Back");
-			    }
-			}
-	    }
-		else { ShowGraffMainMenu(playerid); }
-	    return 1;
-	}
-	if(dialogid == ColorDialog2)
-	{
-	    if(response) {
-	    	new string[80]; GRAFFTextColor[playerid] = strval(inputtext);
-			format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Text Color: {FFFFFF}%i", GRAFFTextColor[playerid]);
-			SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
-		}
-		else
-		{
-		    new titulo[100];
-		    format(titulo, sizeof(titulo),""GRAFF_Grey"Text Color "GRAFF_Grey"| "COL_PRIM"Current Text Color: {FFFFFF}%i",GRAFFTextColor[playerid]);
-            ShowPlayerDialog(playerid,ColorDialog,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Type a ARGB color code\
-			\n{FFFFFF}2. "COL_PRIM"Select a predefinded color","Next","Back");
-		}
-   		return 1;
-	}
-	if(dialogid == ColorDialog3)
-	{
-	    if(response) {
-	        switch(listitem)
-	        {
-	            case 0: { GRAFFTextColor[playerid] = 0xFFFF0000; } //Red
-	            case 1: { GRAFFTextColor[playerid] = 0xFF04B404; }
-	            case 2: { GRAFFTextColor[playerid] = 0xFF00B5CD; }
-	            case 3: { GRAFFTextColor[playerid] = 0xFFFFFF00; } //Yellow
-	            case 4: { GRAFFTextColor[playerid] = 0xFF0000FF; }
-	            case 5: { GRAFFTextColor[playerid] = 0xFF848484; }
-	            case 6: { GRAFFTextColor[playerid] = 0xFFFF00FF; }
-	            case 7: { GRAFFTextColor[playerid] = 0xFFFFFFFF; } //White
-	        }
-	        new string[80]; UpdateGraffObject(playerid);
-	        format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Text Color: {FFFFFF}%i", GRAFFTextColor[playerid]);
-			SendClientMessage(playerid,-1,string); ShowGraffMainMenu(playerid);
-		}
-		else
-		{
-		    new titulo[100];
-		    format(titulo, sizeof(titulo),""GRAFF_Grey"Text Color "GRAFF_Grey"| "COL_PRIM"Current Text Color: {FFFFFF}%i",GRAFFTextColor[playerid]);
-            ShowPlayerDialog(playerid,ColorDialog,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Type a ARGB color code\
-			\n{FFFFFF}2. "COL_PRIM"Select a predefinded color","Next","Back");
-		}
-   		return 1;
-	}
-	if(dialogid == BackgColorD)
-	{
-	    if(response)
-	    {
-	        switch(listitem)
-	        {
-	            case 0: { BackgColor[playerid] = 0; UpdateGraffObject(playerid);  ShowGraffMainMenu(playerid); SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Background Color: {FFFFFF}Disabled"); }
-	            case 1: {
-	                ShowPlayerDialog(playerid,ColorDialog4,DIALOG_STYLE_INPUT,"    "GRAFF_Grey"Background Color",
-			        ""GRAFF_Grey"Please, type a ARGB color code below (example = 0xFFFF0000):","Change","Back");
-	            }
-	            case 2: {
-	                ShowPlayerDialog(playerid,ColorDialog5,DIALOG_STYLE_LIST,""GRAFF_Grey"Color List",
-			        "{FF0000}Red\n{04B404}Green\n{00B5CD}Sky-Blue\n{FFFF00}Yellow\
-					\n{0000FF}Blue\n{848484}Grey\n{FF00FF}Pink\n{FFFFFF}White","Change","Back");
-	            }
-	        }
-	    }
-		else { ShowGraffMainMenu(playerid); }
-	    return 1;
-	}
-	if(dialogid == ColorDialog4)
-	{
-	    if(response) {
-	    	new string[80]; BackgColor[playerid] = strval(inputtext);
-			format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Background Color: {FFFFFF}%i", BackgColor[playerid]);
-			SendClientMessage(playerid,-1,string); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
-		}
-		else
-		{
-		    new titulo[100];
-		    format(titulo, sizeof(titulo),""GRAFF_Grey"Object Background "GRAFF_Grey"| "COL_PRIM"Current Text Color: {FFFFFF}%i",BackgColor[playerid]);
-            ShowPlayerDialog(playerid,BackgColorD,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Disable Background\n{FFFFFF}2. "COL_PRIM"Type a ARGB color code\
-			\n{FFFFFF}3. "COL_PRIM"Select a predefinded color","Next","Back");
-		}
-   		return 1;
-	}
-	if(dialogid == ColorDialog5)
-	{
-	    if(response)
-		{
-	        switch(listitem)
-	        {
-	            case 0: { BackgColor[playerid] = 0xFFFF0000; } //Red
-	            case 1: { BackgColor[playerid] = 0xFF04B404; }
-	            case 2: { BackgColor[playerid] = 0xFF00B5CD; }
-	            case 3: { BackgColor[playerid] = 0xFFFFFF00; } //Yellow
-	            case 4: { BackgColor[playerid] = 0xFF0000FF; }
-	            case 5: { BackgColor[playerid] = 0xFF848484; }
-	            case 6: { BackgColor[playerid] = 0xFFFF00FF; }
-	            case 7: { BackgColor[playerid] = 0xFFFFFFFF; } //White
-	        }
-	        new string[80]; UpdateGraffObject(playerid); ShowGraffMainMenu(playerid);
-	        format(string, sizeof(string),""GRAFF_Grey"* "COL_PRIM"Background Color: {FFFFFF}%i", BackgColor[playerid]);
-			SendClientMessage(playerid,-1,string);
-		}
-		else
-		{
-		    new titulo[100];
-		    format(titulo, sizeof(titulo),""GRAFF_Grey"Object Background "GRAFF_Grey"| "COL_PRIM"Current Text Color: {FFFFFF}%i",BackgColor[playerid]);
-            ShowPlayerDialog(playerid,BackgColorD,DIALOG_STYLE_LIST,titulo,"{FFFFFF}1. "COL_PRIM"Disable Background\n{FFFFFF}2. "COL_PRIM"Type a ARGB color code\
-			\n{FFFFFF}3. "COL_PRIM"Select a predefinded color","Next","Back");
-		}
-   		return 1;
-	}
-	if(dialogid == AlignDialog)
-	{
-	    if(response)
-		{
-			switch(listitem)
-			{
-			    case 0:
-				{
-					TextAlign[playerid] = 0; UpdateGraffObject(playerid);
-					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Text Alignment: {FFFFFF}Left"), ShowGraffMainMenu(playerid);
-				}
-				case 1:
-				{
-					TextAlign[playerid] = 1; UpdateGraffObject(playerid);
-					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Text Alignment: {FFFFFF}Center"), ShowGraffMainMenu(playerid);
-				}
-				case 2:
-				{
-					TextAlign[playerid] = 2; UpdateGraffObject(playerid);
-					SendClientMessage(playerid,-1,""GRAFF_Grey"* "COL_PRIM"Text Alignment: {FFFFFF}Right"), ShowGraffMainMenu(playerid);
-				}
-			}
-		}
-		else
-			ShowGraffMainMenu(playerid);
-	}
-	if(dialogid == GRAFFSaveDialog)
-	{
-	    if(response)
-	    {
-			CreatingTextO[playerid] = false, DestroyPlayerObject(playerid, GRAFFObject[playerid]);
-            PlayerSaveNewGraff(playerid);
-			TextAlign[playerid] = 1, Text[playerid] = "Blank", FontName[playerid] = "Arial",
-			GRAFFTextColor[playerid] = 0xFFFF8200, BackgColor[playerid] = 0xFF000000,
-			Size[playerid] = 50, Index[playerid] = 0, UseBold[playerid] = 0,
-			FontSize[playerid] = 24, OName[playerid] = "0", ObjectID[playerid] = 19353;
-
-			SendClientMessage(playerid,-1,"Graffiti has been sprayed and saved into the database successfully");
-			SendClientMessage(playerid,-1,"All settings have been reset so you can spray a new one");
-		}
-		else { ShowGraffMainMenu(playerid); }
-	    return 1;
-	}
-	return 1;
-}
-
-ShowGraffMainMenu(playerid)
-{
-    new string[600];
-    strcat(string,"{FFFFFF}-. "COL_PRIM"Set Graffiti Object Model ID\n{FFFFFF}-. "COL_PRIM"Set Graffiti Text\
-	\n{FFFFFF}-. "COL_PRIM"Set Material Size\n");
-	strcat(string, "{FFFFFF}-. "COL_PRIM"Set Text Font\n{FFFFFF}-. "COL_PRIM"Set Text Size\n{FFFFFF}-. "COL_PRIM"Set Bold Text\
-	\n{FFFFFF}-. "COL_PRIM"Set Text Color\n{FFFFFF}-. "COL_PRIM"Set Background Color\n{FFFFFF}-. "COL_PRIM"Set Text Alignment\n{FFFFFF}-. "GRAFF_Grey"Edit Graffiti\
-	\n{FFFFFF}-. "GRAFF_Grey"Save Graffiti\n{FFFFFF}-. "GRAFF_Grey"Reset Graffiti");
-	ShowPlayerDialog(playerid,GRAFFMainDialog,DIALOG_STYLE_LIST,""GRAFF_Grey"Text Object | Main Menu",string,"Continue","Exit");
-	return 1;
-}
-
-UpdateGraffObject(playerid)
-{
-    GetPlayerObjectPos(playerid, GRAFFObject[playerid], GRAFFPos[playerid][0], GRAFFPos[playerid][1], GRAFFPos[playerid][2]);
-    GetPlayerObjectRot(playerid, GRAFFObject[playerid], GRAFFRot[playerid][0], GRAFFRot[playerid][1], GRAFFRot[playerid][2]); DestroyPlayerObject(playerid, GRAFFObject[playerid]);
-	GRAFFObject[playerid] = CreatePlayerObject(playerid, ObjectID[playerid], GRAFFPos[playerid][0], GRAFFPos[playerid][1], GRAFFPos[playerid][2], GRAFFRot[playerid][0], GRAFFRot[playerid][1], GRAFFRot[playerid][2]);
-
-	SetPlayerObjectMaterialText(playerid, GRAFFObject[playerid], Text[playerid], Index[playerid], Size[playerid], FontName[playerid],
-	FontSize[playerid], UseBold[playerid], GRAFFTextColor[playerid], BackgColor[playerid], TextAlign[playerid]);
-}
-
-forward OnPlayerEditGraffObject(playerid, playerobject, objectid, response, Float:fX, Float:fY, Float:fZ, Float:fRotX, Float:fRotY, Float:fRotZ);
-public OnPlayerEditGraffObject(playerid, playerobject, objectid, response, Float:fX, Float:fY, Float:fZ, Float:fRotX, Float:fRotY, Float:fRotZ)
-{
-    if(objectid == GRAFFObject[playerid])
-	{
-		if(response == EDIT_RESPONSE_FINAL)
-	 	{
-	 	    SendClientMessage(playerid,-1,""COL_PRIM"Object Edition: {FFFFFF}Updated");
-            DestroyPlayerObject(playerid, GRAFFObject[playerid]);
-			GRAFFObject[playerid] = CreatePlayerObject(playerid, ObjectID[playerid], fX, fY, fZ, fRotX, fRotY, fRotZ);
-			SetPlayerObjectMaterialText(playerid, GRAFFObject[playerid], Text[playerid], Index[playerid], Size[playerid], FontName[playerid],
-			FontSize[playerid], UseBold[playerid], GRAFFTextColor[playerid], BackgColor[playerid], TextAlign[playerid]);
-			ShowGraffMainMenu(playerid);
-			GRAFFPos[playerid][0] = fX;
-			GRAFFPos[playerid][1] = fY;
-			GRAFFPos[playerid][2] = fZ;
-			GRAFFRot[playerid][0] = fRotX;
-			GRAFFRot[playerid][1] = fRotY;
-			GRAFFRot[playerid][2] = fRotZ;
-		}
-		else if(response == EDIT_RESPONSE_CANCEL)
-		{
-            SendClientMessage(playerid,-1,""COL_PRIM"Object Edition: {FFFFFF}Cancelled updating"); UpdateGraffObject(playerid), ShowGraffMainMenu(playerid);
-		}
-	}
-	return 1;
-}
-
-// graffiti <end>
-
-/*
-// Headshots start
-#include <YSI\y_hooks>
-
-new
-	LastHeadShotTick[MAX_PLAYERS],
-	LastSnipedBy[MAX_PLAYERS],
-	LastSnipedTick[MAX_PLAYERS],
-	LastDeagledBy[MAX_PLAYERS],
-	LastDeagledTick[MAX_PLAYERS],
-	LastRifledBy[MAX_PLAYERS],
-	LastRifledTick[MAX_PLAYERS]
-	;
-
-
-forward HeadShotCheck();
-public HeadShotCheck()
-{
-	new idx;
-	foreach(new i : Player)
-	{
-		idx = GetPlayerAnimationIndex(i);
-		if(idx == 1173 || idx == 1175 || idx == 1177 || idx == 1178)
-		{
-			if((GetTickCount() - LastSnipedTick[i]) < 1000)
-			{
-				if(IsPlayerConnected(LastSnipedBy[i]))
-				{
-				    if(!Player[i][InHeadShot])
-				    {
-						if((GetPlayerTeam(i) != NO_TEAM && GetPlayerTeam(i) != GetPlayerTeam(LastSnipedBy[i])) || (GetPlayerTeam(i) == NO_TEAM && GetPlayerTeam(LastSnipedBy[i]) == NO_TEAM))
-						{
-							if((GetTickCount() - LastHeadShotTick[i]) > 1000)
-							{
-								LastHeadShotTick[i] = GetTickCount();
-								OnPlayerHeadshotPlayer(i, LastSnipedBy[i], WEAPON_SNIPER);
-							}
-						}
-					}
-					else
-					{
-					    if((GetTickCount() - LastHeadShotTick[i]) > 1000)
-						{
-							LastHeadShotTick[i] = GetTickCount();
-							OnPlayerHeadshotPlayer(i, LastSnipedBy[i], WEAPON_SNIPER);
-						}
-					}
-				}
-				break;
-			}
-			if((GetTickCount() - LastRifledTick[i]) < 1000)
-			{
-				if(IsPlayerConnected(LastRifledBy[i]))
-				{
-				    if(!Player[i][InHeadShot])
-				    {
-						if((GetPlayerTeam(i) != NO_TEAM && GetPlayerTeam(i) != GetPlayerTeam(LastRifledBy[i])) || (GetPlayerTeam(i) == NO_TEAM && GetPlayerTeam(LastRifledBy[i]) == NO_TEAM))
-						{
-							if((GetTickCount() - LastHeadShotTick[i]) > 1000)
-							{
-								LastHeadShotTick[i] = GetTickCount();
-								OnPlayerHeadshotPlayer(i, LastRifledBy[i], WEAPON_RIFLE);
-							}
-						}
-					}
-					else
-					{
-					    if((GetTickCount() - LastHeadShotTick[i]) > 1000)
-						{
-							LastHeadShotTick[i] = GetTickCount();
-							OnPlayerHeadshotPlayer(i, LastRifledBy[i], WEAPON_RIFLE);
-						}
-					}
-				}
-				break;
-			}
-			if((GetTickCount() - LastDeagledTick[i]) < 1000)
-			{
-				if(IsPlayerConnected(LastDeagledBy[i]))
-				{
-				    if(!Player[i][InHeadShot])
-				    {
-						if((GetPlayerTeam(i) != NO_TEAM && GetPlayerTeam(i) != GetPlayerTeam(LastDeagledBy[i])) || (GetPlayerTeam(i) == NO_TEAM && GetPlayerTeam(LastDeagledBy[i]) == NO_TEAM))
-						{
-							if((GetTickCount() - LastHeadShotTick[i]) > 1000)
-							{
-								LastHeadShotTick[i] = GetTickCount();
-								OnPlayerHeadshotPlayer(i, LastDeagledBy[i], WEAPON_DEAGLE);
-							}
-						}
-					}
-					else
-					{
-					    if((GetTickCount() - LastHeadShotTick[i]) > 1000)
-						{
-							LastHeadShotTick[i] = GetTickCount();
-							OnPlayerHeadshotPlayer(i, LastDeagledBy[i], WEAPON_DEAGLE);
-						}
-					}
-				}
-				break;
-			}
-		}
-	}
-	return 1;
-}
-
-hook OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
-{
-   	if(issuerid != INVALID_PLAYER_ID)
-	{
-		if(weaponid == WEAPON_SNIPER)
-		{
-			LastSnipedBy[playerid] = issuerid;
-			LastSnipedTick[playerid] = GetTickCount();
-		}
-		else if(weaponid == WEAPON_DEAGLE)
-		{
-			LastDeagledBy[playerid] = issuerid;
-			LastDeagledTick[playerid] = GetTickCount();
-		}
-		else if(weaponid == WEAPON_RIFLE)
-		{
-			LastRifledBy[playerid] = issuerid;
-			LastRifledTick[playerid] = GetTickCount();
-		}
-	}
-	return 1;
-}
-
-forward OnPlayerHeadshotPlayer(playerid, shooterid, weaponid);
-public OnPlayerHeadshotPlayer(playerid, shooterid, weaponid)
-{
-	if(Player[shooterid][InHeadShot])
-	{
-	    if(Player[playerid][InHeadShot])
-	    {
-	        SetHP(playerid, 0.0);
-			return 1;
-		}
-	}
-	new wepName[32];
-	switch(weaponid)
-	{
-	    case WEAPON_SNIPER:
-	    {format(wepName, sizeof wepName, "Sniper");}
-	    case WEAPON_RIFLE:
-	    {format(wepName, sizeof wepName, "Rifle");}
-	    case WEAPON_DEAGLE:
-	    {format(wepName, sizeof wepName, "Deagle");}
-	}
-	new shootername[MAX_PLAYER_NAME], shotname[MAX_PLAYER_NAME];
-	GetPlayerName(playerid, shotname, sizeof shotname);
-	GetPlayerName(shooterid, shootername, sizeof shootername);
-	SendClientMessageToAll(-1, sprintf("{FFFFFF}%s "COL_PRIM"has just head-shot {FFFFFF}%s "COL_PRIM"({FFFFFF}%s"COL_PRIM")", shootername, shotname, wepName));
-	return 1;
-}
-
-// Headshots end
-*/
 forward DelayedDatabaseStuff();
 public DelayedDatabaseStuff()
 {
@@ -3158,7 +2305,6 @@ public DelayedDatabaseStuff()
 	LoadArenas(); // Loads areans
 	LoadDMs(); // Loads DMs
 	LoadDuels(); // Loads Duels
-    LoadGraffs(); // Loads Graffs
     CreateDuelArena();
 
     //AddFoxGlitchFix(); // Fixes BASE 42 glitch
@@ -3368,8 +2514,6 @@ public OnGameModeInit()
     //Exception = "Whitetiger";
 
 	SetTimer("OnScriptUpdate", 1000, true); // Timer that updates every second (will be using this for most stuff)
-	SetTimer("FixVsTextDraw", 3000, true);
-    //SetTimer("HeadShotCheck", 250, true);
     InitVersionChecker(true, true);
 
 	CreateObject(3095, 268.74, 1884.21, 16.07,   0.00, 0.00, 0.00);
@@ -3623,7 +2767,6 @@ public OnPlayerConnect(playerid)
 	Player[playerid][blockedall] = false;
 	Player[playerid][HasVoted] = false;
 	Player[playerid][SetToReconnect] = false;
-	Player[playerid][PROT_HPAutoRefilled] = false;
 
 	noclipdata[playerid][cameramode] 	= 	CAMERA_MODE_NONE;
 	noclipdata[playerid][lrold]	   	 	= 	0;
@@ -3831,55 +2974,11 @@ public OnPlayerRequestSpawn(playerid) {
 }
 
 
-
-/*PUB:HackCheck(playerid)
-{
-    gpInfo[playerid][firstspawn] = 1;
-	new Float:x, Float:y, Float:z;
-	GetPlayerCameraFrontVector(playerid, x, y, z);
-	#pragma unused x
-	#pragma unused y
-	if(z < -0.8)
-	{
-	    TogglePlayerControllable(playerid, 1);
-	    Player[playerid][IsFreezed] = false;
-	    gpInfo[playerid][hacker] = 1;
-	    new string[128],name[24]; GetPlayerName(playerid,name,24);
-		format(string, sizeof string, "{FF0000}ANTICHEAT: {FFFFFF}%s (%d) "COL_PRIM"has been busted with {FF0000}s0beit", name, playerid);
-		for(new i=0; i<MAX_PLAYERS; ++i) SendClientMessage(i, -1, string);
-
-		Player[playerid][DontPause] = true;
-		SetTimerEx("OnPlayerKicked", 500, false, "i", playerid);
-	}
-	else
-	{
-	    Player[playerid][IsFreezed] = false;
-	    if(Player[playerid][Playing] == false) {
-	    	TogglePlayerControllable(playerid, 1);
-		}
-	    if(Player[playerid][Playing] == true && RoundPaused == false) {
-	    	TogglePlayerControllable(playerid, 1);
-		}
-	}
-	return 1;
-}*/
-
-
 public OnPlayerSpawn(playerid)
 {
     if(gpInfo[playerid][firstspawn] == 0 && Player[playerid][Playing] == false)
 	{
 	    SetCameraBehindPlayer(playerid);
-	    //TogglePlayerControllable(playerid, 0);
-	    //SetTimerEx("HackCheck", FREEZE_SECONDS * 1000, 0, "i", playerid);
-   	    //Player[playerid][IsFreezed] = true;
-
-
-//1=Hardcore NL, 2=ChartHits, 3=MUSIK.MAIN, 4=idobi, 5=DEFJAY US
-//6=181.FM Hiphop, 7=Indian Radio HSL, 8=BlackBeats.FM, 9=TechnoBase.FM, 10=HouseTime.FM
-
-		//SendClientMessage(playerid, -1, "Checking for cheats..");
-
 	}
 
 
@@ -3925,14 +3024,10 @@ public OnPlayerSpawn(playerid)
 	{
 		if( Player[playerid][InTDM] == true )
 		{
-			//new str[128];
-		    new tmpkill, tmpdeath, Float: tmpdamage;
+			new tmpkill, tmpdeath, Float: tmpdamage;
 			tmpkill = Player[playerid][RoundKills];
 			tmpdeath = Player[playerid][RoundDeaths];
 			tmpdamage = Player[playerid][RoundDamage];
-
-			//format(str,sizeof(str),"BEFORE: %d | %d | %0.1f || ", tmpkill, tmpdeath, tmpdamage);
-
 			AddPlayerToArena(playerid);
 
 			Player[playerid][RoundKills] = tmpkill;
@@ -3944,11 +3039,6 @@ public OnPlayerSpawn(playerid)
 			else format(iString, sizeof(iString), "~n~~n~%sKills ~r~%d~n~%sDmg ~r~%.0f~n~%sT. Dmg ~r~%.0f", MAIN_TEXT_COLOUR, Player[playerid][RoundKills], MAIN_TEXT_COLOUR, Player[playerid][RoundDamage], MAIN_TEXT_COLOUR, Player[playerid][TotalDamage]);
 
 			PlayerTextDrawSetString(playerid, RoundKillDmgTDmg, iString);
-
-			//format(str,sizeof(str),"%sAFTER: %d | %d | %0.1f ", str, Player[playerid][RoundKills], Player[playerid][RoundDeaths], Player[playerid][RoundDamage]);
-
-			//SendClientMessage(playerid,-1,str);
-
 			Player[playerid][InTDM] = false;
 			return 1;
 		}
@@ -3959,11 +3049,7 @@ public OnPlayerSpawn(playerid)
 	    SetSpawnInfoEx(playerid, NO_TEAM, Skin[Player[playerid][Team]], -39.8379 + random(2), 76.9813 + random(2), 3.1172 + 0.5, 180.0, 0, 0, 0, 0, 0, 0);
 		Player[playerid][IgnoreSpawn] = true;
 		SpawnPlayerEx(playerid);
-
-
-		//SetPlayerPos(playerid,AntiLagSpawn[Pos][0],AntiLagSpawn[Pos][1],AntiLagSpawn[Pos][2]);
-		//SetPlayerFacingAngle(playerid,AntiLagSpawn[Pos][3]);
-
+		
 		SetPlayerInterior(playerid, 	0);
 		SetPlayerVirtualWorld(playerid, 500);
 
@@ -3998,35 +3084,15 @@ public OnPlayerSpawn(playerid)
 		ColorFix(playerid); // Fixes player color based on their team.
 		SetPlayerSkin(playerid, Skin[Player[playerid][Team]]);
 	}
-
-/*	for(new i = 0; i < 15; i++) {
-		TextDrawShowForPlayer(playerid, AttackersAlive[i]);
-		TextDrawShowForPlayer(playerid, DefendersAlive[i]);
-    }
-*/
-
-
-    //TextDrawShowForPlayer(playerid, LOGO);
+	FixVsTextDraw();
 	return 1;
 }
 
 
 public OnPlayerDisconnect(playerid, reason)
 {
-	/*if(Player[playerid][SetToReconnect] == true)
-	{
-	    Player[playerid][SetToReconnect] = false;
-		SendRconCommand(sprintf("unbanip %s", Player[playerid][IpToReconnect]));
-		SendRconCommand("reloadbans");
-	}*/
-
 	if(reason == 0)
         DidSomeoneTimeout = true;
-
-	if(CreatingTextO[playerid])
-	{
-	    //PlayerSaveNewGraff(playerid);
-	}
 
 	if(Player[playerid][Spectating] == true && IsPlayerConnected(Player[playerid][IsSpectatingID])) StopSpectate(playerid);
 
@@ -4217,6 +3283,7 @@ public OnPlayerDisconnect(playerid, reason)
     #if XMAS == 1
     Snow_OnDisconnect(playerid);
 	#endif
+	FixVsTextDraw();
 	return 1;
 }
 
@@ -4339,7 +3406,8 @@ stock Float:GetDistanceToPoint(playerid, Float:XXX, Float:YYY, Float:ZZZ) {
 	return floatsqroot(floatpower(floatabs(floatsub(XXX, Pos[0])),2) + floatpower(floatabs(floatsub(YYY, Pos[1])),2) + floatpower(floatabs(floatsub(ZZZ, Pos[2])),2));
 }
 
-public OnPlayerDeath(playerid, killerid, reason)
+forward ServerOnPlayerDeath(playerid, killerid, reason);
+public ServerOnPlayerDeath(playerid, killerid, reason)
 {
 	if(reason == 255 && Player[playerid][AntiLag] == false && Player[playerid][InHeadShot] == false && ServerAntiLag == false) reason = 53;
 	new iString[180];
@@ -4921,12 +3989,6 @@ public OnPlayerEnterCheckpoint(playerid) {
     return 1;
 }
 
-public OnPlayerEditObject(playerid, playerobject, objectid, response, Float:fX, Float:fY, Float:fZ, Float:fRotX, Float:fRotY, Float:fRotZ)
-{
-    OnPlayerEditGraffObject(playerid, playerobject, objectid, response, Float:fX, Float:fY, Float:fZ, Float:fRotX, Float:fRotY, Float:fRotZ);
-	return 1;
-}
-
 public OnPlayerClickMap(playerid, Float:fX, Float:fY, Float:fZ)
 {
 	if(Player[playerid][Level] == 5 && Player[playerid][Playing] == false && Player[playerid][InDM] == false && Player[playerid][InDuel] == false && Player[playerid][Spectating] == false && Player[playerid][InHeadShot] == false && Player[playerid][AntiLag] == false) {
@@ -5201,13 +4263,6 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 	return 1;
 }
 
-forward HideAutoRefillText(playerid);
-public HideAutoRefillText(playerid)
-{
-    Player[playerid][PROT_HPAutoRefilled] = false;
-	return 1;
-}
-
 public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 {
     if((Player[playerid][OnGunmenu] && Player[playerid][Playing]) ||
@@ -5269,7 +4324,8 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 	    ShowTargetInfo(issuerid, playerid);
 	}
 
-	if(ServerAntiLag == true && weaponid != -1) return 1;
+	if(ServerAntiLag == true && weaponid != -1)
+		return 1;
 
 
 	new Float:Health[3], Float:Damage;
@@ -5304,9 +4360,6 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		if(Health[1] >= 1.0 && (Health[0] - amount) < RoundHP)
 		{
 		    return 1;
-			//Player[playerid][PROT_HPAutoRefilled] = true;
-			//SetTimerEx("HideAutoRefillText", 2000, false, "i", playerid);
-			//SetHP(playerid, RoundHP);
 		}
 	}
 	// <end>
@@ -5316,6 +4369,9 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		if(Player[issuerid][Playing] == true && (Player[issuerid][Team] == Player[playerid][Team]))
 			return 1;
 			
+    Player[playerid][ServerSidedDeath_killerid] = issuerid;
+ 	Player[playerid][ServerSidedDeath_reason] = weaponid;
+
 	if(weaponid == 54)
 	{
 	    SetHP(playerid, Health[0] - amount);
@@ -5334,6 +4390,152 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 	else
 	    SetHP(playerid, Health[0] - amount);
 	// <end>
+
+	if((BaseStarted == true || ArenaStarted == true) && TeamHPDamage == true)
+	{
+	    new
+		    playerScores[MAX_PLAYERS][rankingEnum],
+		    index,
+		    p
+		;
+		
+		foreach(new i : Player)
+	 	{
+		    if(Player[i][WasInBase] == true && TeamHPDamage == true)
+			{
+				playerScores[index][player_Score] = floatround(Player[i][RoundDamage], floatround_round);
+		        playerScores[index++][player_ID] = i;
+		        p++;
+			}
+		}
+		
+		if(BaseStarted == true)
+		{
+			GetPlayerHighestScores(playerScores, 0, index -1 );
+			new AttOnline, DefOnline;
+
+			ScoreString[0] = "";
+			ScoreString[1] = "";
+			ScoreString[2] = "";
+			ScoreString[3] = "";
+
+			for(new i = 0; i != p; ++i)
+			{
+				if(IsPlayerConnected(playerScores[i][player_ID]))
+				{
+					if(Player[playerScores[i][player_ID]][Team] == ATTACKER)
+					{
+					    AttOnline++;
+					    if(Player[playerScores[i][player_ID]][Playing] == false && Player[playerScores[i][player_ID]][RoundDeaths] > 0)
+						{
+					    	if(AttOnline <= 3)
+								format(ScoreString[0], 256, "%s%s| %s ~r~~h~Dead %s- ~r~%d~n~", ScoreString[0], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+							else if(AttOnline <= 6)
+								format(ScoreString[1], 256, "%s%s| %s ~r~~h~Dead %s- ~r~%d~n~", ScoreString[1], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+						}
+						else if(Player[playerScores[i][player_ID]][Playing] == true)
+						{
+						    if(AttOnline <= 3)
+								format(ScoreString[0], 256, "%s%s| %s ~r~~h~%.0f %s- ~r~%d~n~", ScoreString[0], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+							else if(AttOnline <= 6)
+								format(ScoreString[1], 256, "%s%s| %s ~r~~h~%.0f %s- ~r~%d~n~", ScoreString[1], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+						}
+					}
+					else if(Player[playerScores[i][player_ID]][Team] == DEFENDER)
+					{
+					    DefOnline++;
+
+					    if(Player[playerScores[i][player_ID]][Playing] == false && Player[playerScores[i][player_ID]][RoundDeaths] > 0)
+						{
+					        if(DefOnline <= 3)
+								format(ScoreString[2], 256, "%s%s| %s ~b~~h~Dead %s- ~b~~h~%d~n~", ScoreString[2], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+							else if(DefOnline <= 6)
+								format(ScoreString[3], 256, "%s%s| %s ~b~~h~Dead %s- ~b~~h~%d~n~", ScoreString[3], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+					    }
+						else if(Player[playerScores[i][player_ID]][Playing] == true)
+						{
+					    	if(DefOnline <= 3)
+								format(ScoreString[2], 256, "%s%s| %s ~b~~h~%.0f %s- ~b~~h~%d~n~", ScoreString[2], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+							else if(DefOnline <= 6)
+								format(ScoreString[3], 256, "%s%s| %s ~b~~h~%.0f %s- ~b~~h~%d~n~", ScoreString[3], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+						}
+					}
+				}
+			}
+
+			TextDrawSetString(AttackerTeam[0], ScoreString[0]);
+			TextDrawSetString(AttackerTeam[1], ScoreString[1]);
+			TextDrawSetString(DefenderTeam[0], ScoreString[2]);
+			TextDrawSetString(DefenderTeam[1], ScoreString[3]);
+			TextDrawSetString(AttackerTeam[2], ScoreString[0]);
+			TextDrawSetString(AttackerTeam[3], ScoreString[1]);
+			TextDrawSetString(DefenderTeam[2], ScoreString[2]);
+			TextDrawSetString(DefenderTeam[3], ScoreString[3]);
+		}
+	    if(ArenaStarted == true)
+	    {
+		    GetPlayerHighestScores(playerScores, 0, index -1 );
+			new AttOnline, DefOnline;
+
+			ScoreString[0] = "";
+			ScoreString[1] = "";
+			ScoreString[2] = "";
+			ScoreString[3] = "";
+
+			for(new i = 0; i != p; ++i)
+			{
+				if(IsPlayerConnected(playerScores[i][player_ID]))
+				{
+					if(Player[playerScores[i][player_ID]][Team] == ATTACKER)
+					{
+					    AttOnline++;
+					    if(Player[playerScores[i][player_ID]][RoundDeaths] > 0)
+						{
+					    	if(AttOnline <= 3)
+								format(ScoreString[0], 256, "%s%s| %s ~r~~h~Dead %s- ~r~%d~n~", ScoreString[0], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+							else if(AttOnline <= 6)
+								format(ScoreString[1], 256, "%s%s| %s ~r~~h~Dead %s- ~r~%d~n~", ScoreString[1], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+						}
+						else
+						{
+						    if(AttOnline <= 3)
+								format(ScoreString[0], 256, "%s%s| %s ~r~~h~%.0f %s- ~r~%d~n~", ScoreString[0], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+							else if(AttOnline <= 6)
+								format(ScoreString[1], 256, "%s%s| %s ~r~~h~%.0f %s- ~r~%d~n~", ScoreString[1], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+						}
+					}
+					else if(Player[playerScores[i][player_ID]][Team] == DEFENDER)
+					{
+					    DefOnline++;
+
+					    if(Player[playerScores[i][player_ID]][RoundDeaths] > 0)
+						{
+					        if(DefOnline <= 3)
+								format(ScoreString[2], 256, "%s%s| %s ~b~~h~Dead %s- ~b~~h~%d~n~", ScoreString[2], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+							else if(DefOnline <= 6)
+								format(ScoreString[3], 256, "%s%s| %s ~b~~h~Dead %s- ~b~~h~%d~n~", ScoreString[3], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+					    }
+						else
+					 	{
+					    	if(DefOnline <= 3)
+								format(ScoreString[2], 256, "%s%s| %s ~b~~h~%.0f %s- ~b~~h~%d~n~", ScoreString[2], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+							else if(DefOnline <= 6)
+								format(ScoreString[3], 256, "%s%s| %s ~b~~h~%.0f %s- ~b~~h~%d~n~", ScoreString[3], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
+						}
+					}
+				}
+			}
+
+			TextDrawSetString(AttackerTeam[0], ScoreString[0]);
+			TextDrawSetString(AttackerTeam[1], ScoreString[1]);
+			TextDrawSetString(DefenderTeam[0], ScoreString[2]);
+			TextDrawSetString(DefenderTeam[1], ScoreString[3]);
+			TextDrawSetString(AttackerTeam[2], ScoreString[0]);
+			TextDrawSetString(AttackerTeam[3], ScoreString[1]);
+			TextDrawSetString(DefenderTeam[2], ScoreString[2]);
+			TextDrawSetString(DefenderTeam[3], ScoreString[3]);
+		}
+ 	}
 
 	if(Health[0] > 0) {
 	    if(amount > Health[0]) {
@@ -5512,8 +4714,11 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 	   			Update3DTextLabelText(DmgLabel[playerid], -1, iString);
 			}
 		}
-	} else {
-		if(GetPlayerState(playerid) != PLAYER_STATE_WASTED) {
+	}
+	else
+	{
+		if(GetPlayerState(playerid) != PLAYER_STATE_WASTED)
+		{
 
 			PlayerPlaySound(playerid, Player[playerid][GetHitSound], 0, 0, 0);
 
@@ -5555,7 +4760,9 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 				format(iString, sizeof(iString), "%s\n%s\n%s", DmgLabelStr[0][playerid], DmgLabelStr[1][playerid], DmgLabelStr[2][playerid]);
 	   			Update3DTextLabelText(DmgLabel[playerid], -1, iString);
 
-			} else {
+			}
+			else
+			{
 			    if(gLastHit[4][playerid] == -1 && gLastHit[5][playerid] != playerid) gLastHit[4][playerid] = playerid;
 				if(gLastHit[4][playerid] == playerid) {
 				    DamageDone[4][playerid] += amount;
@@ -5647,7 +4854,6 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 
 public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 {
-    OnMainGraffMenuResponse(playerid, dialogid, response, listitem, inputtext);
     if(dialogid == DIALOG_REPLACE_FIRST)
 	{
 		if(response)
@@ -5823,6 +5029,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 					ip = "Hidden";
 				}
 */
+                GetPlayerFPS(CID);
 				#if STATS == 0 && MYSQL == 0
 				format(statsSTR[0], sizeof(statsSTR[]), "{FF0000}- {FFFFFF}Country: %s\n\n{FF0000}- {FFFFFF}Round Kills: \t\t%d\t\t{FF0000}- {FFFFFF}Total Kills: \t\t%d\t\t{FF0000}- {FFFFFF}FPS: \t\t\t%d\n{FF0000}- {FFFFFF}Round Deaths: \t%.0f\t\t{FF0000}- {FFFFFF}Total Deaths: \t\t%d\t\t{FF0000}- {FFFFFF}Ping: \t\t\t%d\n",Country,  Player[CID][RoundKills],Player[CID][TotalKills], Player[CID][FPS], RD, TD, GetPlayerPing(CID));
 				format(statsSTR[1], sizeof(statsSTR[]), "{FF0000}- {FFFFFF}Round Damage: \t%.0f\t\t{FF0000}- {FFFFFF}Total Damage:   \t%.0f\t\t{FF0000}- {FFFFFF}Packet-Loss:   \t%.1f\n\n{FF0000}- {FFFFFF}Player Weather: \t%d\t\t{FF0000}- {FFFFFF}Chat Channel: \t%d\t\t\t{FF0000}- {FFFFFF}In Round: \t\t%s\n",Player[CID][RoundDamage],Player[CID][TotalDamage], GetPlayerPacketLoss(CID), Player[CID][Weather], (MC == YC ? YC : -1), (Player[CID][Playing] == true ? ("Yes") : ("No")));
@@ -6142,13 +5349,13 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	if(dialogid == DIALOG_SERVER_PASS) {
 		if(response) {
 		    if(isnull(inputtext)) return 1;
-			if(strlen(inputtext) > 6) {
+			if(strlen(inputtext) > MAX_SERVER_PASS_LENGH) {
 				SendErrorMessage(playerid,"Server password is too long.");
 			   	ShowPlayerDialog(playerid, DIALOG_SERVER_PASS, DIALOG_STYLE_INPUT,""COL_PRIM"Server Password",""COL_PRIM"Enter server password below:", "Ok","Close");
 				return 1;
 			}
             format(ServerPass, sizeof(ServerPass), "password %s", inputtext);
-            SendRconCommand(ServerPass);
+           	SendRconCommand(ServerPass);
 
 			ServerLocked = true;
 			PermLocked = false;
@@ -7909,12 +7116,13 @@ CMD:updates(playerid, params[])
 
 	strcat(string, "{00FF00}Attack-Defend v2.7 updates:\n");
     
+    strcat(string, "\n{FFFFFF}- Much code optimization's been done for better performence and smoother gameplay.");
+    strcat(string, "\n{FFFFFF}- Gamemode now uses server-sided health which brings out some features:-");
+	strcat(string, "\n{FFFFFF}\t-Perfected fall protection.\n\t-Smoothly disabled heli-blades, falling, collision, explosions and fire.\n\t-No longer trusting the client, server handles player health which means less cheaters");
 	strcat(string, "\n{FFFFFF}- Other fighting styles are made usable now with the power of /fightstyle.");
 	strcat(string, "\n{FFFFFF}- AC Update allowing functions to be used without the plugin loaded.");
 	strcat(string, "\n{FFFFFF}- Make sure you leave a message to your dead enemies using /deathdiss.");
 	strcat(string, "\n{FFFFFF}- Fixed team win bug that could make wrong results in a round.");
-	strcat(string, "\n{FFFFFF}- Gamemode now uses server-sided health which brings out some features:-");
-	strcat(string, "\n{FFFFFF}\t-Perfected fall protection.\n\t-Smoothly disabled heli-blades, falling, collision, explosions and fire.\n\t-No longer trusting the client, server handles player health which means less cheaters");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
 	strcat(string, "\n{FFFFFF}");
@@ -7991,7 +7199,7 @@ CMD:acmds(playerid, params[])
 
 	if(Player[playerid][Level] > 3) {
 		strcat(string, "\n\n"COL_PRIM"Level 4:");
-		strcat(string, "\n{FFFFFF}/acar   /banip   /mainspawn   /spray   /deletegraff   /clearadmcmd");
+		strcat(string, "\n{FFFFFF}/acar   /banip   /mainspawn   /clearadmcmd");
 	}
 
 	if(Player[playerid][Level] > 4) {
@@ -9233,7 +8441,7 @@ CMD:lock(playerid, params[])
 	if(ServerLocked == false) {
 
 	    if(isnull(params)) return SendUsageMessage(playerid,"/lock [Password]");
-		if(strlen(params) > 6) return SendErrorMessage(playerid,"Server password is too long.");
+		if(strlen(params) > MAX_SERVER_PASS_LENGH) return SendErrorMessage(playerid,"Server password is too long.");
 
         format(ServerPass, sizeof(ServerPass), "password %s", params);
         SendRconCommand(ServerPass);
@@ -12026,6 +11234,11 @@ CMD:help(playerid, params[])
 	return 1;
 }
 
+CMD:deathmessage(playerid, params[])
+{
+	return cmd_deathdiss(playerid, params);
+}
+
 CMD:deathdiss(playerid, params[])
 {
     if(isnull(params)) return SendUsageMessage(playerid,"/deathdiss [Message]");
@@ -13083,7 +12296,6 @@ CMD:end(playerid, params[])
 	GangZoneDestroy(ArenaZone);
 
 	ResetTeamLeaders();
-	LoadGraffs();
 
     LogAdminCommand("end", playerid, INVALID_PLAYER_ID);
 	return 1;
@@ -18011,11 +17223,26 @@ stock SetHP(playerid, Float:amount)
         SetPlayerProgressBarColour(playerid, HealthBar, 0x890606FF);
 	}
 	
+	if(FallProtection == false)
+	{
+		PlayerTextDrawSetString(playerid, HPTextDraw_TD, sprintf("%s%.0f", MAIN_TEXT_COLOUR, amount));
+	}
+	else
+	{
+		if(Player[playerid][Playing] == true)
+			PlayerTextDrawSetString(playerid, HPTextDraw_TD, sprintf("%sFall Prot.", MAIN_TEXT_COLOUR));
+		else
+		{
+			PlayerTextDrawSetString(playerid, HPTextDraw_TD, sprintf("%s%.0f", MAIN_TEXT_COLOUR, amount));
+		}
+	}
+	
 	PlayerHealth[playerid] = amount;
+	Player[playerid][pHealth] = amount;
 	SetPlayerProgressBarValue(playerid, HealthBar, amount);
 	if(amount <= 0.0)
 	{
-	    SetPlayerHealth(playerid, 0.0);
+	    ServerOnPlayerDeath(playerid, Player[playerid][ServerSidedDeath_killerid], Player[playerid][ServerSidedDeath_reason]);
 	    HidePlayerProgressBar(playerid, HealthBar);
 	}
 	else
@@ -18049,7 +17276,14 @@ stock SetAP(playerid, Float:amount)
         SetPlayerProgressBarColour(playerid, ArmourBar, 0xdb1e1eFF);
 	}
 	
+	if(Player[playerid][pArmour] > 0) {
+		PlayerTextDrawSetString(playerid, ArmourTextDraw, sprintf("%s~h~~h~%.0f", MAIN_TEXT_COLOUR, amount));
+	} else {
+	    PlayerTextDrawSetString(playerid, ArmourTextDraw, "_");
+	}
+	
 	PlayerArmour[playerid] = amount;
+	Player[playerid][pArmour] = amount;
 	SetPlayerProgressBarValue(playerid, ArmourBar, amount);
 	if(amount <= 0.0)
 	{
@@ -18725,6 +17959,7 @@ stock ShowTargetInfo(playerid, targetid)
 
 	new str[170];
 	new vid = GetPlayerVehicleID(targetid);
+	GetPlayerFPS(targetid);
 	if(vid == 0)
 	{
 		format(str, sizeof str, "~n~~n~%sName: %s%s~n~%sPing: %s%d   %sFPS: %s%d~n~%sPL: %s%.1f   %sHP: %s%.0f",
@@ -19440,10 +18675,6 @@ stock CanPlay(playerid)
 
     if(!(Player[playerid][Team] == ATTACKER || Player[playerid][Team] == DEFENDER))
 		return 0; // can not play
-
-	if(CreatingTextO[playerid])
-		return 0; // can not play
-
 
 	return 1; // can play
 }
@@ -20194,6 +19425,7 @@ stock SwapTeams()
 
 	format(iString, sizeof(iString), "{FFFFFF}Teams are swapped - {FF0033}Attackers: {FFFFFF}%s | {3344FF}Defenders: {FFFFFF}%s", TeamName[ATTACKER], TeamName[DEFENDER]);
 	SendClientMessageToAll(-1, iString);
+	FixVsTextDraw();
 	return 1;
 }
 
@@ -20270,20 +19502,12 @@ stock BalanceTeams() {
 			ClearAnimations(i);
 		}
 	}
+	FixVsTextDraw();
 	return 1;
 }
 
 
 stock SwitchTeamFix(playerid) {
-/*    TextDrawHideForPlayer(playerid, AttackerText);
-    TextDrawHideForPlayer(playerid, AttackerSubText);
-    TextDrawHideForPlayer(playerid, DefenderText);
-    TextDrawHideForPlayer(playerid, DefenderSubText);
-	TextDrawHideForPlayer(playerid, AutoAssignText);
-    TextDrawHideForPlayer(playerid, RefereeText);
-
-    CancelSelectTextDraw(playerid);
-*/
     new iString[160];
 	format(iString, sizeof(iString), "{FFFFFF}%s "COL_PRIM"has switched to: {FFFFFF}%s", Player[playerid][Name], TeamName[Player[playerid][Team]]);
 	SendClientMessageToAll(-1, iString);
@@ -20293,6 +19517,7 @@ stock SwitchTeamFix(playerid) {
 	PlayerTextDrawSetString(playerid, RoundKillDmgTDmg, iString);
 
 	ColorFix(playerid);
+	FixVsTextDraw();
 	SetPlayerSkin(playerid, Skin[Player[playerid][Team]]);
 	SetCameraBehindPlayer(playerid);
 
@@ -21707,6 +20932,7 @@ stock GetPlayerFPS(playerid) {
 			Player[playerid][DLlast] = drunk2;
 		}
 	}
+	return Player[playerid][FPS];
 }
 
 
@@ -22237,12 +21463,6 @@ public OnScriptUpdate()
 	PlayersAlive[ATTACKER] = 0;
 	PlayersAlive[DEFENDER] = 0;
 
-	new
-	    playerScores[MAX_PLAYERS][rankingEnum],
-	    index,
-	    p
-	;
-
 	ReadyText[0] = sprintf("%sPlayers To Ready:", MAIN_TEXT_COLOUR);
 	ReadyText[1] = "";
 	new PlayersToReady;
@@ -22269,50 +21489,14 @@ public OnScriptUpdate()
 		    AddAimbotBan(i);
 		}
 
-		//if(ServerAntiLag == true) SetPlayerTeam(i, ANTILAG_TEAM);
+		
+		Player[i][PauseCount] ++;
 
-		Player[i][PauseCount]++;
-	    GetPlayerFPS(i);
-
-//		new iString[200];
-
-		GetHP(i, Player[i][pHealth]);
-		GetAP(i, Player[i][pArmour]);
-
-		if(Player[i][PROT_HPAutoRefilled] == false)
+		if(RoundPaused == false)
 		{
-			if(FallProtection == false)
-			{
-				format(iString, sizeof(iString), "%s%.0f", MAIN_TEXT_COLOUR, Player[i][pHealth]);
-				PlayerTextDrawSetString(i, HPTextDraw_TD, iString);
-			}
-			else
-			{
-				if(Player[i][Playing] == true)
-					PlayerTextDrawSetString(i, HPTextDraw_TD, sprintf("%sFall Prot.", MAIN_TEXT_COLOUR));
-				else
-				{
-					format(iString, sizeof(iString), "%s%.0f", MAIN_TEXT_COLOUR, Player[i][pHealth]);
-			    	PlayerTextDrawSetString(i, HPTextDraw_TD, iString);
-				}
-			}
-		}
-		else
-		{
-            PlayerTextDrawSetString(i, HPTextDraw_TD, sprintf("%sPROT. HP refilled", MAIN_TEXT_COLOUR));
-		}
-
-		if(Player[i][pArmour] > 0) {
-			format(iString, sizeof(iString), "%s~h~~h~%.0f", MAIN_TEXT_COLOUR, Player[i][pArmour]);
-			PlayerTextDrawSetString(i, ArmourTextDraw, iString);
-		} else {
-		    PlayerTextDrawSetString(i, ArmourTextDraw, "_");
-		}
-
-		new pPing = GetPlayerPing(i);
-		new Float:pPacket = GetPlayerPacketLoss(i);
-
-		if(RoundPaused == false) {
+		    GetPlayerFPS(i);
+			new pPing = GetPlayerPing(i);
+			new Float:pPacket = GetPlayerPacketLoss(i);
 			format(iString,sizeof(iString),"%sFPS ~r~%d			%sPing ~r~%d			%sPacketLoss ~r~%.1f%%", MAIN_TEXT_COLOUR, Player[i][FPS], MAIN_TEXT_COLOUR, pPing, MAIN_TEXT_COLOUR, pPacket);
             PlayerTextDrawSetString(i, FPSPingPacket,iString);
             TextDrawHideForAll(PauseTD);
@@ -22330,8 +21514,6 @@ public OnScriptUpdate()
 			}
 		}
 
-
-
 		if(PlayersInCP > 0 && Current != -1 && RoundPaused == false) PlayerPlaySound(i,1056,0.0,0.0,0.0);
 
 		if(ESLMode == true && Current == -1) {
@@ -22346,63 +21528,32 @@ public OnScriptUpdate()
 			}
 		}
 
-
 		if(Player[i][Spectating] == true && Player[i][IsSpectatingID] != INVALID_PLAYER_ID && !noclipdata[i][FlyMode]) {
 			new specid = Player[i][IsSpectatingID];
-/*			new Float:Angle; GetPlayerFacingAngle(specid, Angle);
-
-			format(iString,sizeof(iString),"~l~%s ~r~%d~n~~l~(~l~%.0f~l~)  (~r~~h~%.0f~l~)~n~~l~Ping ~r~%d ~l~FPS ~r~%d~n~~l~Packet-Loss ~r~%.1f", Player[specid][Name], specid, Player[specid][pArmour], Player[specid][pHealth], GetPlayerPing(specid), Player[specid][FPS], GetPlayerPacketLoss(specid));
-			PlayerTextDrawSetString(i, SpecText[1], iString);
-		    PlayerTextDrawShow(i,SpecText[1]);
-
-			format(iString,sizeof(iString),"~l~R-Dmg ~r~%.0f  ~l~T-Dmg ~r~%.0f~n~~l~Facing ~r~%s~n~~l~%s", Player[specid][RoundDamage], Player[specid][TotalDamage], GetCardinalPoint(Angle), SpecWeapons(specid));
-			PlayerTextDrawSetString(i, SpecText[1], iString);
-		    PlayerTextDrawShow(i,SpecText[1]);
-*/
 			format(iString, sizeof(iString),"%s%s ~r~~h~%d~n~~n~%s(%.0f) (~r~~h~%.0f%s)~n~FPS: ~r~~h~%d %sPing: ~r~~h~%d~n~%sPacket-Loss: ~r~~h~%.1f~n~%sKills: ~r~~h~%d~n~%sDamage: ~r~~h~%.0f~n~%sTotal Dmg: ~r~~h~%.0f",
-				MAIN_TEXT_COLOUR, Player[specid][Name], specid, MAIN_TEXT_COLOUR, Player[specid][pArmour], Player[specid][pHealth], MAIN_TEXT_COLOUR, Player[specid][FPS], MAIN_TEXT_COLOUR, GetPlayerPing(specid), MAIN_TEXT_COLOUR, GetPlayerPacketLoss(specid), MAIN_TEXT_COLOUR, Player[specid][RoundKills], MAIN_TEXT_COLOUR, Player[specid][RoundDamage], MAIN_TEXT_COLOUR, Player[specid][TotalDamage]);
+				MAIN_TEXT_COLOUR, Player[specid][Name], specid, MAIN_TEXT_COLOUR, Player[specid][pArmour], Player[specid][pHealth], MAIN_TEXT_COLOUR, GetPlayerFPS(specid), MAIN_TEXT_COLOUR, GetPlayerPing(specid), MAIN_TEXT_COLOUR, GetPlayerPacketLoss(specid), MAIN_TEXT_COLOUR, Player[specid][RoundKills], MAIN_TEXT_COLOUR, Player[specid][RoundDamage], MAIN_TEXT_COLOUR, Player[specid][TotalDamage]);
 			PlayerTextDrawSetString(i, SpecText[1], iString);
 			PlayerTextDrawSetString(i, SpecText[3], SpecWeapons(specid));
 
 		}
 
-
-		/*if(Current == -1) {
-			switch(Player[i][Team]) {
-			    case ATTACKER: {
-					Alive[ATTACKER-1]++;
-				} case DEFENDER: {
-					Alive[DEFENDER-1]++;
-				}
-			}
-	    	format(iString, sizeof(iString), "  ~r~%d  ~l~Vs  ~b~~h~%d", Alive[ATTACKER-1], Alive[DEFENDER-1]);
-			PlayerTextDrawSetString(i, BaseID_VS, iString);
-		}*/
-
-
-		if(Player[i][WasInBase] == true && TeamHPDamage == true) {
-			playerScores[index][player_Score] = floatround(Player[i][RoundDamage], floatround_round);
-	        playerScores[index++][player_ID] = i;
-	        p++;
-		}
-
 		if(IsPlayerInAnyVehicle(i)) {
 			Update3DTextLabelText(PingFPS[i], 0x00FF00FF, "");
-		} else {
-//	        new Float:Angle; GetPlayerFacingAngle(i, Angle);
-//			format(iString, sizeof(iString), "%s%s\n%sPing: {FFFFFF}%i\n%sFPS: {FFFFFF}%i",TextColor[Player[i][Team]],GetCardinalPoint(Angle),TextColor[Player[i][Team]], pPing, TextColor[Player[i][Team]], Player[i][FPS]);
-
-//plin3dtext
-//			format(iString, sizeof(iString), "\n%sPing: {FFFFFF}%i\n%sFPS: {FFFFFF}%i",TextColor[Player[i][Team]], pPing, TextColor[Player[i][Team]], Player[i][FPS]);
+		}
+		else
+		{
+			GetPlayerFPS(i);
+			new pPing = GetPlayerPing(i);
+			new Float:pPacket = GetPlayerPacketLoss(i);
 			format(iString, sizeof(iString), "%sPL: {FFFFFF}%.1f%%\n%sPing: {FFFFFF}%i\n%sFPS: {FFFFFF}%i", TextColor[Player[i][Team]], pPacket, TextColor[Player[i][Team]], pPing, TextColor[Player[i][Team]], Player[i][FPS]);
-//plin3dtext
-
 			Update3DTextLabelText(PingFPS[i], 0x00FF00FF, iString);
-			//Attach3DTextLabelToPlayer(PingFPS[i], i, 0.0, 0.0, -0.745);
 		}
 
 		if(Player[i][InDuel] == true && Player[i][NetCheck] == 1)
 		{
+		    GetPlayerFPS(i);
+			new pPing = GetPlayerPing(i);
+			new Float:pPacket = GetPlayerPacketLoss(i);
 			if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5  && Player[i][FPSCheck] == 1) {
 			    Player[i][FPSKick]++;
 			    format(iString,sizeof(iString),"{CCCCCC}Low FPS! Warning %d/7", Player[i][FPSKick]);
@@ -22534,7 +21685,11 @@ public OnScriptUpdate()
 
 
 
-	   		if(Player[i][NetCheck] == 1) {
+	   		if(Player[i][NetCheck] == 1)
+			{
+			    GetPlayerFPS(i);
+				new pPing = GetPlayerPing(i);
+				new Float:pPacket = GetPlayerPacketLoss(i);
 				if(Player[i][FPS] < Min_FPS && Player[i][FPS] != 0 && Player[i][PauseCount] < 5 && Player[i][FPSCheck] == 1) {
 				    Player[i][FPSKick]++;
 			    	format(iString,sizeof(iString),"{CCCCCC}Low FPS! Warning %d/7", Player[i][FPSKick]); //will help to know when you cross limit
@@ -22586,11 +21741,6 @@ public OnScriptUpdate()
 				}
 			}
 		}
-
-		// Target info
-	//	if(ToggleTargetInfo == true) ShowTargetInfo(i, GetPlayerTargetPlayer(i));
-
-		// ---
 
 		if(TakeDmgCD[0][i] > 0){
 			TakeDmgCD[0][i]++;
@@ -22659,9 +21809,8 @@ public OnScriptUpdate()
 			}
 		}
 	}
-
-//	new iString[256];
-
+	
+	
 	if(Current == -1) {
 		if(ESLMode == true) {
 		    TextDrawSetString(Ready[0], ReadyText[0]);
@@ -22669,58 +21818,9 @@ public OnScriptUpdate()
 		}
 	}
 
-	if(BaseStarted == true) {
-		if(TeamHPDamage == true) {
-			GetPlayerHighestScores(playerScores, 0, index -1 );
-			new AttOnline, DefOnline;
-
-
-//			new string[5];
-//			new iValue = 250;
-//			valstr(string,iValue); // string is now "250"
-
-			ScoreString[0] = "";
-			ScoreString[1] = "";
-			ScoreString[2] = "";
-			ScoreString[3] = "";
-
-			for(new i = 0; i != p; ++i) {
-				if(IsPlayerConnected(playerScores[i][player_ID])) {
-
-					if(Player[playerScores[i][player_ID]][Team] == ATTACKER) {
-					    AttOnline++;
-					    if(Player[playerScores[i][player_ID]][Playing] == false && Player[playerScores[i][player_ID]][RoundDeaths] > 0) {
-					    	if(AttOnline <= 3) format(ScoreString[0], 256, "%s%s| %s ~r~~h~Dead %s- ~r~%d~n~", ScoreString[0], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-							else if(AttOnline <= 6) format(ScoreString[1], 256, "%s%s| %s ~r~~h~Dead %s- ~r~%d~n~", ScoreString[1], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-						} else if(Player[playerScores[i][player_ID]][Playing] == true) {
-						    if(AttOnline <= 3) format(ScoreString[0], 256, "%s%s| %s ~r~~h~%.0f %s- ~r~%d~n~", ScoreString[0], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-							else if(AttOnline <= 6) format(ScoreString[1], 256, "%s%s| %s ~r~~h~%.0f %s- ~r~%d~n~", ScoreString[1], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-						}
-					} else if(Player[playerScores[i][player_ID]][Team] == DEFENDER) {
-					    DefOnline++;
-
-					    if(Player[playerScores[i][player_ID]][Playing] == false && Player[playerScores[i][player_ID]][RoundDeaths] > 0) {
-					        if(DefOnline <= 3) format(ScoreString[2], 256, "%s%s| %s ~b~~h~Dead %s- ~b~~h~%d~n~", ScoreString[2], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-							else if(DefOnline <= 6) format(ScoreString[3], 256, "%s%s| %s ~b~~h~Dead %s- ~b~~h~%d~n~", ScoreString[3], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-    				    } else if(Player[playerScores[i][player_ID]][Playing] == true) {
-					    	if(DefOnline <= 3) format(ScoreString[2], 256, "%s%s| %s ~b~~h~%.0f %s- ~b~~h~%d~n~", ScoreString[2], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-							else if(DefOnline <= 6) format(ScoreString[3], 256, "%s%s| %s ~b~~h~%.0f %s- ~b~~h~%d~n~", ScoreString[3], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-						}
-					}
-				}
-			}
-
-			TextDrawSetString(AttackerTeam[0], ScoreString[0]);
-			TextDrawSetString(AttackerTeam[1], ScoreString[1]);
-			TextDrawSetString(DefenderTeam[0], ScoreString[2]);
-			TextDrawSetString(DefenderTeam[1], ScoreString[3]);
-			TextDrawSetString(AttackerTeam[2], ScoreString[0]);
-			TextDrawSetString(AttackerTeam[3], ScoreString[1]);
-			TextDrawSetString(DefenderTeam[2], ScoreString[2]);
-			TextDrawSetString(DefenderTeam[3], ScoreString[3]);
-		}
-
-		if(RoundPaused == false)
+	if(BaseStarted == true)
+	{
+  		if(RoundPaused == false)
 		{
 			if(PlayersInCP > 0)
 			{
@@ -22755,12 +21855,6 @@ public OnScriptUpdate()
 
 		    ElapsedTime++;
 		}
-
-/*
-			if(PlayersInCP == 0) format(iString,sizeof(iString),"~r~%s  ~r~~h~%d   ~l~(~r~~h~%.0f~l~)			   	            ~l~%d:%02d			   	            ~b~~h~%s  ~b~~h~%d   ~l~(~b~~h~%.0f~l~)~n~",TeamName[ATTACKER],PlayersAlive[ATTACKER],TeamHP[ATTACKER],RoundMints,RoundSeconds,TeamName[DEFENDER],PlayersAlive[DEFENDER],TeamHP[DEFENDER]);
-			else format(iString,sizeof(iString),"~r~%s  ~r~~h~%d   ~l~(~r~~h~%.0f~l~)			   	            ~l~%d:%02d / ~r~%d		   	            ~b~~h~%s  ~b~~h~%d   ~l~(~b~~h~%.0f~l~)~n~",TeamName[ATTACKER],PlayersAlive[ATTACKER],TeamHP[ATTACKER],RoundMints,RoundSeconds,CurrentCPTime, TeamName[DEFENDER],PlayersAlive[DEFENDER],TeamHP[DEFENDER]);
-			TextDrawSetString(RoundStats, iString);
-*/
 
 		new iString2[256];
 		if(PlayersInCP == 0)
@@ -22801,51 +21895,6 @@ public OnScriptUpdate()
 	    #if ENABLED_TDM == 1
 	    if( GameType == TDM ) goto skipped;
 	    #endif
-
-		if(TeamHPDamage == true) {
-			GetPlayerHighestScores(playerScores, 0, index -1 );
-			new AttOnline, DefOnline;
-
-			ScoreString[0] = "";
-			ScoreString[1] = "";
-			ScoreString[2] = "";
-			ScoreString[3] = "";
-
-			for(new i = 0; i != p; ++i) {
-				if(IsPlayerConnected(playerScores[i][player_ID])) {
-
-					if(Player[playerScores[i][player_ID]][Team] == ATTACKER) {
-					    AttOnline++;
-					    if(Player[playerScores[i][player_ID]][RoundDeaths] > 0) {
-					    	if(AttOnline <= 3) format(ScoreString[0], 256, "%s%s| %s ~r~~h~Dead %s- ~r~%d~n~", ScoreString[0], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-							else if(AttOnline <= 6) format(ScoreString[1], 256, "%s%s| %s ~r~~h~Dead %s- ~r~%d~n~", ScoreString[1], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-						} else {
-						    if(AttOnline <= 3) format(ScoreString[0], 256, "%s%s| %s ~r~~h~%.0f %s- ~r~%d~n~", ScoreString[0], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-							else if(AttOnline <= 6) format(ScoreString[1], 256, "%s%s| %s ~r~~h~%.0f %s- ~r~%d~n~", ScoreString[1], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-						}
-					} else if(Player[playerScores[i][player_ID]][Team] == DEFENDER) {
-					    DefOnline++;
-
-					    if(Player[playerScores[i][player_ID]][RoundDeaths] > 0) {
-					        if(DefOnline <= 3) format(ScoreString[2], 256, "%s%s| %s ~b~~h~Dead %s- ~b~~h~%d~n~", ScoreString[2], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-							else if(DefOnline <= 6) format(ScoreString[3], 256, "%s%s| %s ~b~~h~Dead %s- ~b~~h~%d~n~", ScoreString[3], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-    				    } else {
-					    	if(DefOnline <= 3) format(ScoreString[2], 256, "%s%s| %s ~b~~h~%.0f %s- ~b~~h~%d~n~", ScoreString[2], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-							else if(DefOnline <= 6) format(ScoreString[3], 256, "%s%s| %s ~b~~h~%.0f %s- ~b~~h~%d~n~", ScoreString[3], MAIN_TEXT_COLOUR, Player[playerScores[i][player_ID]][NameWithoutTag], ( (Player[playerScores[i][player_ID]][RoundDeaths] > 0 && Player[i][Playing] == false) ? 0.0 : (Player[playerScores[i][player_ID]][pHealth] + Player[playerScores[i][player_ID]][pArmour])), MAIN_TEXT_COLOUR, playerScores[i][player_Score]);
-						}
-					}
-				}
-			}
-
-			TextDrawSetString(AttackerTeam[0], ScoreString[0]);
-			TextDrawSetString(AttackerTeam[1], ScoreString[1]);
-			TextDrawSetString(DefenderTeam[0], ScoreString[2]);
-			TextDrawSetString(DefenderTeam[1], ScoreString[3]);
-			TextDrawSetString(AttackerTeam[2], ScoreString[0]);
-			TextDrawSetString(AttackerTeam[3], ScoreString[1]);
-			TextDrawSetString(DefenderTeam[2], ScoreString[2]);
-			TextDrawSetString(DefenderTeam[3], ScoreString[3]);
-		}
 		//======================================================================
 
 		if( GameType == TDM )
@@ -22972,9 +22021,6 @@ public OnScriptUpdate()
 			}
 		}
 	}
-
-//	printf("OnScriptUpdating...");
-
 	return 1;
 }
 
@@ -23407,7 +22453,6 @@ public OnPlayerInGameReplace(ToAddID, i, playerid) {
 forward OnArenaStart(ArenaID);
 public OnArenaStart(ArenaID)
 {
-    DeleteAllGraffs();
     ClearKillList(); // Clears the kill-list.
     DestroyAllVehicles(); // Destroys (removes) all the spawned vehicles
 	Current = ArenaID; // Current will be the ID of the base that we just started. We do this so that we can use this ID later on (e.g. check /car command for the use).
@@ -23953,8 +22998,7 @@ GivePlayerArenaWeapons(playerid)
 forward OnBaseStart(BaseID);
 public OnBaseStart(BaseID)
 {
-	DeleteAllGraffs();
-    ClearKillList(); // Clears the kill-list.
+	ClearKillList(); // Clears the kill-list.
     DestroyAllVehicles(); // Destroys (removes) all the spawned vehicles
 	Current = BaseID; // Current will be the ID of the base that we just started. We do this so that we can use this ID later on (e.g. check /car command for the use).
     //ClearPlayerVariables(); // Clears all saved variables for the crashed players.
@@ -24985,7 +24029,6 @@ EndRound(WinID) //WinID: 0 = CP, 1 = RoundTime, 2 = NoAttackersLeft, 3 = NoDefen
 	DefAcc = "";
 
     ResetTeamLeaders();
-    LoadGraffs();
     
     SetTimer("NotEndingRound", 3000, false);
 	return 1;
@@ -25603,7 +24646,7 @@ SpectatePlayer(playerid, specid) {
 	GetAP(specid, aArmour);
 
 	format(iString, sizeof(iString),"%s%s ~r~~h~%d~n~~n~%s(%.0f) (~r~~h~%.0f%s)~n~FPS: ~r~~h~%d %sPing: ~r~~h~%d~n~%sPacket-Loss: ~r~~h~%.1f~n~%sKills: ~r~~h~%d~n~%sDamage: ~r~~h~%.0f~n~%sTotal Dmg: ~r~~h~%.0f",
-		MAIN_TEXT_COLOUR, Player[specid][Name], specid, MAIN_TEXT_COLOUR, Player[specid][pArmour], Player[specid][pHealth], MAIN_TEXT_COLOUR, Player[specid][FPS], MAIN_TEXT_COLOUR, GetPlayerPing(specid), MAIN_TEXT_COLOUR, GetPlayerPacketLoss(specid), MAIN_TEXT_COLOUR, Player[specid][RoundKills], MAIN_TEXT_COLOUR, Player[specid][RoundDamage], MAIN_TEXT_COLOUR, Player[specid][TotalDamage]);
+		MAIN_TEXT_COLOUR, Player[specid][Name], specid, MAIN_TEXT_COLOUR, Player[specid][pArmour], Player[specid][pHealth], MAIN_TEXT_COLOUR, GetPlayerFPS(specid), MAIN_TEXT_COLOUR, GetPlayerPing(specid), MAIN_TEXT_COLOUR, GetPlayerPacketLoss(specid), MAIN_TEXT_COLOUR, Player[specid][RoundKills], MAIN_TEXT_COLOUR, Player[specid][RoundDamage], MAIN_TEXT_COLOUR, Player[specid][TotalDamage]);
 	PlayerTextDrawSetString(playerid, SpecText[1], iString);
 	PlayerTextDrawSetString(playerid, SpecText[3], SpecWeapons(specid));
 
