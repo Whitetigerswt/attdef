@@ -584,8 +584,6 @@ enum PlayerVariables {
 	bool:blockedall,
 	bool:FakePacketRenovation,
 	bool:HasVoted,
-	ServerSidedDeath_killerid,
-	ServerSidedDeath_reason,
 	RadioID,
 	NetCheck,
 	FPSCheck,
@@ -3406,6 +3404,11 @@ stock Float:GetDistanceToPoint(playerid, Float:XXX, Float:YYY, Float:ZZZ) {
 	return floatsqroot(floatpower(floatabs(floatsub(XXX, Pos[0])),2) + floatpower(floatabs(floatsub(YYY, Pos[1])),2) + floatpower(floatabs(floatsub(ZZZ, Pos[2])),2));
 }
 
+public OnPlayerDeath(playerid, killerid, reason)
+{
+	// todo: test if this callback should be used under any weird circumstances. e.g: falling from a large cliff, exploding while driving a car, etc...
+}
+
 forward ServerOnPlayerDeath(playerid, killerid, reason);
 public ServerOnPlayerDeath(playerid, killerid, reason)
 {
@@ -3429,17 +3432,15 @@ public ServerOnPlayerDeath(playerid, killerid, reason)
 	}
 
 
-	new bool:TempPlaying;
-	if(Player[playerid][Playing] == true) TempPlaying = true;
-	else TempPlaying = false;
-
     if(Player[playerid][Playing] == true)
+    {
     	PlayerNoLeadTeam(playerid);
+    }
 
 	if(killerid == INVALID_PLAYER_ID) {
 	    if(Current == -1) SendDeathMessage(INVALID_PLAYER_ID, playerid, reason);
 
-	    if(TempPlaying == true) {
+	    if(Player[playerid][Playing] == true) {
 
             SendDeathMessage(INVALID_PLAYER_ID, playerid, reason);
 			Player[playerid][RoundDeaths]++;
@@ -3515,12 +3516,10 @@ public ServerOnPlayerDeath(playerid, killerid, reason)
 			SetHP(killerid, 100);
 			SetAP(killerid, 100);
 
-
-
 			Player[playerid][VWorld] = GetPlayerVirtualWorld(killerid);
 		}
 
-		if(TempPlaying == true) {
+		if(Player[playerid][Playing] == true) {
 		    SendDeathMessage(killerid, playerid, reason);
 
 		    Player[killerid][RoundKills]++;
@@ -3552,37 +3551,8 @@ public ServerOnPlayerDeath(playerid, killerid, reason)
 		}
 	}
 
-	Player[playerid][InDM] = false;
-	Player[playerid][Playing] = false;
 
-	if(Player[playerid][WeaponPicked] > 0){
- 		TimesPicked[Player[playerid][Team]][Player[playerid][WeaponPicked]-1]--;
- 		Player[playerid][WeaponPicked] = 0;
-	}
-
-	if(Player[playerid][WasInCP] == true) {
-	    PlayersInCP--;
-	    Player[playerid][WasInCP] = false;
-		if(PlayersInCP <= 0) {
-		    CurrentCPTime = ConfigCPTime;
-		    TextDrawHideForAll(EN_CheckPoint);
-		}
-	}
-
-	if(Player[playerid][BeingSpeced] == true) {
-		foreach(new i : Player) {
-		    if(Player[i][Spectating] == true && Player[i][IsSpectatingID] == playerid) {
-				if(Current != -1 && (Player[i][Team] == ATTACKER || Player[i][Team] == ATTACKER_SUB || Player[i][Team] == DEFENDER || Player[i][Team] == DEFENDER_SUB)) {
-					SpectateNextTeamPlayer(i);
-				} else {
-				    SpectateNextPlayer(i);
-				}
-			}
-		}
-	}
-
-
-	if(TempPlaying == true) {
+	if(Player[playerid][Playing] == true) {
 		new Float:Pos[3];
 		GetPlayerPos(playerid, Pos[0], Pos[1], Pos[2]);
 
@@ -3602,7 +3572,6 @@ public ServerOnPlayerDeath(playerid, killerid, reason)
 		}
 	}
 
-
 	PlayerTextDrawHide(playerid, AreaCheckTD);
 	PlayerTextDrawHide(playerid, AreaCheckBG);
 
@@ -3611,7 +3580,7 @@ public ServerOnPlayerDeath(playerid, killerid, reason)
 	#if ENABLED_TDM == 1
 	if( Current != -1 && GameType == TDM && ArenaStarted == true )
 	{
-	    if( TempPlaying == true )
+	    if( Player[playerid][Playing] == true )
 	    {
 			switch( Player[playerid][Team] )
 			{
@@ -3636,7 +3605,7 @@ public ServerOnPlayerDeath(playerid, killerid, reason)
 	}
 	#endif
 
-	if(TempPlaying == true) {
+	if(Player[playerid][Playing] == true) {
 	    if(Player[playerid][Team] == ATTACKER) {
 	        foreach(new i : Player) {
 	            if(Player[i][Team] == ATTACKER && Player[i][Playing] == true) {
@@ -3656,10 +3625,35 @@ public ServerOnPlayerDeath(playerid, killerid, reason)
 		}
 	}
 
+	Player[playerid][InDM] = false;
+	Player[playerid][Playing] = false;
 
+	if(Player[playerid][WeaponPicked] > 0)
+	{
+ 		TimesPicked[Player[playerid][Team]][Player[playerid][WeaponPicked]-1]--;
+ 		Player[playerid][WeaponPicked] = 0;
+	}
 
+	if(Player[playerid][WasInCP] == true) {
+	    PlayersInCP--;
+	    Player[playerid][WasInCP] = false;
+		if(PlayersInCP <= 0) {
+		    CurrentCPTime = ConfigCPTime;
+		    TextDrawHideForAll(EN_CheckPoint);
+		}
+	}
 
-
+	if(Player[playerid][BeingSpeced] == true) {
+		foreach(new i : Player) {
+		    if(Player[i][Spectating] == true && Player[i][IsSpectatingID] == playerid) {
+				if(Current != -1 && (Player[i][Team] == ATTACKER || Player[i][Team] == ATTACKER_SUB || Player[i][Team] == DEFENDER || Player[i][Team] == DEFENDER_SUB)) {
+					SpectateNextTeamPlayer(i);
+				} else {
+				    SpectateNextPlayer(i);
+				}
+			}
+		}
+	}
 
 	SetHP(playerid, 100);
 	SpawnPlayerEx(playerid);
@@ -4369,8 +4363,8 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 		if(Player[issuerid][Playing] == true && (Player[issuerid][Team] == Player[playerid][Team]))
 			return 1;
 			
-    Player[playerid][ServerSidedDeath_killerid] = issuerid;
- 	Player[playerid][ServerSidedDeath_reason] = weaponid;
+    Player[playerid][HitBy] = issuerid;
+ 	Player[playerid][HitWith] = weaponid;
 
 	if(weaponid == 54)
 	{
@@ -17242,7 +17236,7 @@ stock SetHP(playerid, Float:amount)
 	SetPlayerProgressBarValue(playerid, HealthBar, amount);
 	if(amount <= 0.0)
 	{
-	    ServerOnPlayerDeath(playerid, Player[playerid][ServerSidedDeath_killerid], Player[playerid][ServerSidedDeath_reason]);
+	    ServerOnPlayerDeath(playerid, Player[playerid][HitBy], Player[playerid][HitWith]);
 	    HidePlayerProgressBar(playerid, HealthBar);
 	}
 	else
