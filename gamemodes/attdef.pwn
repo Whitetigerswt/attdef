@@ -4182,11 +4182,6 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 		return 1;
 	}
 
-	if(!IsValidWeaponDat(weaponid, amount))
-	{
-		return SendClientMessage(playerid, -1, "weapon.dat modified.");
-	}
-
 	if(ToggleTargetInfo == true)
 	{
 	    ShowTargetInfo(playerid, damagedid);
@@ -4264,12 +4259,6 @@ public OnPlayerGiveDamage(playerid, damagedid, Float: amount, weaponid, bodypart
 
 public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 {
-
-	if(!IsValidWeaponDat(weaponid, amount))
-	{
-		return SendClientMessage(playerid, -1, "weapon.dat modified.");
-	}
-
     if((Player[playerid][OnGunmenu] && Player[playerid][Playing]) ||
     	(weaponid == 49 || weaponid == 50 || weaponid == 51 || (weaponid == 54 && amount <= 10)) ||
     	Player[playerid][IsAFK])
@@ -4287,7 +4276,6 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 
         return 1;
     }
-
 
 
     //ShowHitArrow(playerid, issuerid);
@@ -4853,108 +4841,6 @@ public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
 
 	}
 
-
-	return 1;
-}
-
-IsValidWeaponDat(weaponid, Float:amount)
-{
-	new Float:bullets;
-	switch (weaponid) 
-	{
-		// The spas shotguns shoot 8 bullets, each inflicting 4.95 damage
-		case WEAPON_SHOTGSPA: 
-		{
-			bullets = amount / 4.950000286102294921875;
-	 
-			if (8.0 - bullets < -0.05) 
-			{
-				return 0;
-			}
-		}
-	 
-		// Shotguns and sawed-off shotguns shoot 15 bullets, each inflicting 3.3 damage
-		case WEAPON_SHOTGUN, WEAPON_SAWEDOFF:
-		{
-			bullets = amount / 3.30000019073486328125;
-	 
-			if (15.0 - bullets < -0.05) 
-			{
-				return 0;
-			}
-		}
-	}
- 
-	if (_:bullets) 
-	{
-		new Float:f = floatfract(bullets);
-
-		// The damage for each bullet has been tampered with
-		if (f > 0.01 && f < 0.99) 
-		{
-			return 0;
-		}
-
-		// Divide the damage amount by the number of bullets
-		amount /= bullets;
-	}
-
-	// Check chainsaw damage
-	if (weaponid == WEAPON_CHAINSAW) 
-	{
-		switch (amount) 
-		{
-			case 6.6000003814697265625,
-			13.5300006866455078125,
-			16.1700000762939453125,
-			26.40000152587890625,
-			27.060001373291015625: {}
-
-			default:
-			{
-				return 0;
-			}
-		}
-	}
-
-	// Check gun damage
-	new Float:def_amount = 0.0;
-
-	switch (weaponid) 
-	{
-		case WEAPON_COLT45,
-		WEAPON_MP5: def_amount = 8.25;
-		case WEAPON_SILENCED: def_amount = 13.200000762939453125;
-		case WEAPON_DEAGLE: def_amount = 46.200000762939453125;
-		case WEAPON_UZI,
-		WEAPON_TEC9: def_amount = 6.6000003814697265625;
-		case WEAPON_AK47,
-		WEAPON_M4: def_amount = 9.90000057220458984375;
-		case WEAPON_RIFLE: def_amount = 24.7500019073486328125;
-		case WEAPON_SNIPER: def_amount = 41.25;
-		case WEAPON_MINIGUN: def_amount = 46.200000762939453125;
-		case WEAPON_VEHICLE: def_amount = 9.90000057220458984375;
-	}
-
-	if (_:def_amount && _:def_amount != _:amount) 
-	{
-		return 0;
-	}
-
-	//todo: melee damages.
-	/*
-	1.32000005245208740234375
-	1.650000095367431640625
-	1.980000019073486328125
-	2.3100001811981201171875
-	2.6400001049041748046875
-	2.9700000286102294921875
-	3.96000003814697265625
-	4.28999996185302734375
-	4.62000036239624023437
-	5.280000209808349609375
-	6.6000003814697265625
-	54.12000274658203125*/
 
 	return 1;
 }
