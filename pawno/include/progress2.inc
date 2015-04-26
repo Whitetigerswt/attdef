@@ -80,7 +80,8 @@ PlayerText:	pbar_main
 
 static
 			pbar_Data[MAX_PLAYERS][MAX_PLAYER_BARS][E_BAR_DATA],
-			pbar_TextDraw[MAX_PLAYERS][MAX_PLAYER_BARS][E_BAR_TEXT_DRAW];
+			pbar_TextDraw[MAX_PLAYERS][MAX_PLAYER_BARS][E_BAR_TEXT_DRAW],
+			bool:pbar_IsBarShown[MAX_PLAYERS][MAX_PLAYER_BARS];
 
 #if defined _Y_ITERATE_LOCAL_VERSION
 	new Iterator:pbar_Index[MAX_PLAYERS]<MAX_PLAYER_BARS>;
@@ -276,7 +277,9 @@ stock DestroyPlayerProgressBar(playerid, PlayerBar:barid)
 	PlayerTextDrawDestroy(playerid, pbar_TextDraw[playerid][_:barid][pbar_back]);
 	PlayerTextDrawDestroy(playerid, pbar_TextDraw[playerid][_:barid][pbar_fill]);
 	PlayerTextDrawDestroy(playerid, pbar_TextDraw[playerid][_:barid][pbar_main]);
-
+	
+	pbar_IsBarShown[playerid][_:barid] = false;
+	
 #if defined _Y_ITERATE_LOCAL_VERSION
 	Iter_Remove(pbar_Index[playerid], _:barid);
 #else
@@ -294,7 +297,7 @@ stock ShowPlayerProgressBar(playerid, PlayerBar:barid)
 	PlayerTextDrawShow(playerid, pbar_TextDraw[playerid][_:barid][pbar_back]);
 	PlayerTextDrawShow(playerid, pbar_TextDraw[playerid][_:barid][pbar_fill]);
 	PlayerTextDrawShow(playerid, pbar_TextDraw[playerid][_:barid][pbar_main]);
-
+	pbar_IsBarShown[playerid][_:barid] = true;
 	return 1;
 }
 
@@ -306,7 +309,7 @@ stock HidePlayerProgressBar(playerid, PlayerBar:barid)
 	PlayerTextDrawHide(playerid, pbar_TextDraw[playerid][_:barid][pbar_back]);
 	PlayerTextDrawHide(playerid, pbar_TextDraw[playerid][_:barid][pbar_fill]);
 	PlayerTextDrawHide(playerid, pbar_TextDraw[playerid][_:barid][pbar_main]);
-
+	pbar_IsBarShown[playerid][_:barid] = false;
 	return 1;
 }
 
@@ -372,6 +375,8 @@ stock HidePlayerProgressBar(playerid, PlayerBar:barid)
 
 public OnPlayerDisconnect(playerid, reason)
 {
+	for(new i = 0; i < MAX_PLAYER_BARS; i ++)
+		pbar_IsBarShown[playerid][i] = false;
 #if defined _Y_ITERATE_LOCAL_VERSION
 	Iter_Clear(pbar_Index[playerid]);
 #else
@@ -585,6 +590,12 @@ stock GetPlayerProgressBarDirection(playerid, PlayerBar:barid)
 
 	return pbar_Data[playerid][_:barid][pbar_direction];
 }
+
+stock bool:IsPlayerProgressBarShown(playerid, PlayerBar:barid)
+{
+	return pbar_IsBarShown[playerid][_:barid];
+}
+
 /*
 stock SetPlayerProgressBarDirection(playerid, PlayerBar:barid, direction)
 {
