@@ -1,11 +1,5 @@
 Attack-Defend
 =============
+Attack-Defend 2.5.2 Development No longer active. The following repository contains the latest updates for Attack-Defend ever officially made. I am not providing any support.
 
-If you made it this far, you're part of the elite group of Attack-Defend developers.
-
-be sure NOT to fork this as I think that will make everything public
-
-Issue tracker
--------
-
-Check https://github.com/Whitetigerswt/attdef/issues?state=open for a list of open issues, some might be assigned to you!
+More information will be included in this section at a later date.
